@@ -21,10 +21,10 @@ macro_rules! gen_hash {
 }
 
 #[derive(Debug)]
-pub struct Hash<'a> {
+pub struct Hash {
     data: String,
     len: u32,
-    note: &'a str
+    note: String
 }
 
 pub trait Hashable {
@@ -33,7 +33,7 @@ pub trait Hashable {
 
     fn encrype_sha256(&self) -> Hash {
         let data = gen_hash!(sha256_raw => self.serialized_data());
-        Hash { data: data, len: 32, note: "SHA256" }
+        Hash { data: data, len: 32, note: String::from("SHA256") }
     }
 }
 
