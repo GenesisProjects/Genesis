@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
+log = "0.4"
 rust-crypto = "^0.2"
-crust = "0.30.0"
-tarpc = "0.9.0"
-tarpc-plugins = "0.2.0"
+rand = "^0.3"
