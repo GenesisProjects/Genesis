@@ -8,4 +8,5 @@ log = "0.4"
 rust-crypto = "^0.2"
 rand = "^0.3"
 ring = "0.12.1"
+untrusted = "0.6.1"
 
