@@ -2,51 +2,80 @@ extern crate ring;
 extern crate untrusted;
 
 use self::ring::{rand, signature};
+use self::untrusted::Input as Input;
+use std::mem::transmute;
+use super::address::Secret;
+use super::address::Address;
+use super::address::PUBLIC_KEY_LEN;
 
-pub enum KeyPair {
-    Ed25519KeyPair { pair: signature::Ed25519KeyPair },
-    ECDSAKeyPair { pair: signature::ECDSAKeyPair },
+pub struct KeyPair {
+    pair: signature::Ed25519KeyPair
 }
 
-trait KeyPairOp {
-    fn public_key_str(&self) -> String;
-    fn private_key_str(&self) -> String;
+pub trait KeyPairOp<'a, 'b> {
+    fn public_key_str(&'a self) -> Address;
 
-    fn gen_ed25519_keypair() -> Result<KeyPair, String>;
-    fn gen_ecdsakey_pair_keypair() -> Result<KeyPair, String>;
+    fn gen_rand_keypair() -> Result<(KeyPair, Secret), String>;
+    fn restore_keypair(input: &'a [u8]) -> Result<KeyPair, String>;
 
-    fn sign_msg(msg: & [u8]) -> signature::Signature;
-    fn verify_sig(msg: & [u8], sig: &signature::Signature, pub_key: &String) -> bool;
+    fn sign_msg(&self, msg: &'a [u8]) -> signature::Signature;
+    fn verify_sig(&self, msg: &'a [u8], sig: &signature::Signature) -> bool;
 }
 
-impl KeyPairOp for KeyPair {
-    fn gen_ed25519_keypair() -> Result<KeyPair, String> {
+impl<'a, 'b> KeyPairOp<'a, 'b> for KeyPair {
+    fn public_key_str(&'a self) -> Address {
+        let mut a: Address = Default::default();
+        a.copy_from_slice(self.pair.public_key_bytes());
+        a
+    }
+
+    fn gen_rand_keypair() -> Result<(KeyPair, Secret), String> {
         let rng = rand::SystemRandom::new();
         match signature::Ed25519KeyPair::generate_pkcs8(&rng) {
             Err(why) => {
-                panic!("{:?}", why);
-                Err(String::from("Failed to generate pkcs8: " + why))
-            },
-            Ok(pkcs8_bytes) => match signature
-            ::Ed25519KeyPair
-            ::from_pkcs8(untrusted::Input::from(&pkcs8_bytes)) {
-                Err(why) => {
-                    panic!("{:?}", why);
-                    Err(String::from("Failed to generate key_pair: " + why))
-                },
-                Ok(key_pair) => Ok(Ed25519KeyPair { pair: key_pair })
-            },
+                Err(String::from(format!("{}{}", "Failed to generate pkcs8: ", why)))
+            }
+            Ok(pkcs8_bytes) =>
+                match signature::Ed25519KeyPair::from_pkcs8(Input::from(&pkcs8_bytes)) {
+                    Err(why) => {
+                        Err(String::from(format!("{}{}", "Failed to generate key_pair: ", why)))
+                    }
+                    Ok(key_pair) => {
+                        Ok((KeyPair { pair: key_pair }, pkcs8_bytes))
+                    }
+                }
         }
     }
 
-    // TODO::
-}
+    fn restore_keypair(input: &'a [u8]) -> Result<KeyPair, String> {
+        match signature::Ed25519KeyPair::from_pkcs8(Input::from(&input)) {
+            Err(why) => {
+                Err(String::from(format!("{}{}", "Failed to generate key_pair: ", why)))
+            }
+            Ok(key_pair) => {
+                Ok(KeyPair { pair: key_pair })
+            }
+        }
+    }
 
-/*
-impl KeyPairOp for KeyPair:: ECDSAKeyPair {
+    fn sign_msg(&self, msg: &'a [u8]) -> signature::Signature {
+        self.pair.sign(msg)
+    }
 
+    fn verify_sig(&self, msg: &'a [u8], sig: &signature::Signature) -> bool {
+        let peer_public_key_bytes = self.pair.public_key_bytes();
+        let sig_bytes = sig.as_ref();
+
+        let peer_public_key = Input::from(peer_public_key_bytes);
+        let msg = Input::from(msg);
+        let sig = Input::from(sig_bytes);
+
+        match signature::verify(&signature::ED25519, peer_public_key, msg, sig) {
+            Ok(_) => true,
+            Err(_) => false
+        }
+    }
 }
-*/
 
 #[cfg(test)]
 mod tests {
