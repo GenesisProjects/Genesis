@@ -4,8 +4,8 @@ use self::crypto::digest::Digest;
 use self::crypto::sha2::Sha256;
 use std::string::String;
 
-// macro gen_hash! takes (*_str => '&str' type data) and (*_raw => '&[u8]' type data) as input
-// it generates a 'String' type output
+/// macro gen_hash! takes (*_str => '&str' type data) and (*_raw => '&[u8]' type data) as input
+/// it generates a 'String' type output
 #[macro_export]
 macro_rules! gen_hash {
     (sha256_str => $e:expr) => ({
@@ -20,6 +20,7 @@ macro_rules! gen_hash {
     })
 }
 
+/// Hash structure
 #[derive(Debug)]
 pub struct Hash {
     data: String,
@@ -27,6 +28,7 @@ pub struct Hash {
     note: String
 }
 
+/// Interface for hashable objects
 pub trait Hashable {
     fn serialized_data(&self) -> &[u8];
     fn serialized_str(&self) -> &str;

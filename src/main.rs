@@ -8,5 +8,5 @@ fn main() {
         Ok(r) => r,
         Err(e) => panic!(e.as_bytes().to_owned())
     };
-    println!("Hello, world! {:?}", AddressOp::addr2string(&pair.public_key_str()));
+    println!("Hello, world! {}", Address::key2addr(pair.public_key_str()));
 }

@@ -4,17 +4,25 @@ extern crate untrusted;
 use self::ring::{rand, signature};
 use self::untrusted::Input as Input;
 use std::mem::transmute;
-use super::address::Secret;
-use super::address::Address;
-use super::address::PUBLIC_KEY_LEN;
 
+use self::ring::signature::ED25519_PKCS8_V2_LEN as PKCS_LEN;
+pub const PUBLIC_KEY_LEN: usize = 32;
+
+pub type PublicKey = [u8; PUBLIC_KEY_LEN];
+pub type Secret = [u8; PKCS_LEN];
+
+
+/// KeyPair which store public key and secret
 pub struct KeyPair {
     pair: signature::Ed25519KeyPair
 }
 
+/// Common keypair operation
 pub trait KeyPairOp<'a, 'b> {
-    fn public_key_str(&'a self) -> Address;
+    /// Get the public key
+    fn public_key_str(&'a self) -> PublicKey;
 
+    /// Get the public key
     fn gen_rand_keypair() -> Result<(KeyPair, Secret), String>;
     fn restore_keypair(input: &'a [u8]) -> Result<KeyPair, String>;
 
@@ -23,8 +31,8 @@ pub trait KeyPairOp<'a, 'b> {
 }
 
 impl<'a, 'b> KeyPairOp<'a, 'b> for KeyPair {
-    fn public_key_str(&'a self) -> Address {
-        let mut a: Address = Default::default();
+    fn public_key_str(&'a self) -> PublicKey {
+        let mut a: PublicKey = Default::default();
         a.copy_from_slice(self.pair.public_key_bytes());
         a
     }
