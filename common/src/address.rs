@@ -14,8 +14,8 @@ pub struct Address {
 
 impl Address {
     /// Convert key to addr
-    pub fn key2addr(key: PublicKey) -> String {
-        key.to_base58()
+    pub fn key2addr(key: PublicKey) -> Address {
+        Address { text: key.to_base58() }
     }
 
     /// Convert to key
