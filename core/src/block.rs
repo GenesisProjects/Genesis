@@ -32,7 +32,7 @@ struct BlockHeader {
     pub number: BigInt,
     pub gas_used: u64,
     pub time: BigInt,
-    pub extra: vec<u8>,
+    pub extra: Vec<u8>,
     pub digest: Hash,
     pub nounce: nounce::BlockNounce
 }

@@ -6,6 +6,9 @@ use self::untrusted::Input as Input;
 use std::mem::transmute;
 
 use self::ring::signature::ED25519_PKCS8_V2_LEN as PKCS_LEN;
+
+use address::*;
+
 pub const PUBLIC_KEY_LEN: usize = 32;
 
 pub type PublicKey = [u8; PUBLIC_KEY_LEN];
@@ -28,7 +31,7 @@ pub trait KeyPairOp<'a, 'b> {
     fn restore_keypair(input: &'a [u8]) -> Result<KeyPair, String>;
 
     fn sign_msg(&self, msg: &'a [u8]) -> signature::Signature;
-    fn verify_sig(&self, msg: &'a [u8], sig: &signature::Signature) -> bool;
+    fn verify_sig(addr: &Address, msg: &'a [u8], sig: &signature::Signature) -> bool;
 }
 
 impl<'a, 'b> KeyPairOp<'a, 'b> for KeyPair {
@@ -71,11 +74,11 @@ impl<'a, 'b> KeyPairOp<'a, 'b> for KeyPair {
         self.pair.sign(msg)
     }
 
-    fn verify_sig(&self, msg: &'a [u8], sig: &signature::Signature) -> bool {
-        let peer_public_key_bytes = self.pair.public_key_bytes();
+    fn verify_sig(addr: &Address, msg: &'a [u8], sig: &signature::Signature) -> bool {
+        let peer_public_key_bytes = addr.to_key().unwrap();
         let sig_bytes = sig.as_ref();
 
-        let peer_public_key = Input::from(peer_public_key_bytes);
+        let peer_public_key = Input::from(&peer_public_key_bytes);
         let msg = Input::from(msg);
         let sig = Input::from(sig_bytes);
 
