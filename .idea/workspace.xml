@@ -2,27 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="a66d182c-deb9-4c0e-afe2-f41db5e0af2e" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/core/src/block.rs" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/util/mod.rs" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/common/mod.rs" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/core/block.rs" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/main.rs" afterPath="" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/account/mod.rs" afterPath="$PROJECT_DIR$/account/mod.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/apps/mod.rs" afterPath="$PROJECT_DIR$/apps/mod.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/chaintool/mod.rs" afterPath="$PROJECT_DIR$/chaintool/mod.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/common/address.rs" afterPath="$PROJECT_DIR$/common/src/address.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/common/hash.rs" afterPath="$PROJECT_DIR$/common/src/hash.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/common/key.rs" afterPath="$PROJECT_DIR$/common/src/key.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/config/mod.rs" afterPath="$PROJECT_DIR$/common/src/lib.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/contract/mod.rs" afterPath="$PROJECT_DIR$/config/mod.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/core/mod.rs" afterPath="$PROJECT_DIR$/core/src/lib.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/db/mod.rs" afterPath="$PROJECT_DIR$/contract/mod.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/fs/mod.rs" afterPath="$PROJECT_DIR$/db/mod.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/network/mod.rs" afterPath="$PROJECT_DIR$/fs/mod.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/role/mod.rs" afterPath="$PROJECT_DIR$/network/mod.rs" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/util/mod.rs" afterPath="$PROJECT_DIR$/role/mod.rs" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/common/src/bloom.rs" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Cargo.toml" afterPath="$PROJECT_DIR$/Cargo.toml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/GenesisRust/Cargo.toml" afterPath="$PROJECT_DIR$/GenesisRust/Cargo.toml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/GenesisRust/src/main.rs" afterPath="$PROJECT_DIR$/GenesisRust/src/main.rs" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/common/Cargo.toml" afterPath="$PROJECT_DIR$/common/Cargo.toml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/common/src/lib.rs" afterPath="$PROJECT_DIR$/common/src/lib.rs" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/core/Cargo.toml" afterPath="$PROJECT_DIR$/core/Cargo.toml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/core/src/block.rs" afterPath="$PROJECT_DIR$/core/src/block.rs" />
     </list>
     <ignored path="$PROJECT_DIR$/target/" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -38,28 +25,8 @@
       <file leaf-file-name="lib.rs" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/common/src/lib.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="46">
-              <caret line="2" column="12" lean-forward="false" selection-start-line="2" selection-start-column="12" selection-end-line="2" selection-end-column="12" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="key.rs" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/common/src/key.rs">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="194">
-              <caret line="81" column="26" lean-forward="false" selection-start-line="81" selection-start-column="26" selection-end-line="81" selection-end-column="26" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Cargo.toml" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Cargo.toml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="92">
-              <caret line="4" column="9" lean-forward="false" selection-start-line="4" selection-start-column="9" selection-end-line="4" selection-end-column="9" />
+            <state relative-caret-position="69">
+              <caret line="3" column="14" lean-forward="false" selection-start-line="3" selection-start-column="14" selection-end-line="3" selection-end-column="14" />
               <folding />
             </state>
           </provider>
@@ -68,8 +35,18 @@
       <file leaf-file-name="Cargo.toml" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/GenesisRust/Cargo.toml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="138">
-              <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="50" />
+            <state relative-caret-position="184">
+              <caret line="8" column="0" lean-forward="false" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="GenesisRust.iml" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/GenesisRust.iml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="0">
+              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -79,7 +56,7 @@
         <entry file="file://$PROJECT_DIR$/GenesisRust/src/main.rs">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="23">
-              <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
+              <caret line="1" column="17" lean-forward="false" selection-start-line="1" selection-start-column="17" selection-end-line="1" selection-end-column="17" />
               <folding />
             </state>
           </provider>
@@ -88,8 +65,8 @@
       <file leaf-file-name="Cargo.toml" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/Cargo.toml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="184">
-              <caret line="8" column="0" lean-forward="false" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
+            <state relative-caret-position="138">
+              <caret line="6" column="50" lean-forward="false" selection-start-line="6" selection-start-column="50" selection-end-line="6" selection-end-column="50" />
               <folding />
             </state>
           </provider>
@@ -98,6 +75,37 @@
       <file leaf-file-name="block.rs" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/src/block.rs">
           <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="115">
+              <caret line="25" column="12" lean-forward="true" selection-start-line="25" selection-start-column="12" selection-end-line="25" selection-end-column="12" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="bloom.rs" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/common/src/bloom.rs">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="170">
+              <caret line="32" column="39" lean-forward="false" selection-start-line="32" selection-start-column="26" selection-end-line="32" selection-end-column="39" />
+              <folding>
+                <element signature="e#4279#4280#0" expanded="true" />
+                <element signature="e#4316#4317#0" expanded="true" />
+                <element signature="e#4407#4408#0" expanded="true" />
+                <element signature="e#4438#4439#0" expanded="true" />
+                <element signature="e#4562#4563#0" expanded="true" />
+                <element signature="e#4587#4588#0" expanded="true" />
+                <element signature="e#4683#4684#0" expanded="true" />
+                <element signature="e#4740#4741#0" expanded="true" />
+                <element signature="e#5530#5531#0" expanded="true" />
+                <element signature="e#5564#5565#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="lib.rs" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/siphasher-0.1.3/src/lib.rs">
+          <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="0">
               <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
               <folding />
@@ -105,7 +113,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="lib.rs" pinned="false" current-in-tab="true">
+      <file leaf-file-name="lib.rs" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/src/lib.rs">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="0">
@@ -118,18 +126,8 @@
       <file leaf-file-name="Cargo.toml" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/common/Cargo.toml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="138">
-              <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="12" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="address.rs" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/common/src/address.rs">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="391">
-              <caret line="19" column="0" lean-forward="false" selection-start-line="19" selection-start-column="0" selection-end-line="19" selection-end-column="0" />
+            <state relative-caret-position="253">
+              <caret line="11" column="19" lean-forward="false" selection-start-line="11" selection-start-column="19" selection-end-line="11" selection-end-column="19" />
               <folding />
             </state>
           </provider>
@@ -176,6 +174,7 @@
       <find>Public</find>
       <find>Addr</find>
       <find>Address</find>
+      <find>optimal_k_num</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -230,19 +229,22 @@
         <option value="$PROJECT_DIR$/src/common/src/lib.rs" />
         <option value="$PROJECT_DIR$/src/common/Cargo.toml" />
         <option value="$PROJECT_DIR$/src/main.rs" />
+        <option value="$PROJECT_DIR$/Cargo.toml" />
         <option value="$PROJECT_DIR$/GenesisRust/Cargo.toml" />
+        <option value="$PROJECT_DIR$/GenesisRust/src/main.rs" />
+        <option value="$PROJECT_DIR$/core/src/bloom.rs" />
+        <option value="$PROJECT_DIR$/core/src/lib.rs" />
+        <option value="$PROJECT_DIR$/core/Cargo.toml" />
         <option value="$PROJECT_DIR$/common/Cargo.toml" />
         <option value="$PROJECT_DIR$/common/src/lib.rs" />
-        <option value="$PROJECT_DIR$/GenesisRust/src/main.rs" />
-        <option value="$PROJECT_DIR$/Cargo.toml" />
-        <option value="$PROJECT_DIR$/core/Cargo.toml" />
         <option value="$PROJECT_DIR$/core/src/block.rs" />
+        <option value="$PROJECT_DIR$/common/src/bloom.rs" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
-    <option name="x" value="493" />
-    <option name="y" value="7" />
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="1" />
+    <option name="y" value="56" />
     <option name="width" value="1400" />
     <option name="height" value="1060" />
   </component>
@@ -280,6 +282,12 @@
             <path>
               <item name="Genesis" type="b2602c69:ProjectViewProjectNode" />
               <item name="Genesis" type="462c0819:PsiDirectoryNode" />
+              <item name="common" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Genesis" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Genesis" type="462c0819:PsiDirectoryNode" />
               <item name="core" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -292,6 +300,12 @@
               <item name="Genesis" type="b2602c69:ProjectViewProjectNode" />
               <item name="Genesis" type="462c0819:PsiDirectoryNode" />
               <item name="GenesisRust" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Genesis" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Genesis" type="462c0819:PsiDirectoryNode" />
+              <item name="GenesisRust" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -311,6 +325,7 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\tanshuo\Desktop\Genesis\common\src" />
       <recent name="C:\Users\tanshuo\Desktop\Genesis\core" />
       <recent name="C:\Users\tanshuo\Desktop\Genesis\core\src" />
       <recent name="C:\Users\tanshuo\Desktop\Genesis" />
@@ -447,7 +462,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-9" y="-9" width="1938" height="1048" extended-state="7" />
+    <frame x="-9" y="-9" width="1938" height="1048" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -486,14 +501,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/rust-crypto/Cargo.toml" />
-    <entry file="file://$USER_HOME$/.rustup/toolchains/stable-x86_64-pc-windows-msvc/lib/rustlib/src/rust/src/librand/lib.rs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/rust-crypto-0.2.36/src/buffer.rs">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="192">
@@ -738,14 +745,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/GenesisRust.iml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/common/src/key.rs">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="194">
@@ -762,30 +761,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/common/src/lib.rs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="46">
-          <caret line="2" column="12" lean-forward="false" selection-start-line="2" selection-start-column="12" selection-end-line="2" selection-end-column="12" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/GenesisRust/src/main.rs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="23">
-          <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/common/Cargo.toml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="138">
-          <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="12" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Cargo.toml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="92">
@@ -794,15 +769,23 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/GenesisRust/Cargo.toml">
+    <entry file="file://$PROJECT_DIR$/GenesisRust.iml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="138">
-          <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="50" />
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/Cargo.toml">
+    <entry file="file://$PROJECT_DIR$/GenesisRust/src/main.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="23">
+          <caret line="1" column="17" lean-forward="false" selection-start-line="1" selection-start-column="17" selection-end-line="1" selection-end-column="17" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GenesisRust/Cargo.toml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="184">
           <caret line="8" column="0" lean-forward="false" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
@@ -810,7 +793,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/src/block.rs">
+    <entry file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/siphasher-0.1.3/src/lib.rs">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
@@ -823,6 +806,57 @@
         <state relative-caret-position="0">
           <caret line="0" column="14" lean-forward="false" selection-start-line="0" selection-start-column="14" selection-end-line="0" selection-end-column="14" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/common/Cargo.toml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="253">
+          <caret line="11" column="19" lean-forward="false" selection-start-line="11" selection-start-column="19" selection-end-line="11" selection-end-column="19" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/common/src/lib.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="69">
+          <caret line="3" column="14" lean-forward="false" selection-start-line="3" selection-start-column="14" selection-end-line="3" selection-end-column="14" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/Cargo.toml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="138">
+          <caret line="6" column="50" lean-forward="false" selection-start-line="6" selection-start-column="50" selection-end-line="6" selection-end-column="50" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/src/block.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="115">
+          <caret line="25" column="12" lean-forward="true" selection-start-line="25" selection-start-column="12" selection-end-line="25" selection-end-column="12" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/common/src/bloom.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="170">
+          <caret line="32" column="39" lean-forward="false" selection-start-line="32" selection-start-column="26" selection-end-line="32" selection-end-column="39" />
+          <folding>
+            <element signature="e#4279#4280#0" expanded="true" />
+            <element signature="e#4316#4317#0" expanded="true" />
+            <element signature="e#4407#4408#0" expanded="true" />
+            <element signature="e#4438#4439#0" expanded="true" />
+            <element signature="e#4562#4563#0" expanded="true" />
+            <element signature="e#4587#4588#0" expanded="true" />
+            <element signature="e#4683#4684#0" expanded="true" />
+            <element signature="e#4740#4741#0" expanded="true" />
+            <element signature="e#5530#5531#0" expanded="true" />
+            <element signature="e#5564#5565#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
