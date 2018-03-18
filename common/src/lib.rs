@@ -1,4 +1,4 @@
 pub mod address;
-pub mod key;
-pub mod hash;
 pub mod bloom;
+pub mod hash;
+pub mod key;

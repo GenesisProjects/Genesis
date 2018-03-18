@@ -19,6 +19,7 @@ pub mod nounce {
 ///
 ///
 ///
+#[derive(Debug)]
 struct BlockHeader {
     pub parent: Hash,
     pub uncle: Hash,

@@ -11,6 +11,7 @@ pub const PUBLIC_KEY_LEN: usize = 32;
 pub type PublicKey = [u8; PUBLIC_KEY_LEN];
 pub type Secret = [u8; PKCS_LEN];
 
+pub type Signature = signature::Signature;
 
 /// KeyPair which store public key and secret
 pub struct KeyPair {
