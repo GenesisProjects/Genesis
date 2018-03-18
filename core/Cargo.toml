@@ -5,3 +5,4 @@ authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
 common = { version = "0.1.0", path = "../common" }
+num = "0.1.30"

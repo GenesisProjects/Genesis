@@ -29,9 +29,8 @@ pub struct Hash {
 }
 
 /// Interface for hashable objects
-pub trait Hashable {
+pub trait SHA256Hashable {
     fn serialized_data(&self) -> &[u8];
-    fn serialized_str(&self) -> &str;
 
     fn encrype_sha256(&self) -> Hash {
         let data = gen_hash!(sha256_raw => self.serialized_data());

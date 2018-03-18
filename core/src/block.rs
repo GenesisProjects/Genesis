@@ -1,8 +1,12 @@
 extern crate common;
+extern crate num;
 
 use self::common::hash::*;
 use self::common::address::*;
 use self::common::bloom::*;
+use self::num::bigint::BigInt;
+
+use log::Log;
 
 pub mod nounce {
     /// A BlockNonce is a 64-bit hash which proves (combined with the
@@ -12,27 +16,24 @@ pub mod nounce {
 
 }
 
-
 ///
 ///
 ///
 struct BlockHeader {
-    parent: Hash,
-    uncle: Hash,
-    coinbase: Address,
-    root: Hash,
-    tx_root: Hash,
-    receipt_root: Hash,
-    bloom: Bloom,
-    /*
-    Difficulty  *big.Int       `json:"difficulty"       gencodec:"required"`
-    Number      *big.Int       `json:"number"           gencodec:"required"`
-    GasLimit    uint64         `json:"gasLimit"         gencodec:"required"`
-    GasUsed     uint64         `json:"gasUsed"          gencodec:"required"`
-    Time        *big.Int       `json:"timestamp"        gencodec:"required"`
-    Extra       []byte         `json:"extraData"        gencodec:"required"`
-    MixDigest   common.Hash    `json:"mixHash"          gencodec:"required"`
-    Nonce       BlockNonce     `json:"nonce"            gencodec:"required"`*/
+    pub parent: Hash,
+    pub uncle: Hash,
+    pub coinbase: Address,
+    pub root: Hash,
+    pub tx_root: Hash,
+    pub receipt_root: Hash,
+    pub logs_bloom: Bloom<Log>,
+    pub difficulty: BigInt,
+    pub number: BigInt,
+    pub gas_used: u64,
+    pub time: BigInt,
+    pub extra: vec<u8>,
+    pub digest: Hash,
+    pub nounce: nounce::BlockNounce
 }
 
 # [cfg(test)]

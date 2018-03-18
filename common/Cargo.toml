@@ -11,5 +11,5 @@ ring = "0.12.1"
 rust-base58 = "0.0.4"
 untrusted = "0.5.1"
 bit-vec = "0.4.4"
-siphasher = "~0.1"
+siphasher = "^0.2.2"
 
