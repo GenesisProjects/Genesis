@@ -30,7 +30,7 @@ impl Address {
                     Some(a)
                 }
             },
-            Err(e) => None
+            Err(_) => None
         }
     }
 }

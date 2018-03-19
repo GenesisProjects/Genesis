@@ -32,6 +32,7 @@ pub struct Hash {
 pub trait SHA256Hashable {
     fn serialized_data(&self) -> &[u8];
 
+    #[inline]
     fn encrype_sha256(&self) -> Hash {
         let data = gen_hash!(sha256_raw => self.serialized_data());
         Hash { data: data, len: 32, note: String::from("SHA256") }

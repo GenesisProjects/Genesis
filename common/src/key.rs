@@ -3,7 +3,6 @@ extern crate untrusted;
 
 use self::ring::{rand, signature};
 use self::untrusted::Input as Input;
-use std::mem::transmute;
 
 use self::ring::signature::ED25519_PKCS8_V2_LEN as PKCS_LEN;
 
@@ -35,12 +34,14 @@ pub trait KeyPairOp<'a, 'b> {
 }
 
 impl<'a, 'b> KeyPairOp<'a, 'b> for KeyPair {
+    #[inline]
     fn public_key_str(&'a self) -> PublicKey {
         let mut a: PublicKey = Default::default();
         a.copy_from_slice(self.pair.public_key_bytes());
         a
     }
 
+    #[inline]
     fn gen_rand_keypair() -> Result<(KeyPair, Secret), String> {
         let rng = rand::SystemRandom::new();
         match signature::Ed25519KeyPair::generate_pkcs8(&rng) {
@@ -59,6 +60,7 @@ impl<'a, 'b> KeyPairOp<'a, 'b> for KeyPair {
         }
     }
 
+    #[inline]
     fn restore_keypair(input: &'a [u8]) -> Result<KeyPair, String> {
         match signature::Ed25519KeyPair::from_pkcs8(Input::from(&input)) {
             Err(why) => {
@@ -70,10 +72,12 @@ impl<'a, 'b> KeyPairOp<'a, 'b> for KeyPair {
         }
     }
 
+    #[inline]
     fn sign_msg(&self, msg: &'a [u8]) -> signature::Signature {
         self.pair.sign(msg)
     }
 
+    #[inline]
     fn verify_sig(addr: &Address, msg: &'a [u8], sig: &signature::Signature) -> bool {
         let peer_public_key_bytes = addr.to_key().unwrap();
         let sig_bytes = sig.as_ref();
