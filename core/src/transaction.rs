@@ -3,7 +3,7 @@ extern crate num;
 
 use self::common::address::Address;
 use self::common::key::Signature;
-use self::common::hash::Hash;
+use self::common::hash::{ Hash, SHA256Hashable };
 use self::num::bigint::BigInt;
 use self::num::Zero;
 
@@ -64,5 +64,13 @@ impl Transaction {
             size: None,
             from: None,
         })
+    }
+}
+
+/// sign transaction
+impl SHA256Hashable for Transaction {
+    fn serialized_data(&self) -> Vec<u8> {
+        let r = vec![1,2,3];
+        return r;
     }
 }
