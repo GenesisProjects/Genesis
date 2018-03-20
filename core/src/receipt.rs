@@ -48,5 +48,3 @@ impl<'a> Receipt<'a> {
         r
     }
 }
-
-
