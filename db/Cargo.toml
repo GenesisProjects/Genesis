@@ -1,0 +1,7 @@
+[package]
+name = "db"
+version = "0.1.0"
+authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
+
+[dependencies]
+common = { version = "0.1.0", path = "../common" }

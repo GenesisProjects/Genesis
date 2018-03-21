@@ -2,7 +2,7 @@ extern crate crypto;
 
 use self::crypto::digest::Digest;
 use self::crypto::sha2::Sha256;
-use std::string::String;
+use std::string::{ String, ToString };
 
 /// macro gen_hash! takes (*_str => '&str' type data) and (*_raw => '&[u8]' type data) as input
 /// it generates a 'String' type output
@@ -29,12 +29,10 @@ pub struct Hash {
 }
 
 /// Interface for hashable objects
-pub trait SHA256Hashable {
-    fn serialized_data(&self) -> Vec<u8>;
-
+pub trait SHA256Hashable: ToString {
     #[inline]
     fn encrype_sha256(&self) -> Hash {
-        let data = gen_hash!(sha256_raw => &self.serialized_data());
+        let data = gen_hash!(sha256_raw => self.to_string().as_bytes());
         Hash { data: data, len: 32, note: String::from("SHA256") }
     }
 }
