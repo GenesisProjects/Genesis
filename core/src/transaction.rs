@@ -69,8 +69,7 @@ impl Transaction {
 
 /// sign transaction
 impl SHA256Hashable for Transaction {
-    fn serialized_data(&self) -> Vec<u8> {
-        let r = vec![1,2,3];
-        return r;
+    fn to_string(&self) -> String {
+        String::from("test")
     }
 }
