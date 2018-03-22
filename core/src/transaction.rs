@@ -67,9 +67,9 @@ impl Transaction {
     }
 }
 
-/// sign transaction
+
+/*
 impl SHA256Hashable for Transaction {
-    fn to_string(&self) -> String {
-        String::from("test")
-    }
+
 }
+*/

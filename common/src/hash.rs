@@ -5,8 +5,7 @@ use self::crypto::digest::Digest;
 use self::crypto::sha2::Sha256;
 
 use self::rlp::RLPSerialize;
-
-use std::string::{ String, ToString };
+use self::rlp::types::RLP;
 
 /// macro gen_hash! takes (*_str => '&str' type data) and (*_raw => '&[u8]' type data) as input
 /// it generates a 'String' type output
@@ -35,9 +34,16 @@ pub struct Hash {
 /// Interface for hashable objects
 pub trait SHA256Hashable<'a>: RLPSerialize<'a> {
     #[inline]
-    fn encrype_sha256(&self) -> Hash {
-        let data = gen_hash!(sha256_raw => &(self.encode().unwrap()));
-        Hash { data: data, len: 32, note: String::from("SHA256") }
+    fn encrype_sha256(&self) -> Option<Hash> {
+        match self.encode() {
+            Ok(r) => {
+                let data = gen_hash!(sha256_raw => &r);
+                Some(Hash { data: data, len: 32, note: String::from("SHA256") })
+            },
+            Err(_) => {
+                None
+            }
+        }
     }
 }
 
