@@ -1,3 +1,7 @@
+extern crate common;
+
+use self::common::hash::*;
+
 /*type (
 fullNode struct {
     Children [17]node // Actual trie node data to encode/decode (needs custom encoder)
@@ -27,21 +31,29 @@ type nodeFlag struct {
 }
 */
 
-type HashNode = Vec<u8>;
-type ValueNode = Vec<u8>;
+pub type TrieKey = Hash;
 
+pub struct ExtensionNode {
+    shared_encoded_path: Vec<u8>,
+    key: TrieKey
+}
 
-pub struct NodeFlag {
-    hash: HashNode,
+pub struct ValueNode<T> {
+    shared_encoded_path: Vec<u8>,
+    value: T
+}
+
+pub struct BranchNode<T> {
+    router: Vec<TrieKey>,
+    value: T
+}
+
+/*pub struct NodeFlag {
+    hash: Hash,
     gen: u16,
     dirty: bool
-}
+}*/
 
 pub trait NodeOp {
 
 }
-
-pub struct ShortNode {
-    children: [NodeOp; 17] // Actual trie node data to encode/decode (needs custom encoder)
-}
-

@@ -24,12 +24,7 @@ macro_rules! gen_hash {
 }
 
 /// Hash structure
-#[derive(Debug)]
-pub struct Hash {
-    data: String,
-    len: u32,
-    note: String
-}
+pub type Hash = [u8; 32];
 
 /// Interface for hashable objects
 pub trait SHA256Hashable<'a>: RLPSerialize<'a> {
@@ -37,8 +32,10 @@ pub trait SHA256Hashable<'a>: RLPSerialize<'a> {
     fn encrype_sha256(&self) -> Option<Hash> {
         match self.encode() {
             Ok(r) => {
-                let data = gen_hash!(sha256_raw => &r);
-                Some(Hash { data: data, len: 32, note: String::from("SHA256") })
+                let data: String = gen_hash!(sha256_raw => &r);
+                let mut result: Hash = [0; 32];
+                result.clone_from_slice(&data.as_bytes()[0..32]);
+                Some(result)
             },
             Err(_) => {
                 None

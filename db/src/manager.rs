@@ -17,7 +17,7 @@ pub enum DBError {
 ///
 ///
 pub trait DBManager {
-    fn connect(config: & DBConfig) -> Result<(DBContext, DBResult), DBError>;
+    fn connect(config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError>;
     fn disconnect() -> Result<DBResult, DBError>;
 
     fn put<'a, T: SHA256Hashable<'a>>(key: &'a String, value: &'a T) -> Result<DBResult, DBError>;
