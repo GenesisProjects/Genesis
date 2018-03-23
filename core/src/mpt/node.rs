@@ -2,7 +2,7 @@ extern crate common;
 
 use std::iter::Iterator;
 use self::common::hash::*;
-use std::fmt::{ Debug, Formatter };
+use std::fmt::{ Debug, Formatter, Result};
 
 static INDICES: [&'static str; 17] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "[17]"];
 
@@ -37,7 +37,7 @@ impl<'a> NodeFlag<'a> {
 pub trait NodeOp {
     fn print(&self, index: &String) -> String;
 
-    fn cache(&self) -> (Option<& ExtensionNode>, bool);
+    fn cache(&self) -> (Option<&ExtensionNode>, bool);
 
     fn can_unload(&self, cachegen: u16, cachelimit: u16) -> bool;
 }
@@ -55,11 +55,21 @@ impl<'a> NodeOp for BranchNode<'a> {
         buff + format!("\n{}] ", index).as_str()
     }
 
-    fn cache(&self) -> (Option<& ExtensionNode>, bool) {
+    fn cache(&self) -> (Option<&ExtensionNode>, bool) {
         (self.flags.hash, self.flags.dirty)
     }
 
     fn can_unload(&self, cachegen: u16, cachelimit: u16) -> bool {
        self.flags.can_unload(cachegen, cachelimit)
     }
+}
+
+impl<'a> NodeOp for Vec<u8> {
+    fn print(&self, index: &String) -> String {
+        format!("<{}> ", String::from_utf8(self.clone()).unwrap())
+    }
+
+    fn cache(&self) -> (Option<&ExtensionNode>, bool) { (None, true) }
+
+    fn can_unload(&self, cachegen: u16, cachelimit: u16) -> bool { false }
 }
