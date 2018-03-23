@@ -9,6 +9,13 @@ use self::rlp::types::RLP;
 
 /// macro gen_hash! takes (*_str => '&str' type data) and (*_raw => '&[u8]' type data) as input
 /// it generates a 'String' type output
+
+/// Hash structure
+pub type Hash = [u8; 32];
+
+/// Empty Hash
+pub const DEFAULT_HASH: [u8; 32] = [0; 32];
+
 #[macro_export]
 macro_rules! gen_hash {
     (sha256_str => $e:expr) => ({
@@ -23,8 +30,12 @@ macro_rules! gen_hash {
     })
 }
 
-/// Hash structure
-pub type Hash = [u8; 32];
+macro_rules! zero_hash {
+    ($e:expr) => ({
+        
+    });
+}
+
 
 /// Interface for hashable objects
 pub trait SHA256Hashable<'a>: RLPSerialize<'a> {

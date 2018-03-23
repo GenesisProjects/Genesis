@@ -48,11 +48,12 @@ pub struct BranchNode<T> {
     value: T
 }
 
-/*pub struct NodeFlag {
-    hash: Hash,
-    gen: u16,
-    dirty: bool
-}*/
+#[derive(Default)]
+pub struct NodeFlag {
+    pub hash: Hash,
+    pub gen: u16,
+    pub dirty: bool
+}
 
 pub trait NodeOp {
 
