@@ -13,7 +13,8 @@ type Trie struct {
 extern crate common;
 extern crate db;
 
-use super::node::*;
+use super::node::types::*;
+use super::node::op::*;
 use self::db::manager::*;
 
 struct Trie<T : NodeOp> {

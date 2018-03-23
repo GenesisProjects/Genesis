@@ -9,7 +9,7 @@ pub mod types;
 use self::serde::ser::Serialize;
 use self::serde::de::Deserialize;
 
-pub trait RLPSerialize<'a>: Serialize + Deserialize<'a> + Sized {
+pub trait RLPSerialize: Sized {
     fn encode(&self) -> Result<types::RLP, types::RLPError>;
-    fn decode() -> Result<Self, types::RLPError>;
+    fn decode(rlp: &types::RLP) -> Result<Self, types::RLPError>;
 }

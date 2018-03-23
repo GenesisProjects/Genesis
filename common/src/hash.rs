@@ -53,7 +53,7 @@ macro_rules! hash_len {
 
 
 /// Interface for hashable objects
-pub trait SHA256Hashable<'a>: RLPSerialize<'a> {
+pub trait SHA256Hashable<'a>: RLPSerialize {
     #[inline]
     fn encrype_sha256(&self) -> Option<Hash> {
         match self.encode() {
