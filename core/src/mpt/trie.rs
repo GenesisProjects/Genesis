@@ -32,7 +32,7 @@ impl<T: NodeOp> Trie<T> {
 
     /// Set_new_flag returns the cache flag value for a newly created node.
     pub fn set_new_flag(&self) -> NodeFlag {
-        NodeFlag{ dirty: true, gen: self.cachegen, hash: common::hash::DEFAULT_HASH }
+        NodeFlag{ dirty: true, gen: self.cachegen, hash: None }
     }
 
     /// New creates a trie with an existing root node from db.
@@ -41,27 +41,7 @@ impl<T: NodeOp> Trie<T> {
     /// trie is initially empty and does not require a database. Otherwise,
     /// New will panic if db is nil and returns a MissingNodeError if root does
     /// not exist in the database. Accessing the trie loads nodes from db on demand.
-    fn new_from_db(root: T, db: &'static DBManager) -> Result<Self, DBError> {
-        let trie = Trie {
-            db: db,
-            root: root,
-            cachegen: 0,
-            cachelimit: 0
-        };
-
-
-
-        let node = trie.resolveHash(root);
-        if err != nil {
-            return nil, err
-        }
-        trie.root = rootnode
-        return trie, nil
-    }
-
-
-    fn resolveHash(&self, node: T) -> Result<T, DBError> {
-        cacheMissCounter.Inc(1);
+    fn new_from_db(root: T, db: &'static DBManager){
 
     }
 }

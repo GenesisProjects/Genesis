@@ -13,10 +13,14 @@ pub enum DBError {
     DBDisConnectSuccess { msg: String },
 }
 
+pub struct DBManager {
+
+}
+
 ///
 ///
 ///
-pub trait DBManager {
+pub trait  DBManagerOP {
     fn connect(config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError>;
     fn disconnect() -> Result<DBResult, DBError>;
 

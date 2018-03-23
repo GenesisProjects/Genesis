@@ -14,9 +14,8 @@ use self::rlp::types::RLP;
 pub type Hash = [u8; 32];
 
 /// Empty Hash
-pub const DEFAULT_HASH: [u8; 32] = [0; 32];
+pub const ZERO_HASH: [u8; 32] = [0; 32];
 
-#[macro_export]
 macro_rules! gen_hash {
     (sha256_str => $e:expr) => ({
         let mut sha = Sha256::new();
@@ -32,22 +31,22 @@ macro_rules! gen_hash {
 
 #[macro_export]
 macro_rules! zero_hash {
-    ($e:expr) => ({
-
+    () => ({
+        ZERO_HASH
     });
 }
 
 #[macro_export]
 macro_rules! equal_hash {
     ($e:expr) => ({
-
+        $e.eq(ZERO_HASH);
     });
 }
 
 #[macro_export]
 macro_rules! hash_len {
     ($e:expr) => ({
-
+        $e.len()
     });
 }
 
