@@ -30,11 +30,27 @@ macro_rules! gen_hash {
     })
 }
 
+#[macro_export]
 macro_rules! zero_hash {
     ($e:expr) => ({
-        
+
     });
 }
+
+#[macro_export]
+macro_rules! equal_hash {
+    ($e:expr) => ({
+
+    });
+}
+
+#[macro_export]
+macro_rules! hash_len {
+    ($e:expr) => ({
+
+    });
+}
+
 
 
 /// Interface for hashable objects
