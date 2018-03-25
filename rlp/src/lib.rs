@@ -5,6 +5,7 @@ extern crate serde_json;
 pub mod decoder;
 pub mod encoder;
 pub mod types;
+pub mod defines;
 
 use self::serde::ser::Serialize;
 use self::serde::de::Deserialize;
