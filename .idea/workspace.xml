@@ -3,9 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="a66d182c-deb9-4c0e-afe2-f41db5e0af2e" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/rlp/src/defines.rs" afterPath="$PROJECT_DIR$/rlp/src/defines.rs" />
       <change beforePath="$PROJECT_DIR$/rlp/src/encoder.rs" afterPath="$PROJECT_DIR$/rlp/src/encoder.rs" />
-      <change beforePath="$PROJECT_DIR$/rlp/src/types.rs" afterPath="$PROJECT_DIR$/rlp/src/types.rs" />
     </list>
     <ignored path="$PROJECT_DIR$/target/" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -71,13 +69,26 @@
       <file leaf-file-name="encoder.rs" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/rlp/src/encoder.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="462">
-              <caret line="125" column="38" lean-forward="false" selection-start-line="125" selection-start-column="38" selection-end-line="125" selection-end-column="38" />
+            <state relative-caret-position="292">
+              <caret line="162" column="4" lean-forward="false" selection-start-line="162" selection-start-column="4" selection-end-line="162" selection-end-column="4" />
               <folding>
-                <element signature="e#940#941#0" expanded="true" />
-                <element signature="e#964#965#0" expanded="true" />
-                <element signature="e#1242#1243#0" expanded="true" />
-                <element signature="e#1280#1281#0" expanded="true" />
+                <element signature="e#969#970#0" expanded="true" />
+                <element signature="e#993#994#0" expanded="true" />
+                <element signature="e#1271#1272#0" expanded="true" />
+                <element signature="e#1309#1310#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="lib.rs" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/bytebuffer-0.2.1/src/lib.rs">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="136">
+              <caret line="367" column="19" lean-forward="false" selection-start-line="367" selection-start-column="11" selection-end-line="367" selection-end-column="19" />
+              <folding>
+                <element signature="e#819#820#0" expanded="true" />
+                <element signature="e#849#850#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -86,11 +97,11 @@
       <file leaf-file-name="node.rs" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/src/mpt/node.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="527">
+            <state relative-caret-position="459">
               <caret line="31" column="5" lean-forward="false" selection-start-line="31" selection-start-column="5" selection-end-line="31" selection-end-column="5" />
               <folding>
-                <marker date="1522082957693" expanded="true" signature="831:837" ph="{...}" />
-                <marker date="1522082957693" expanded="true" signature="831:839" ph="{...}" />
+                <element signature="e#786#787#0" expanded="true" />
+                <element signature="e#836#837#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -106,20 +117,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="trie.rs" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/src/mpt/trie.rs">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="391">
-              <caret line="23" column="0" lean-forward="false" selection-start-line="23" selection-start-column="0" selection-end-line="23" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="transaction.rs" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/src/transaction.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="615">
+            <state relative-caret-position="1258">
               <caret line="74" column="2" lean-forward="false" selection-start-line="74" selection-start-column="2" selection-end-line="74" selection-end-column="2" />
               <folding />
             </state>
@@ -138,7 +139,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>verify_sig</find>
       <find>from_utf8</find>
       <find>Inpu</find>
       <find>public</find>
@@ -168,6 +168,7 @@
       <find>write_num_bytes</find>
       <find>to_be</find>
       <find>r</find>
+      <find>&amp;[</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -236,8 +237,8 @@
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="104" />
-    <option name="y" value="23" />
+    <option name="x" value="43" />
+    <option name="y" value="43" />
     <option name="width" value="1717" />
     <option name="height" value="1070" />
   </component>
@@ -259,7 +260,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -284,6 +284,7 @@
       </pane>
       <pane id="PackagesPane" />
       <pane id="AndroidView" />
+      <pane id="Scope" />
       <pane id="Scratches" />
     </panes>
   </component>
@@ -433,7 +434,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="104" y="23" width="1717" height="1070" extended-state="0" />
+    <frame x="43" y="43" width="1717" height="1070" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -442,14 +443,14 @@
       <window_info id="Palette&#9;" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Image Layers" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Analysis" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32622603" sideWeight="0.49366325" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3304904" sideWeight="0.49366325" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32622603" sideWeight="0.50633675" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3304904" sideWeight="0.50633675" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32900432" sideWeight="0.49573562" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32918552" sideWeight="0.49785408" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.34821966" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.30778515" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -457,31 +458,11 @@
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Cargo" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.33144796" sideWeight="0.4914163" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Palette&#9;" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Image Layers" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Capture Analysis" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.33144796" sideWeight="0.50858366" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32918552" sideWeight="0.49785408" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.30418456" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32894737" sideWeight="0.49791667" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Theme Preview" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
     </layout>
   </component>
   <component name="VcsContentAnnotationSettings">
@@ -724,10 +705,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="192">
           <caret line="2373" column="7" lean-forward="false" selection-start-line="2373" selection-start-column="7" selection-end-line="2373" selection-end-column="7" />
-          <folding>
-            <element signature="e#77895#77896#0" expanded="false" />
-            <element signature="e#77941#77942#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -747,7 +724,6 @@
       </provider>
     </entry>
     <entry file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/byteorder-0.3.13/src/lib.rs" />
-    <entry file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/bytebuffer-0.2.1/src/lib.rs" />
     <entry file="file://$PROJECT_DIR$/common/src/hash.rs">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="935">
@@ -758,18 +734,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/core/src/mpt/node.rs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="527">
+        <state relative-caret-position="459">
           <caret line="31" column="5" lean-forward="false" selection-start-line="31" selection-start-column="5" selection-end-line="31" selection-end-column="5" />
           <folding>
-            <marker date="1522082957693" expanded="true" signature="831:837" ph="{...}" />
-            <marker date="1522082957693" expanded="true" signature="831:839" ph="{...}" />
+            <element signature="e#786#787#0" expanded="true" />
+            <element signature="e#836#837#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/core/src/transaction.rs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="615">
+        <state relative-caret-position="1258">
           <caret line="74" column="2" lean-forward="false" selection-start-line="74" selection-start-column="2" selection-end-line="74" selection-end-column="2" />
           <folding />
         </state>
@@ -807,15 +783,26 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/bytebuffer-0.2.1/src/lib.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="136">
+          <caret line="367" column="19" lean-forward="false" selection-start-line="367" selection-start-column="11" selection-end-line="367" selection-end-column="19" />
+          <folding>
+            <element signature="e#819#820#0" expanded="true" />
+            <element signature="e#849#850#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/rlp/src/encoder.rs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="462">
-          <caret line="125" column="38" lean-forward="false" selection-start-line="125" selection-start-column="38" selection-end-line="125" selection-end-column="38" />
+        <state relative-caret-position="292">
+          <caret line="162" column="4" lean-forward="false" selection-start-line="162" selection-start-column="4" selection-end-line="162" selection-end-column="4" />
           <folding>
-            <element signature="e#940#941#0" expanded="true" />
-            <element signature="e#964#965#0" expanded="true" />
-            <element signature="e#1242#1243#0" expanded="true" />
-            <element signature="e#1280#1281#0" expanded="true" />
+            <element signature="e#969#970#0" expanded="true" />
+            <element signature="e#993#994#0" expanded="true" />
+            <element signature="e#1271#1272#0" expanded="true" />
+            <element signature="e#1309#1310#0" expanded="true" />
           </folding>
         </state>
       </provider>

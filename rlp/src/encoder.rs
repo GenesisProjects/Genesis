@@ -7,6 +7,7 @@ use defines::*;
 use types::*;
 use std::io::{Read, Write, Result};
 use std::mem::*;
+use std::iter::FromIterator;
 
 macro_rules! total_bytes {
     ($e:expr) => {
@@ -25,13 +26,13 @@ struct Encoder {
 }
 
 impl Encoder {
-    fn new(size: usize) -> Self {
+    fn new_with_size(size: usize) -> Self {
         let mut buffer = ByteBuffer::new();
         buffer.resize(size);
         Encoder { buffer: buffer }
     }
 
-    fn new_with_size() -> Self {
+    fn new() -> Self {
         let mut buffer = ByteBuffer::new();
         buffer.resize(ENCODER_BUFFER_SIZE);
         Encoder { buffer: buffer }
@@ -60,7 +61,7 @@ impl Encoder {
             panic!("String length out of range 0-55.");
         } else {
             let prefix: u8 = SHORT_STRING_PREFIX_BASE + input.len() as u8;
-            self.buffer.write(&[prefix]);
+            self.buffer.write_u8(prefix);
             self.buffer.write(input.as_bytes());
         }
     }
@@ -135,17 +136,36 @@ impl Encoder {
                 self.encode_item(value.as_str());
             },
             &RLP::RLPList { ref list } => {
+                let l = self.encode_list_len(input) as u64;
+                if l <= SHORT_LIST_MAX_LEN as u64 {
+                    let prefix: u8 = LONG_LIST_PREFIX_BASE + l as u8;
+                    self.buffer.write_u8(prefix);
+                    for elem in list {
+                        self.encode_list(elem);
+                    }
+                } else {
+                    let l_total_byte = total_bytes!(l);
+                    let prefix: u8 = LONG_STRING_PREFIX_BASE + l_total_byte;
+                    self.buffer.write_u8(prefix);
 
+                    let len_bytes: [u8; 8] = unsafe { transmute(l.to_be()) };
+                    for i in 0..l_total_byte {
+                        self.buffer.write_u8(len_bytes[i as usize]);
+                    }
+
+                    for elem in list {
+                        self.encode_list(elem);
+                    }
+                }
             },
         }
     }
 
-    //TODO: Recursive Encoding
-    pub fn encode(&mut self, obj: RLP) -> EncodedRLP {
-        match obj {
-            RLP::RLPList { list } => vec![],
-            RLP::RLPItem { value } => vec![]
-        }
+    pub fn encode(&mut self, obj: &RLP) -> EncodedRLP {
+        self.buffer.clear();
+        let len = self.encode_list_len(obj);
+        self.encode_list(obj);
+        Vec::from_iter(self.buffer.to_bytes()[0..len].iter().cloned())
     }
 }
 
