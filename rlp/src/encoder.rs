@@ -11,6 +11,7 @@ use std::io::{Read, Write, Result};
 use std::mem::*;
 use std::iter::FromIterator;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
 
 macro_rules! total_bytes {
     ($e:expr) => {
@@ -111,12 +112,17 @@ impl Encoder {
     }
 
     fn encode_list_len(&mut self, path: String, input: &RLP) -> usize {
-        match self.len_cache.get(&path) {
-            Some(len) => *len,
+        let cached_result: Option<usize> = match self.len_cache.entry(path.clone()) {
+            Vacant(entry) => None,
+            Occupied(entry) => Some(entry.get().clone()),
+        };
+
+        match cached_result {
+            Some(len) => len,
             None =>  match input {
                 &RLP::RLPItem { ref value } => {
                     let ret = self.encode_item_len(value.as_str());
-                    self.len_cache.insert(path,ret);
+                    self.len_cache.insert(path.clone(),ret);
                     ret
                 },
                 &RLP::RLPList { ref list } => {
