@@ -1,3 +1,5 @@
+///https://blog.csdn.net/ggq89/article/details/78629008
+
 extern crate bytebuffer;
 
 use self::bytebuffer::*;
@@ -65,7 +67,7 @@ impl Encoder {
     fn encode_long_str_len(& self, input: &str) -> usize {
         let l = input.len() as u64;
         let l_total_byte = total_bytes!(l);
-        return 1 + l_total_byte + input.len();
+        return 1usize + l_total_byte as usize + input.len() as usize;
     }
 
     fn encode_long_str(&mut self, input: &str) {

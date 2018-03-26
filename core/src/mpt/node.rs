@@ -17,7 +17,7 @@ pub enum TrieNode<T: RLPSerialize> {
 }
 
 impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
-    fn encode(&self) -> Result<RLP, RLPError> {
+    fn encode(&self) -> Result<EncodedRLP, RLPError> {
         Err(RLPError::RLPErrorUnknown)
     }
 
