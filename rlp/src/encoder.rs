@@ -25,19 +25,19 @@ macro_rules! total_bytes {
     };
 }
 
-struct Encoder {
+pub struct Encoder {
     buffer: ByteBuffer,
     len_cache: HashMap<String, usize>
 }
 
 impl Encoder {
-    fn new_with_size(size: usize) -> Self {
+    pub fn new_with_size(size: usize) -> Self {
         let mut buffer = ByteBuffer::new();
         buffer.resize(size);
         Encoder { buffer: buffer, len_cache: HashMap::new() }
     }
 
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut buffer = ByteBuffer::new();
         buffer.resize(ENCODER_BUFFER_SIZE);
         Encoder { buffer: buffer, len_cache: HashMap::new() }

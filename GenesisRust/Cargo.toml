@@ -6,3 +6,4 @@ authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 [dependencies]
 common = { version = "0.1.0", path = "../common" }
 gen_core = { version = "0.1.0", path = "../core" }
+rlp = { version = "0.1.0", path = "../rlp" }
