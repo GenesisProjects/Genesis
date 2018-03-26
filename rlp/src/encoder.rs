@@ -89,16 +89,6 @@ impl Encoder {
         }
     }
 
-    fn encode_item(&mut self, input: &str) {
-        if input.len() == 1 && input.as_bytes()[0usize] <= SINGLE_BYTE_MAX_VALUE {
-            self.encode_byte( input.as_bytes()[0usize]);
-        } else if input.len() <= SHORT_STRING_MAX_LEN {
-            self.encode_short_str(input);
-        } else {
-            self.encode_long_str(input);
-        }
-    }
-
     fn encode_item_len(&self, input: &str) -> usize {
         if input.len() == 1 && input.as_bytes()[0usize] <= SINGLE_BYTE_MAX_VALUE {
             self.encode_byte_len( input.as_bytes()[0usize])
@@ -109,12 +99,52 @@ impl Encoder {
         }
     }
 
+    fn encode_item(&mut self, input: &str) {
+        if input.len() == 1 && input.as_bytes()[0usize] <= SINGLE_BYTE_MAX_VALUE {
+            self.encode_byte( input.as_bytes()[0usize]);
+        } else if input.len() <= SHORT_STRING_MAX_LEN {
+            self.encode_short_str(input);
+        } else {
+            self.encode_long_str(input);
+        }
+    }
+
+    fn encode_list_len(&self, input: &RLP) -> usize {
+        match input {
+            &RLP::RLPItem { ref value } => {
+                self.encode_item_len(value.as_str())
+            },
+            &RLP::RLPList { ref list } => {
+                let mut total = 0usize;
+                for elem in list {
+                    total = total + self.encode_list_len(&elem);
+                }
+                if total <= SHORT_LIST_MAX_LEN {
+                    1 + total
+                } else {
+                    let l_len = total_bytes!(total as u64);
+                    1 + l_len as usize + total as usize
+                }
+            },
+        }
+    }
+
+    fn encode_list(&mut self, input: &RLP) {
+        match input {
+            &RLP::RLPItem { ref value } => {
+                self.encode_item(value.as_str());
+            },
+            &RLP::RLPList { ref list } => {
+
+            },
+        }
+    }
+
     //TODO: Recursive Encoding
     pub fn encode(&mut self, obj: RLP) -> EncodedRLP {
         match obj {
-            RLP::RLPList { l } => vec![],
-            RLP::RLPItem { v } => vec![],
-            RLP::RLPNone => vec![],
+            RLP::RLPList { list } => vec![],
+            RLP::RLPItem { value } => vec![]
         }
     }
 }
