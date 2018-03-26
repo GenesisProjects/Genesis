@@ -1,5 +1,7 @@
 ///https://blog.csdn.net/ggq89/article/details/78629008
 
+//TODO: Add cache for recursive lenth calculation.
+
 extern crate bytebuffer;
 
 use self::bytebuffer::*;
@@ -8,6 +10,7 @@ use types::*;
 use std::io::{Read, Write, Result};
 use std::mem::*;
 use std::iter::FromIterator;
+use std::collections::HashMap;
 
 macro_rules! total_bytes {
     ($e:expr) => {
@@ -22,27 +25,26 @@ macro_rules! total_bytes {
 }
 
 struct Encoder {
-    buffer: ByteBuffer
+    buffer: ByteBuffer,
+    len_cache: HashMap<String, usize>
 }
 
 impl Encoder {
     fn new_with_size(size: usize) -> Self {
         let mut buffer = ByteBuffer::new();
         buffer.resize(size);
-        Encoder { buffer: buffer }
+        Encoder { buffer: buffer, len_cache: HashMap::new() }
     }
 
     fn new() -> Self {
         let mut buffer = ByteBuffer::new();
         buffer.resize(ENCODER_BUFFER_SIZE);
-        Encoder { buffer: buffer }
+        Encoder { buffer: buffer, len_cache: HashMap::new() }
     }
 }
 
 impl Encoder {
-    fn encode_byte_len(&self, input: u8) -> usize {
-        return 1;
-    }
+    fn encode_byte_len(&self, input: u8) -> usize { 1 }
 
     fn encode_byte(&mut self, input: u8) {
         if input > SINGLE_BYTE_MAX_VALUE {
@@ -52,9 +54,7 @@ impl Encoder {
         }
     }
 
-    fn encode_short_str_len(& self, input: &str) -> usize {
-        return 1 + input.len();
-    }
+    fn encode_short_str_len(& self, input: &str) -> usize { 1 + input.len() }
 
     fn encode_short_str(&mut self, input: &str) {
         if input.len() > SHORT_STRING_MAX_LEN {
@@ -110,38 +110,48 @@ impl Encoder {
         }
     }
 
-    fn encode_list_len(&self, input: &RLP) -> usize {
-        match input {
-            &RLP::RLPItem { ref value } => {
-                self.encode_item_len(value.as_str())
-            },
-            &RLP::RLPList { ref list } => {
-                let mut total = 0usize;
-                for elem in list {
-                    total = total + self.encode_list_len(&elem);
-                }
-                if total <= SHORT_LIST_MAX_LEN {
-                    1 + total
-                } else {
-                    let l_len = total_bytes!(total as u64);
-                    1 + l_len as usize + total as usize
-                }
-            },
+    fn encode_list_len(&mut self, path: String, input: &RLP) -> usize {
+        match self.len_cache.get(&path) {
+            Some(len) => *len,
+            None =>  match input {
+                &RLP::RLPItem { ref value } => {
+                    let ret = self.encode_item_len(value.as_str());
+                    self.len_cache.insert(path,ret);
+                    ret
+                },
+                &RLP::RLPList { ref list } => {
+                    let mut total = 0usize;
+                    for (i, elem) in list.into_iter().enumerate() {
+                        let new_path = path.clone() + format!("{}", i).as_str();
+                        total = total + self.encode_list_len(new_path,&elem);
+                    }
+                    if total <= SHORT_LIST_MAX_LEN {
+                        let ret = 1 + total;
+                        self.len_cache.insert(path.clone(),ret);
+                        ret
+                    } else {
+                        let ret = 1 + total_bytes!(total as u64) as usize + total as usize;
+                        self.len_cache.insert(path.clone(),ret);
+                        ret
+                    }
+                },
+            }
         }
     }
 
-    fn encode_list(&mut self, input: &RLP) {
+    fn encode_list(&mut self, path: String, input: &RLP) {
         match input {
             &RLP::RLPItem { ref value } => {
                 self.encode_item(value.as_str());
             },
             &RLP::RLPList { ref list } => {
-                let l = self.encode_list_len(input) as u64;
+                let l = self.encode_list_len(path.clone(), input) as u64;
                 if l <= SHORT_LIST_MAX_LEN as u64 {
                     let prefix: u8 = LONG_LIST_PREFIX_BASE + l as u8;
                     self.buffer.write_u8(prefix);
-                    for elem in list {
-                        self.encode_list(elem);
+                    for (i, elem) in list.into_iter().enumerate() {
+                        let new_path = path.clone() + format!("{}", i).as_str();
+                        self.encode_list(new_path,elem);
                     }
                 } else {
                     let l_total_byte = total_bytes!(l);
@@ -153,8 +163,9 @@ impl Encoder {
                         self.buffer.write_u8(len_bytes[i as usize]);
                     }
 
-                    for elem in list {
-                        self.encode_list(elem);
+                    for (i, elem) in list.into_iter().enumerate() {
+                        let new_path = path.clone() + format!("{}", i).as_str();
+                        self.encode_list(new_path,elem);
                     }
                 }
             },
@@ -163,9 +174,10 @@ impl Encoder {
 
     pub fn encode(&mut self, obj: &RLP) -> EncodedRLP {
         self.buffer.clear();
-        let len = self.encode_list_len(obj);
-        self.encode_list(obj);
+        self.len_cache = HashMap::new();
+
+        let len = self.encode_list_len("".to_string(), obj);
+        self.encode_list("".to_string(), obj);
         Vec::from_iter(self.buffer.to_bytes()[0..len].iter().cloned())
     }
 }
-
