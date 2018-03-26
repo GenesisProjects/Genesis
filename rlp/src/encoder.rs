@@ -4,6 +4,7 @@ extern crate bytebuffer;
 
 use self::bytebuffer::*;
 use defines::*;
+use types::*;
 use std::io::{Read, Write, Result};
 use std::mem::*;
 
@@ -88,6 +89,33 @@ impl Encoder {
         }
     }
 
+    fn encode_item(&mut self, input: &str) {
+        if input.len() == 1 && input.as_bytes()[0usize] <= SINGLE_BYTE_MAX_VALUE {
+            self.encode_byte( input.as_bytes()[0usize]);
+        } else if input.len() <= SHORT_STRING_MAX_LEN {
+            self.encode_short_str(input);
+        } else {
+            self.encode_long_str(input);
+        }
+    }
 
+    fn encode_item_len(&self, input: &str) -> usize {
+        if input.len() == 1 && input.as_bytes()[0usize] <= SINGLE_BYTE_MAX_VALUE {
+            self.encode_byte_len( input.as_bytes()[0usize])
+        } else if input.len() <= SHORT_STRING_MAX_LEN {
+            self.encode_short_str_len(input)
+        } else {
+            self.encode_long_str_len(input)
+        }
+    }
+
+    //TODO: Recursive Encoding
+    pub fn encode(&mut self, obj: RLP) -> EncodedRLP {
+        match obj {
+            RLP::RLPList { l } => vec![],
+            RLP::RLPItem { v } => vec![],
+            RLP::RLPNone => vec![],
+        }
+    }
 }
 
