@@ -151,7 +151,12 @@ impl Encoder {
                 self.encode_item(value.as_str());
             },
             &RLP::RLPList { ref list } => {
-                let l = self.encode_list_len(path.clone(), input) as u64;
+                let mut l = 0u64;
+                for (i, elem) in list.into_iter().enumerate() {
+                    let new_path = path.clone() + format!("{}", i).as_str();
+                    l = l + self.encode_list_len(new_path,&elem) as u64;
+                }
+
                 if l <= SHORT_LIST_MAX_LEN as u64 {
                     let prefix: u8 = SHORT_LIST_PREFIX_BASE + (l as u8);
                     self.buffer.write_u8(prefix);
