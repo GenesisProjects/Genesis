@@ -15,12 +15,12 @@ use std::collections::hash_map::Entry::{Occupied, Vacant};
 
 macro_rules! total_bytes {
     ($e:expr) => {
-        if ($e << 8) == 0 { 1u8 }
-        else if ($e << 16) == 0 { 2u8 }
-        else if ($e << 24) == 0 { 3u8 }
-        else if ($e << 32) == 0 { 4u8 }
-        else if ($e << 40) == 0 { 5u8 }
-        else if ($e << 48) == 0 { 6u8 }
+        if ($e >> 8) == 0 { 1u8 }
+        else if ($e >> 16) == 0 { 2u8 }
+        else if ($e >> 24) == 0 { 3u8 }
+        else if ($e >> 32) == 0 { 4u8 }
+        else if ($e >> 40) == 0 { 5u8 }
+        else if ($e >> 48) == 0 { 6u8 }
         else { 7u8 }
     };
 }
@@ -83,7 +83,7 @@ impl Encoder {
             let prefix: u8 = LONG_STRING_PREFIX_BASE + l_total_byte;
 
             self.buffer.write(&[prefix]);
-            let len_bytes: [u8; 8] = unsafe { transmute(l.to_be()) };
+            let len_bytes: [u8; 8] = unsafe { transmute(l.to_le()) };
             for i in 0..l_total_byte {
                 self.buffer.write_u8(len_bytes[i as usize]);
             }
@@ -164,7 +164,7 @@ impl Encoder {
                     let prefix: u8 = LONG_STRING_PREFIX_BASE + l_total_byte;
                     self.buffer.write_u8(prefix);
 
-                    let len_bytes: [u8; 8] = unsafe { transmute(l.to_be()) };
+                    let len_bytes: [u8; 8] = unsafe { transmute(l.to_le()) };
                     for i in 0..l_total_byte {
                         self.buffer.write_u8(len_bytes[i as usize]);
                     }
