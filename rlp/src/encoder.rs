@@ -153,11 +153,11 @@ impl Encoder {
             &RLP::RLPList { ref list } => {
                 let l = self.encode_list_len(path.clone(), input) as u64;
                 if l <= SHORT_LIST_MAX_LEN as u64 {
-                    let prefix: u8 = LONG_LIST_PREFIX_BASE + l as u8;
+                    let prefix: u8 = SHORT_LIST_PREFIX_BASE + (l as u8);
                     self.buffer.write_u8(prefix);
                     for (i, elem) in list.into_iter().enumerate() {
                         let new_path = path.clone() + format!("{}", i).as_str();
-                        self.encode_list(new_path,elem);
+                        self.encode_list(new_path,&elem);
                     }
                 } else {
                     let l_total_byte = total_bytes!(l);
@@ -171,7 +171,7 @@ impl Encoder {
 
                     for (i, elem) in list.into_iter().enumerate() {
                         let new_path = path.clone() + format!("{}", i).as_str();
-                        self.encode_list(new_path,elem);
+                        self.encode_list(new_path,&elem);
                     }
                 }
             },
