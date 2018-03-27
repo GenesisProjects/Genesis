@@ -13,6 +13,5 @@ fn main() {
     let test_list = RLP::RLPList {list: vec![test_item1.clone(), test_item2.clone(), test_item3.clone()]}; // [ [], [[]], [ [], [[]] ] ]
     let result = encoder.encode(&test_list);
 
-
     print!("{:?}", result)
 }

@@ -1,7 +1,3 @@
-///https://blog.csdn.net/ggq89/article/details/78629008
-
-//TODO: Add cache for recursive lenth calculation.
-
 extern crate bytebuffer;
 
 use self::bytebuffer::*;
