@@ -11,9 +11,7 @@ use std::io::{Read, Write, Result};
 use std::mem::*;
 use std::iter::FromIterator;
 
-pub struct Decoder {
-
-}
+pub struct Decoder {}
 
 impl Decoder {
     #[inline]
@@ -59,7 +57,7 @@ impl Decoder {
         }
     }
 
-    fn decode(input: &Vec<u8>, start: usize, end: usize) -> (RLP, usize) {
+    fn decode_helper(input: &Vec<u8>, start: usize, end: usize) -> (RLP, usize) {
         let prefix = input[start];
 
         match prefix {
@@ -99,7 +97,7 @@ impl Decoder {
 
                     let seg_estimated_end = if cur_pos + 8usize > end { end } else { cur_pos + 8usize };
                     let seg_len = Decoder::detect_len(input[cur_pos .. seg_estimated_end + 1].to_vec().clone());
-                    let (rlp, _) = Decoder::decode(input, cur_pos, cur_pos + seg_len - 1usize);
+                    let (rlp, _) = Decoder::decode_helper(input, cur_pos, cur_pos + seg_len - 1usize);
                     result_list.append(&mut vec![rlp]);
                     cur_pos = cur_pos + seg_len;
                 }
@@ -121,7 +119,7 @@ impl Decoder {
 
                     let seg_estimated_end = if cur_pos + 8usize > end { end } else { cur_pos + 8usize };
                     let seg_len = Decoder::detect_len(input[cur_pos .. seg_estimated_end + 1].to_vec().clone());
-                    let (rlp, _) = Decoder::decode(input, cur_pos, cur_pos + seg_len - 1usize);
+                    let (rlp, _) = Decoder::decode_helper(input, cur_pos, cur_pos + seg_len - 1usize);
                     result_list.append(&mut vec![rlp]);
                     cur_pos = cur_pos + seg_len;
                 }
@@ -133,5 +131,10 @@ impl Decoder {
                 panic!("Incorrect prefix");
             }
         }
+    }
+
+    pub fn decode(input: &EncodedRLP) -> RLP {
+        let (r, _) = Decoder::decode_helper(input, 0usize, input.len() - 1usize);
+        r
     }
 }

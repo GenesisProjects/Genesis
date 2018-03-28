@@ -2,7 +2,7 @@ pub enum RLPError {
     RLPErrorUnknown
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum RLP {
     RLPList { list: Vec<RLP> },
     RLPItem { value: String },
