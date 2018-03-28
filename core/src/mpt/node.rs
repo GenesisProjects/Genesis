@@ -21,7 +21,7 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
         Err(RLPError::RLPErrorUnknown)
     }
 
-    fn decode(rlp: &RLP) -> Result<Self, RLPError> {
+    fn decode(encoded_rlp: &EncodedRLP) -> Result<Self, RLPError> {
         Err(RLPError::RLPErrorUnknown)
     }
 }
