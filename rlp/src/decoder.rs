@@ -68,13 +68,15 @@ impl Decoder {
         match prefix {
             // single byte
             0x00u8 ... 0x7fu8 => {
-                if expected_len != 1 { malformed_err() } else {
+                if expected_len != 1 {
+                    malformed_err()
+                } else {
                     (Ok(RLP::RLPItem { value: String::from_utf8(vec![prefix]).unwrap() }), 1)
                 }
             },
             // short string
             0x80u8 ... 0xb7u8 => {
-                let l = prefix - 0x80u8;
+                let l = prefix - SHORT_STRING_PREFIX_BASE;
                 let seg_len = 11usize + l as usize;
                 if expected_len != seg_len {
                     malformed_err()
@@ -86,7 +88,7 @@ impl Decoder {
             },
             // long string
             0xb8u8 ... 0xbfu8 => {
-                let l_total_byte = prefix - 0xb7u8;
+                let l_total_byte = prefix - LONG_STRING_PREFIX_BASE;
                 let mut buffer = [0u8; 8];
                 for i in start + 1usize .. start + 1usize + l_total_byte as usize {
                     buffer[i - start - 1usize] = input[i];
@@ -106,7 +108,7 @@ impl Decoder {
             },
             // short list
             0xc0u8 ... 0xf7u8 => {
-                let l = prefix - 0x80u8;
+                let l = prefix - SHORT_LIST_PREFIX_BASE;
                 let all_seg_len = 1usize + l as usize;
                 if expected_len != all_seg_len {
                     malformed_err()
@@ -136,7 +138,7 @@ impl Decoder {
             },
             // long list
             0xf8u8 ... 0xffu8 => {
-                let l_total_byte = prefix - 0xf8u8;
+                let l_total_byte = prefix - LONG_LIST_PREFIX_BASE;
                 let mut buffer = [0u8; 8];
                 for i in 1usize..(1 + l_total_byte) as usize {
                     buffer[i - 1] = input[i];
