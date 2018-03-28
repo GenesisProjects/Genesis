@@ -10,6 +10,10 @@ use types::*;
 use std::io::{Read, Write, Result};
 use std::mem::*;
 use std::iter::FromIterator;
+use std::io::{Error, ErrorKind};
+
+#[inline]
+fn malformed_err() -> (Result<RLP>, usize) { (Err(Error::new(ErrorKind::Other, "Malformed input")), 0) }
 
 pub struct Decoder {}
 
@@ -57,20 +61,28 @@ impl Decoder {
         }
     }
 
-    fn decode_helper(input: &Vec<u8>, start: usize, end: usize) -> (RLP, usize) {
+    fn decode_helper(input: &Vec<u8>, start: usize, end: usize) -> (Result<RLP>, usize) {
         let prefix = input[start];
+        let expected_len = end - start + 1;
 
         match prefix {
             // single byte
             0x00u8 ... 0x7fu8 => {
-                (RLP::RLPItem { value: String::from_utf8(vec![prefix]).unwrap() }, 1)
+                if expected_len != 1 { malformed_err() } else {
+                    (Ok(RLP::RLPItem { value: String::from_utf8(vec![prefix]).unwrap() }), 1)
+                }
             },
             // short string
             0x80u8 ... 0xb7u8 => {
                 let l = prefix - 0x80u8;
-                (RLP::RLPItem { value: String::from_utf8(
-                    input[start + 1usize .. start + 11usize + l as usize].to_vec()
-                ).unwrap() }, 11usize + l as usize)
+                let seg_len = 11usize + l as usize;
+                if expected_len != seg_len {
+                    malformed_err()
+                } else {
+                    (Ok(RLP::RLPItem { value: String::from_utf8(
+                        input[start + 1usize .. start + 11usize + l as usize].to_vec()
+                    ).unwrap() }), seg_len)
+                }
             },
             // long string
             0xb8u8 ... 0xbfu8 => {
@@ -80,29 +92,47 @@ impl Decoder {
                     buffer[i - start - 1usize] = input[i];
                 }
                 let l = unsafe{ transmute::<[u8; 8], u64>(buffer) as usize };
-                let offset = start + 1usize + (l_total_byte as usize);
-                (RLP::RLPItem {
-                    value: String::from_utf8(
-                        input[offset .. offset + l as usize].to_vec()
-                    ).unwrap()
-                }, 1usize + l_total_byte as usize + l as usize)
+                let seg_len = 1usize + l_total_byte as usize + l as usize;
+                if expected_len != seg_len {
+                    malformed_err()
+                } else {
+                    let offset = start + 1usize + (l_total_byte as usize);
+                    (Ok(RLP::RLPItem {
+                        value: String::from_utf8(
+                            input[offset .. offset + l as usize].to_vec()
+                        ).unwrap()
+                    }), seg_len)
+                }
             },
             // short list
             0xc0u8 ... 0xf7u8 => {
                 let l = prefix - 0x80u8;
-                let mut cur_pos = 1usize + start;
-                let mut result_list: Vec<RLP> = vec![];
-                loop {
-                    if cur_pos > end { break; }
+                let all_seg_len = 1usize + l as usize;
+                if expected_len != all_seg_len {
+                    malformed_err()
+                } else {
+                    let mut cur_pos = 1usize + start;
+                    let mut result_list: Vec<RLP> = vec![];
 
-                    let seg_estimated_end = if cur_pos + 8usize > end { end } else { cur_pos + 8usize };
-                    let seg_len = Decoder::detect_len(input[cur_pos .. seg_estimated_end + 1].to_vec().clone());
-                    let (rlp, _) = Decoder::decode_helper(input, cur_pos, cur_pos + seg_len - 1usize);
-                    result_list.append(&mut vec![rlp]);
-                    cur_pos = cur_pos + seg_len;
+                    loop {
+                        if cur_pos > end { break; }
+
+                        let seg_estimated_end = if cur_pos + 8usize > end { end } else { cur_pos + 8usize };
+                        let seg_len = Decoder::detect_len(input[cur_pos .. seg_estimated_end + 1].to_vec().clone());
+                        let (r_rlp, _) = Decoder::decode_helper(input, cur_pos, cur_pos + seg_len - 1usize);
+                        let rlp: Option<RLP> = match r_rlp {
+                            Ok(rlp) => Some(rlp),
+                            _ => None,
+                        };
+                        if rlp.is_none() {
+                            return malformed_err();
+                        } else {
+                            result_list.append(&mut vec![rlp.unwrap()]);
+                            cur_pos = cur_pos + seg_len;
+                        }
+                    }
+                    (Ok(RLP::RLPList { list: result_list.clone() }), all_seg_len)
                 }
-
-                (RLP::RLPList { list: result_list.clone() }, 1usize + l as usize)
             },
             // long list
             0xf8u8 ... 0xffu8 => {
@@ -112,29 +142,41 @@ impl Decoder {
                     buffer[i - 1] = input[i];
                 }
                 let l = unsafe { transmute::<[u8; 8], u64>(buffer) as usize };
-                let mut cur_pos = 1usize + start + l_total_byte as usize;
-                let mut result_list: Vec<RLP> = vec![];
-                loop {
-                    if cur_pos > end { break; }
-
-                    let seg_estimated_end = if cur_pos + 8usize > end { end } else { cur_pos + 8usize };
-                    let seg_len = Decoder::detect_len(input[cur_pos .. seg_estimated_end + 1].to_vec().clone());
-                    let (rlp, _) = Decoder::decode_helper(input, cur_pos, cur_pos + seg_len - 1usize);
-                    result_list.append(&mut vec![rlp]);
-                    cur_pos = cur_pos + seg_len;
+                let all_seg_len = 1usize + l_total_byte as usize + l as usize;
+                if expected_len != all_seg_len {
+                    malformed_err()
+                } else {
+                    let mut cur_pos = 1usize + start + l_total_byte as usize;
+                    let mut result_list: Vec<RLP> = vec![];
+                    loop {
+                        if cur_pos > end { break; }
+                        let seg_estimated_end = if cur_pos + 8usize > end { end } else { cur_pos + 8usize };
+                        let seg_len = Decoder::detect_len(input[cur_pos .. seg_estimated_end + 1].to_vec().clone());
+                        let (r_rlp, _) = Decoder::decode_helper(input, cur_pos, cur_pos + seg_len - 1usize);
+                        let rlp: Option<RLP> = match r_rlp {
+                            Ok(rlp) => Some(rlp),
+                            Err(e) => None
+                        };
+                        if rlp.is_none() {
+                            return malformed_err();
+                        } else {
+                            result_list.append(&mut vec![rlp.unwrap()]);
+                            cur_pos = cur_pos + seg_len;
+                        }
+                    }
+                    (Ok(RLP::RLPList { list: result_list.clone() }), all_seg_len)
                 }
-
-                (RLP::RLPList { list: result_list.clone() }, 1usize + l_total_byte as usize + l as usize)
             },
             // default
-            _ => {
-                panic!("Incorrect prefix");
-            }
+            _ => malformed_err()
         }
     }
 
-    pub fn decode(input: &EncodedRLP) -> RLP {
+    pub fn decode(input: &EncodedRLP) -> Option<RLP> {
         let (r, _) = Decoder::decode_helper(input, 0usize, input.len() - 1usize);
-        r
+        match r {
+            Ok(r) => Some(r),
+            Err(e) => None
+        }
     }
 }
