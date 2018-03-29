@@ -4,5 +4,4 @@ pub mod mpt;
 pub mod transaction;
 pub mod receipt;
 
-#[macro_use]
 pub extern crate common;
