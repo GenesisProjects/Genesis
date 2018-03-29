@@ -1,5 +1,9 @@
 #[macro_use]
 extern crate serde;
+
+#[macro_use]
+pub extern crate lazy_static;
+
 extern crate serde_json;
 
 pub mod decoder;
@@ -11,6 +15,6 @@ use self::serde::ser::Serialize;
 use self::serde::de::Deserialize;
 
 pub trait RLPSerialize: Sized {
-    fn encode(&self) -> Result<types::EncodedRLP, types::RLPError>;
-    fn decode(encoded_rlp: &types::EncodedRLP) -> Result<Self, types::RLPError>;
+    fn serialize(&self) -> Result<types::RLP, types::RLPError>;
+    fn deserialize(encoded_rlp: &types::RLP) -> Result<Self, types::RLPError>;
 }

@@ -24,7 +24,7 @@ pub fn nibble2vec(nibble: &Vec<u8>) -> Vec<u8> {
             panic!("Invalid nibble entry");
         }
         if i >= nibble.len() / 2usize { break; }
-        output.append(&mut vec![nibble[i] * 16u8 + nibble[i + 1]]);
+        output.append(&mut vec![nibble[i] * 16u8 + nibble[i + 1usize]]);
         i = i + 2usize;
     }
     output
@@ -96,13 +96,27 @@ pub enum TrieNode<T: RLPSerialize> {
 }
 
 impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
-    fn encode(&self) -> Result<EncodedRLP, RLPError> {
+    fn serialize(&self) -> Result<RLP, RLPError> {
         match self {
             &TrieNode::EMPTY => {
-                Err(RLPError::RLPErrorUnknown)
+                Err(RLPError::RLPEncodingErrorUnencodable)
             },
             &TrieNode::BranchNode{ ref branches, ref value } => {
-                Err(RLPError::RLPErrorUnknown)
+                let mut value_item = value.serialize()?;
+                let mut rlp_list: Vec<RLP> = vec![];
+                for elem in branches {
+                    let elem_str_r = String::from_utf8((elem as &TrieKey).to_vec());
+                    match elem_str_r {
+                        Ok(r) => {
+                            let elem_item = RLP::RLPItem { value: r };
+                            rlp_list.append(&mut vec![elem_item]);
+                        },
+                        Err(e) => {
+                            return Err(RLPError::RLPErrorUTF8);
+                        }
+                    }
+                }
+                Ok(RLP::RLPList { list: rlp_list })
             },
             &TrieNode::ExtensionNode{ ref encoded_path, ref key } => {
                 Err(RLPError::RLPErrorUnknown)
@@ -113,7 +127,7 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
         }
     }
 
-    fn decode(encoded_rlp: &EncodedRLP) -> Result<Self, RLPError> {
+    fn deserialize(encoded_rlp: &RLP) -> Result<Self, RLPError> {
         Err(RLPError::RLPErrorUnknown)
     }
 }

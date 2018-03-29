@@ -3,7 +3,7 @@ extern crate num;
 
 use self::common::address::Address;
 use self::common::key::Signature;
-use self::common::hash::{ Hash, SHA256Hashable };
+use self::common::hash::{ Hash, SerializableAndSHA256Hashable };
 use self::num::bigint::BigInt;
 use self::num::Zero;
 

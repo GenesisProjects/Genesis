@@ -6,3 +6,4 @@ authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 [dependencies]
 lazy_static = "1.0.0"
 common = { version = "0.1.0", path = "../common" }
+rlp = { version = "0.1.0", path = "../rlp" }

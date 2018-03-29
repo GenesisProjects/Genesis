@@ -5,7 +5,9 @@ use self::crypto::digest::Digest;
 use self::crypto::sha2::Sha256;
 
 use self::rlp::RLPSerialize;
+use self::rlp::encoder::SHARED_ENCODER;
 use self::rlp::types::RLP;
+use self::rlp::encoder::Encoder;
 
 /// macro gen_hash! takes (*_str => '&str' type data) and (*_raw => '&[u8]' type data) as input
 /// it generates a 'String' type output
@@ -53,12 +55,13 @@ macro_rules! hash_len {
 
 
 /// Interface for hashable objects
-pub trait SHA256Hashable<'a>: RLPSerialize {
+pub trait SerializableAndSHA256Hashable<'a>: RLPSerialize {
     #[inline]
     fn encrype_sha256(&self) -> Option<Hash> {
-        match self.encode() {
+        match self.serialize() {
             Ok(r) => {
-                let data: String = gen_hash!(sha256_raw => &r);
+                let encoded_rlp = SHARED_ENCODER.lock().unwrap().encode(&r);
+                let data: String = gen_hash!(sha256_raw => &encoded_rlp);
                 let mut result: Hash = [0; 32];
                 result.clone_from_slice(&data.as_bytes()[0..32]);
                 Some(result)

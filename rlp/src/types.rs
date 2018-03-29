@@ -1,5 +1,11 @@
 pub enum RLPError {
-    RLPErrorUnknown
+    RLPErrorUnknown,
+
+    RLPErrorUTF8,
+
+    RLPEncodingErrorUnencodable,
+
+    RLPDecodingErrorMalformed,
 }
 
 #[derive(Clone, Debug)]

@@ -3,9 +3,11 @@ extern crate bytebuffer;
 use self::bytebuffer::*;
 use defines::*;
 use types::*;
+
 use std::io::{Read, Write, Result};
 use std::mem::*;
 use std::iter::FromIterator;
+use std::sync::Mutex;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 
@@ -18,6 +20,12 @@ macro_rules! total_bytes {
         else if ($e >> 40) == 0 { 5u8 }
         else if ($e >> 48) == 0 { 6u8 }
         else { 7u8 }
+    };
+}
+
+lazy_static! {
+    pub static ref SHARED_ENCODER: Mutex<Encoder> = {
+        Mutex::new(Encoder::new())
     };
 }
 
