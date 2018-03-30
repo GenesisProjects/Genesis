@@ -1,18 +1,14 @@
 extern crate common;
-extern crate core;
+extern crate gen_core;
 extern crate rlp;
 
 use self::rlp::encoder::Encoder;
 use self::rlp::decoder::Decoder;
 use self::rlp::types::RLP;
 
+use self::gen_core::mpt::node::*;
+
 fn main() {
-    let mut encoder = Encoder::new();
-    let test_item1 = RLP::RLPList {list: vec![]}; // []
-    let test_item2 = RLP::RLPList {list: vec![test_item1.clone()]}; // [[]]
-    let test_item3 = RLP::RLPList {list: vec![test_item1.clone(), test_item2.clone()]}; //  [ [], [[]] ]
-    let test_list = RLP::RLPList {list: vec![test_item1.clone(), test_item2.clone(), test_item3.clone()]}; // [ [], [[]], [ [], [[]] ] ]
-    let result = encoder.encode(&test_list);
-    let rlp = Decoder::decode(&result);
-    print!("{:?}", rlp)
+    let test = TrieNode::LeafNode { encoded_path: vec![65u8, 65u8], value: "test".to_string() };
+    print!("{:?}", test)
 }

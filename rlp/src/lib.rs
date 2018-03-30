@@ -14,7 +14,21 @@ pub mod types;
 use self::serde::ser::Serialize;
 use self::serde::de::Deserialize;
 
+use types::{ RLPError, RLP };
+
 pub trait RLPSerialize: Sized {
     fn serialize(&self) -> Result<types::RLP, types::RLPError>;
     fn deserialize(rlp: &types::RLP) -> Result<Self, types::RLPError>;
+}
+
+impl RLPSerialize for String {
+    fn serialize(&self) -> Result<types::RLP, types::RLPError> {
+        Ok(RLP::RLPItem { value: self.clone() })
+    }
+    fn deserialize(rlp: &types::RLP) -> Result<Self, types::RLPError> {
+        match rlp {
+            &RLP::RLPItem { ref value } => Ok(value.clone()),
+            _ => Err(RLPError::RLPErrorUnknown)
+        }
+    }
 }
