@@ -16,5 +16,5 @@ use self::serde::de::Deserialize;
 
 pub trait RLPSerialize: Sized {
     fn serialize(&self) -> Result<types::RLP, types::RLPError>;
-    fn deserialize(encoded_rlp: &types::RLP) -> Result<Self, types::RLPError>;
+    fn deserialize(rlp: &types::RLP) -> Result<Self, types::RLPError>;
 }

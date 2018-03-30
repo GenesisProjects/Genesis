@@ -33,10 +33,10 @@ pub fn nibble2vec(nibble: &Vec<u8>) -> Vec<u8> {
 }
 
 #[inline]
-pub fn vec2nibble(path: &Vec<u8>) -> Vec<u8> {
+pub fn vec2nibble(vec: &Vec<u8>) -> Vec<u8> {
     let mut output: Vec<u8> = vec![];
-    for i in (0usize .. path.len()) {
-        let byte: u8 = path[i];
+    for i in (0usize .. vec.len()) {
+        let byte: u8 = vec[i];
         output.append(&mut vec![ byte / 16u8, byte % 16u8]);
     }
     output
@@ -124,41 +124,73 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                 Ok(RLP::RLPList { list: rlp_list })
             },
             &TrieNode::ExtensionNode{ ref encoded_path, ref key } => {
-                let path_str_r = String::from_utf8(encoded_path.to_vec());
-                let key_str_r = String::from_utf8((&key.to_vec()).to_vec());
+                let path_str_r = String::from_utf8(vec2nibble(encoded_path));
+                let key_str_r = String::from_utf8((vec2nibble(&key.to_vec()).to_vec()).to_vec());
                 match (path_str_r, key_str_r) {
                     (Ok(l), Ok(r)) => {
-                        let list = vec![RLP::RLPItem { value: l }, RLP::RLPItem { value: r }];
+                        let list = vec![RLP::RLPItem { value: "e".to_string() }, RLP::RLPItem { value: l }, RLP::RLPItem { value: r }];
                         Ok(RLP::RLPList { list: list })
                     }
                     _ => {
-                        Err(RLPError::RLPErrorUTF8)
+                        Err(RLPError::RLPErrorUnknown)
                     }
                 }
             },
             &TrieNode::LeafNode{ ref encoded_path, ref value } => {
-                let path_str_r = String::from_utf8(encoded_path.to_vec());
+                let path_str_r = String::from_utf8(vec2nibble(encoded_path).to_vec());
                 let value_rlp_item = value.serialize();
                 match (path_str_r, value_rlp_item) {
                     (Ok(l), Ok(r)) => {
                         let list = vec![RLP::RLPItem { value: l }, r];
                         Ok(RLP::RLPList { list: list })
                     }
-                    (Err(l), Ok(r)) => {
-                        Err(RLPError::RLPErrorUTF8)
-                    }
-                    (Ok(l), Err(r)) => {
-                        Err(RLPError::RLPErrorUnknown)
-                    }
-                    _ => {
-                        Err(RLPError::RLPErrorUnknown)
-                    }
+                    _ => Err(RLPError::RLPErrorUnknown)
                 }
             },
         }
     }
 
-    fn deserialize(encoded_rlp: &RLP) -> Result<Self, RLPError> {
-        Err(RLPError::RLPErrorUnknown)
+    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
+       match rlp {
+           &RLP::RLPList { ref list } => {
+               match list.len() {
+                   //LeafNode
+                   2usize => {
+                       let path_item = &list[0];
+                       let value_item = &list[1];
+                       match (path_item, value_item)  {
+                           (&RLP::RLPItem { value: ref path }, rlp) => {
+                               Ok(TrieNode::LeafNode {
+                                   encoded_path: nibble2vec(&path.as_bytes().to_vec()),
+                                   value: match T::deserialize(rlp) {
+                                       Ok(r) => r,
+                                       _ => { return Err(RLPError::RLPErrorUnknown); }
+                                   }
+                               })
+                           },
+                           _ => Err(RLPError::RLPErrorUnknown)
+                       }
+                   },
+                   3usize => {
+                       let path_item = &list[1];
+                       let value_item = &list[2];
+                       match (path_item, value_item)  {
+                           (&RLP::RLPItem { value: ref path }, &RLP::RLPItem { value: ref key }) => {
+                               Ok(TrieNode::ExtensionNode {
+                                   encoded_path: nibble2vec(&path.as_bytes().to_vec()),
+                                   key: nibble2vec(&key.as_bytes().to_vec())
+                               })
+                           },
+                           _ => Err(RLPError::RLPErrorUnknown)
+                       }
+                   },
+                   17usize => {
+                       Err(RLPError::RLPErrorUnknown)
+                   },
+                   _ => Err(RLPError::RLPErrorUnknown)
+               }
+           },
+           &RLP::RLPItem { ref value } => Err(RLPError::RLPErrorUnknown),
+       }
     }
 }
