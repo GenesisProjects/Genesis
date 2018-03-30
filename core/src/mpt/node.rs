@@ -15,6 +15,26 @@ pub type TrieKey = Hash;
 pub type EncodedPath = Vec<u8>;
 
 #[inline]
+fn from_slice_to_key(bytes: &Vec<u8>) -> TrieKey {
+    let mut a = [0u8; 32];
+    for i in 0..a.len() {
+        // Panics if not enough input
+        a[i] = bytes[i];
+    }
+    a
+}
+
+#[inline]
+fn from_slice_to_branch(keys: &Vec<TrieKey>) -> [TrieKey; 16] {
+    let mut a = [[0u8; 32]; 16];
+    for i in 0..a.len() {
+        // Panics if not enough input
+        a[i] = keys[i];
+    }
+    a
+}
+
+#[inline]
 pub fn nibble2vec(nibble: &Vec<u8>) -> Vec<u8> {
     if nibble.len() % 2 != 0 {
         panic!("Invalid nibble length");
@@ -121,6 +141,7 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                         }
                     }
                 }
+                rlp_list.append(&mut vec![value_item]);
                 Ok(RLP::RLPList { list: rlp_list })
             },
             &TrieNode::ExtensionNode{ ref encoded_path, ref key } => {
@@ -178,14 +199,29 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                            (&RLP::RLPItem { value: ref path }, &RLP::RLPItem { value: ref key }) => {
                                Ok(TrieNode::ExtensionNode {
                                    encoded_path: nibble2vec(&path.as_bytes().to_vec()),
-                                   key: nibble2vec(&key.as_bytes().to_vec())
+                                   key: from_slice_to_key(&nibble2vec(&key.as_bytes().to_vec()))
                                })
                            },
                            _ => Err(RLPError::RLPErrorUnknown)
                        }
                    },
                    17usize => {
-                       Err(RLPError::RLPErrorUnknown)
+                       let mut buffer: Vec<TrieKey> = vec![];
+                       let mut index= 0usize;
+                       for iter in list {
+                           if index == 16 { break; }
+                           match iter {
+                               &RLP::RLPItem { ref value } => {
+                                   let key = from_slice_to_key(&nibble2vec(&value.as_bytes().to_vec()));
+                                   buffer.append(&mut vec![key]);
+                               },
+                               _ => { return Err(RLPError::RLPErrorUnknown); }
+                           }
+                           index = index + 1;
+                       }
+                       let value_ref = &list[index];
+                       let value = T::deserialize(value_ref)?;
+                       Ok(TrieNode::BranchNode { branches: from_slice_to_branch(&buffer), value: value })
                    },
                    _ => Err(RLPError::RLPErrorUnknown)
                }
