@@ -10,6 +10,7 @@ Cargo.lock
 **/*.rs.bk
 
 # Remove IntelliJ internal files
+.idea
 *.iml
 .gradle
 out/
