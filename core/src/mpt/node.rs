@@ -42,10 +42,10 @@ pub fn nibble2vec(nibble: &Vec<u8>) -> Vec<u8> {
     let mut output: Vec<u8> = vec![];
     let mut i = 0usize;
     loop {
+        if i + 2usize > nibble.len() { break; }
         if nibble[i] >= 16u8 {
             panic!("Invalid nibble entry");
         }
-        if i >= nibble.len() / 2usize { break; }
         output.append(&mut vec![nibble[i] * 16u8 + nibble[i + 1usize]]);
         i = i + 2usize;
     }
@@ -192,6 +192,7 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                            _ => Err(RLPError::RLPErrorUnknown)
                        }
                    },
+                   //ExtensionNode
                    3usize => {
                        let path_item = &list[1];
                        let value_item = &list[2];
@@ -205,6 +206,7 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                            _ => Err(RLPError::RLPErrorUnknown)
                        }
                    },
+                   //BranchNode
                    17usize => {
                        let mut buffer: Vec<TrieKey> = vec![];
                        let mut index= 0usize;
