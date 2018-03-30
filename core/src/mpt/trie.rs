@@ -20,4 +20,8 @@ struct Trie {
 
 }
 
+impl Trie {
+
+}
+
 
