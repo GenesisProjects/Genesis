@@ -14,13 +14,6 @@ use self::rlp::decoder::*;
 pub type TrieKey = Hash;
 pub type EncodedPath = Vec<u8>;
 
-#[macro_export]
-macro_rules! hash2base58 {
-    ($e:expr) => ({
-        ($e as &TrieKey).to_base58().as_bytes().to_vec()
-    });
-}
-
 #[inline]
 pub fn nibble2vec(nibble: &Vec<u8>) -> Vec<u8> {
     if nibble.len() % 2 != 0 {
@@ -117,7 +110,7 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                 let mut value_item = value.serialize()?;
                 let mut rlp_list: Vec<RLP> = vec![];
                 for elem in branches {
-                    let elem_str_r = String::from_utf8(hash2base58!(elem));
+                    let elem_str_r = String::from_utf8(vec2nibble(&elem.to_vec()).to_vec());
                     match elem_str_r {
                         Ok(r) => {
                             let elem_item = RLP::RLPItem { value: r };
@@ -132,7 +125,7 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
             },
             &TrieNode::ExtensionNode{ ref encoded_path, ref key } => {
                 let path_str_r = String::from_utf8(encoded_path.to_vec());
-                let key_str_r = String::from_utf8(hash2base58!(key));
+                let key_str_r = String::from_utf8((&key.to_vec()).to_vec());
                 match (path_str_r, key_str_r) {
                     (Ok(l), Ok(r)) => {
                         let list = vec![RLP::RLPItem { value: l }, RLP::RLPItem { value: r }];
