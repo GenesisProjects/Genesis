@@ -5,7 +5,6 @@ use self::common::hash::SerializableAndSHA256Hashable;
 use self::rlp::RLPSerialize;
 
 use std::sync::Mutex;
-use types::{ DBContext, DBStatus, DBConfig };
 
 pub enum DBResult {
     DBConnectSuccess,
@@ -13,18 +12,34 @@ pub enum DBResult {
 }
 
 pub enum DBError {
-    DBConnectError{ msg: String },
-    DBDisConnectSuccess { msg: String },
+    DBConnectError{ msg: &'static str },
+    DBDisconnectError { msg: &'static str },
+    DBUpdateError { msg: &'static str },
+    DBFetchError { msg: &'static str },
+    DBStatusError { msg: &'static str },
+}
+
+pub struct DBContext {
+
+}
+
+pub struct DBStatus {
+
+}
+
+pub struct DBConfig {
+
 }
 
 pub struct DBManager {
-
+    config: &'static mut DBConfig
 }
 
 // TODO:
 lazy_static! {
     pub static ref SHARED_MANAGER: Mutex<DBManager> = {
-        Mutex::new(DBManager{})
+        static mut conf: DBConfig = DBConfig {};
+        unsafe { Mutex::new(DBManager{ config: &mut conf }) }
     };
 }
 
@@ -32,11 +47,32 @@ lazy_static! {
 ///
 ///
 pub trait DBManagerOP {
-    fn connect(config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError>;
-    fn disconnect() -> Result<DBResult, DBError>;
+    fn connect(&self,config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError>;
+    fn disconnect(&self) -> Result<DBResult, DBError>;
 
-    fn put<T: RLPSerialize>(key: &String, value: &T) -> Result<DBResult, DBError>;
-    fn get<T: RLPSerialize>(key: &String) -> Result<T, DBError>;
+    fn put<T: RLPSerialize>(&self, key: &String, value: &T) -> Result<DBResult, DBError>;
+    fn get<T: RLPSerialize>(&self, key: &String) -> Result<T, DBError>;
 
-    fn show_status() -> Result<DBStatus, DBError>;
+    fn show_status(&self) -> Result<DBStatus, DBError>;
+}
+
+impl DBManagerOP for DBManager {
+    fn connect(&self,config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError> {
+        Err(DBError::DBConnectError { msg: "Unknown Err" })
+    }
+
+    fn disconnect(&self) -> Result<DBResult, DBError> {
+        Err(DBError::DBDisconnectError { msg: "Unknown Err" })
+    }
+
+    fn put<T: RLPSerialize>(&self, key: &String, value: &T) -> Result<DBResult, DBError> {
+        Err(DBError::DBUpdateError { msg: "Unknown Err" })
+    }
+    fn get<T: RLPSerialize>(&self, key: &String) -> Result<T, DBError> {
+        Err(DBError::DBFetchError { msg: "Unknown Err" })
+    }
+
+    fn show_status(&self) -> Result<DBStatus, DBError> {
+        Err(DBError::DBStatusError { msg: "Unknown Err" })
+    }
 }

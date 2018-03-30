@@ -12,15 +12,17 @@ type Trie struct {
 }*/
 extern crate common;
 extern crate db;
+extern crate rlp;
 
 use super::node::*;
 use self::db::manager::*;
+use self::rlp::RLPSerialize;
 
-struct Trie {
-
+struct Trie<T: RLPSerialize> {
+    root: TrieNode<T>
 }
 
-impl Trie {
+impl<T> Trie<T> where T: RLPSerialize {
 
 }
 
