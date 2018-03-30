@@ -4,6 +4,7 @@ extern crate rlp;
 use self::common::hash::SerializableAndSHA256Hashable;
 use self::rlp::RLPSerialize;
 
+use std::sync::Mutex;
 use types::{ DBContext, DBStatus, DBConfig };
 
 pub enum DBResult {
@@ -20,10 +21,17 @@ pub struct DBManager {
 
 }
 
+// TODO:
+lazy_static! {
+    pub static ref SHARED_MANAGER: Mutex<DBManager> = {
+        Mutex::new(DBManager{})
+    };
+}
+
 ///
 ///
 ///
-pub trait  DBManagerOP {
+pub trait DBManagerOP {
     fn connect(config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError>;
     fn disconnect() -> Result<DBResult, DBError>;
 
