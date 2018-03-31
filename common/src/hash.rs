@@ -55,16 +55,21 @@ macro_rules! hash_len {
 
 
 /// Interface for hashable objects
-pub trait SerializableAndSHA256Hashable<'a>: RLPSerialize {
+pub trait SerializableAndSHA256Hashable: RLPSerialize {
     #[inline]
-    fn encrype_sha256(&self) -> Option<Hash> {
+    fn encrype_sha256(&self) -> Option<(Hash, Vec<u8>)>;
+}
+
+impl<T> SerializableAndSHA256Hashable for T where T: RLPSerialize {
+    #[inline]
+    fn encrype_sha256(&self) -> Option<(Hash, Vec<u8>)> {
         match self.serialize() {
             Ok(r) => {
                 let encoded_rlp = SHARED_ENCODER.lock().unwrap().encode(&r);
                 let data: String = gen_hash!(sha256_raw => &encoded_rlp);
                 let mut result: Hash = [0; 32];
                 result.clone_from_slice(&data.as_bytes()[0..32]);
-                Some(result)
+                Some((result, encoded_rlp))
             },
             Err(_) => {
                 None
