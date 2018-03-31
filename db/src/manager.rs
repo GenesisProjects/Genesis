@@ -69,7 +69,7 @@ pub trait DBManagerOP {
     fn connect(&self,config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError>;
     fn disconnect(&self) -> Result<DBResult, DBError>;
 
-    fn put<T: RLPSerialize>(&self, key: &Vec<u8>, value: &T) -> Result<DBResult, DBError>;
+    fn put<T: RLPSerialize>(&self, value: &T) -> Result<DBResult, DBError>;
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Result<T, DBError>;
 
     fn show_status(&self) -> Result<DBStatus, DBError>;
@@ -85,13 +85,9 @@ impl DBManagerOP for DBManager {
         Err(DBError::DBDisconnectError { msg: "Unknown Err" })
     }
 
-    fn put<T: RLPSerialize>(&self, key: &Vec<u8>, value: &T) -> Result<DBResult, DBError> {
-        let rlp = match value.serialize() {
-            Ok(r) => r,
-            Err(_) => panic!("")
-        };
-        let encoded_rlp = SHARED_ENCODER.lock().unwrap().encode(&rlp);
-        CAHCE.lock().unwrap().insert(key.clone(), encoded_rlp);
+    fn put<T: RLPSerialize>(&self, value: &T) -> Result<DBResult, DBError> {
+        let (key, encoded_rlp) = value.encrype_sha256().unwrap();
+        CAHCE.lock().unwrap().insert(key.to_vec(), encoded_rlp);
         Ok(DBResult::DBUpdateSuccess)
     }
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Result<T, DBError> {
@@ -118,7 +114,7 @@ impl DBManagerOP for DBManager {
         Err(DBError::DBDisconnectError { msg: "Unknown Err" })
     }
 
-    fn put<T: RLPSerialize>(&self, key: &Vec<u8>, value: &T) -> Result<DBResult, DBError> {
+    fn put<T: RLPSerialize>(&self, value: &T) -> Result<DBResult, DBError> {
         Err(DBError::DBUpdateError { msg: "Unknown Err" })
     }
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Result<T, DBError> {
