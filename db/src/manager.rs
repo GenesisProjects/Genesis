@@ -69,9 +69,9 @@ pub trait DBManagerOP {
     fn connect(&self,config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError>;
     fn disconnect(&self) -> Result<DBResult, DBError>;
 
-    fn put<T: RLPSerialize>(&self, value: &T) -> Result<DBResult, DBError>;
-    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Result<T, DBError>;
-
+    fn put<T: RLPSerialize>(&self, value: &T);
+    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;
+    fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T>;
     fn show_status(&self) -> Result<DBStatus, DBError>;
 }
 
@@ -85,17 +85,35 @@ impl DBManagerOP for DBManager {
         Err(DBError::DBDisconnectError { msg: "Unknown Err" })
     }
 
-    fn put<T: RLPSerialize>(&self, value: &T) -> Result<DBResult, DBError> {
+    fn put<T: RLPSerialize>(&self, value: &T) {
         let (key, encoded_rlp) = value.encrype_sha256().unwrap();
         CAHCE.lock().unwrap().insert(key.to_vec(), encoded_rlp);
-        Ok(DBResult::DBUpdateSuccess)
     }
-    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Result<T, DBError> {
-        let result = CAHCE.lock().unwrap().get(key).unwrap().clone();
-        let rlp = Decoder::decode(&result).unwrap();
-        match T::deserialize(&rlp) {
-            Ok(r) => Ok(r),
-            Err(_) => Err(DBError::DBFetchError { msg:"" })
+
+    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {
+        match CAHCE.lock().unwrap().get(key) {
+            Some(v) => {
+                let rlp = Decoder::decode(v).unwrap();
+                match T::deserialize(&rlp) {
+                    Ok(r) => Some(r),
+                    Err(_) => None
+                }
+            },
+            None => None
+        }
+    }
+
+    fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T> {
+        let (key, encoded_rlp) = value.encrype_sha256().unwrap();
+        match CAHCE.lock().unwrap().get(&key.to_vec()) {
+            Some(v) => {
+                let rlp = Decoder::decode(v).unwrap();
+                match T::deserialize(&rlp) {
+                    Ok(r) => Some(r),
+                    Err(_) => None
+                }
+            },
+            None => None
         }
     }
 
@@ -114,11 +132,16 @@ impl DBManagerOP for DBManager {
         Err(DBError::DBDisconnectError { msg: "Unknown Err" })
     }
 
-    fn put<T: RLPSerialize>(&self, value: &T) -> Result<DBResult, DBError> {
-        Err(DBError::DBUpdateError { msg: "Unknown Err" })
+    fn put<T: RLPSerialize>(&self, value: &T) {
+
     }
-    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Result<T, DBError> {
-        Err(DBError::DBFetchError { msg: "Unknown Err" })
+
+    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {
+        None
+    }
+
+    fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T> {
+        None
     }
 
     fn show_status(&self) -> Result<DBStatus, DBError> {

@@ -113,28 +113,43 @@ pub fn decode_path(encoded_path: &Vec<u8>) -> (Vec<u8>, bool) {
 }
 
 #[derive(Debug, Clone)]
-pub enum TrieNode<T: RLPSerialize> {
+pub enum TrieNode<T: RLPSerialize + Clone> {
     EMPTY,
-    BranchNode { branches: [TrieKey; 16], value: T },
+    BranchNode { branches: [TrieKey; 16], value: Option<T> },
     ExtensionNode { encoded_path: EncodedPath, key: TrieKey },
     LeafNode { encoded_path: EncodedPath, value: T }
 }
 
-impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
+impl<T: RLPSerialize + Clone> TrieNode<T> {
+    pub fn new_branch_node(value: Option<&T>) -> Self {
+        let branches: [TrieKey; 16] = [[0u8; 32]; 16];
+        if let Some(ref_value) = value {
+            TrieNode::BranchNode { branches: branches, value: Some(ref_value.clone()) }
+        } else {
+            TrieNode::BranchNode { branches: branches, value: None }
+        }
+    }
+}
+
+impl<T: RLPSerialize + Clone> RLPSerialize for TrieNode<T> {
     fn serialize(&self) -> Result<RLP, RLPError> {
         match self {
             &TrieNode::EMPTY => {
                 Err(RLPError::RLPEncodingErrorUnencodable)
             },
             &TrieNode::BranchNode{ ref branches, ref value } => {
-                let mut value_item = value.serialize()?;
                 let mut rlp_list: Vec<RLP> = vec![];
                 for elem in branches {
                     let elem_item = RLP::RLPItem { value: elem.to_vec() };
                     rlp_list.append(&mut vec![elem_item]);
                 }
-                rlp_list.append(&mut vec![value_item]);
-                Ok(RLP::RLPList { list: rlp_list })
+                if let &Some(ref r) = value {
+                    let mut value_item = r.serialize()?;
+                    rlp_list.append(&mut vec![value_item]);
+                    Ok(RLP::RLPList { list: rlp_list })
+                } else {
+                    Ok(RLP::RLPList { list: rlp_list })
+                }
             },
             &TrieNode::ExtensionNode{ ref encoded_path, ref key } => {
                 let tmp_path = encoded_path.clone();
@@ -206,6 +221,22 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                        }
                    },
                    //BranchNode
+                   16usize => {
+                       let mut buffer: Vec<TrieKey> = vec![];
+                       let mut index= 0usize;
+                       for iter in list {
+                           if index == 16 { break; }
+                           match iter {
+                               &RLP::RLPItem { ref value } => {
+                                   let key = from_slice_to_key(value);
+                                   buffer.append(&mut vec![key]);
+                               },
+                               _ => { return Err(RLPError::RLPErrorUnknown); }
+                           }
+                           index = index + 1;
+                       }
+                       Ok(TrieNode::BranchNode { branches: from_slice_to_branch(&buffer), value: None })
+                   },
                    17usize => {
                        let mut buffer: Vec<TrieKey> = vec![];
                        let mut index= 0usize;
@@ -222,7 +253,7 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                        }
                        let value_ref = &list[index];
                        let value = T::deserialize(value_ref)?;
-                       Ok(TrieNode::BranchNode { branches: from_slice_to_branch(&buffer), value: value })
+                       Ok(TrieNode::BranchNode { branches: from_slice_to_branch(&buffer), value: Some(value) })
                    },
                    _ => Err(RLPError::RLPErrorUnknown)
                }
