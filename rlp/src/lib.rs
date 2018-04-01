@@ -23,11 +23,14 @@ pub trait RLPSerialize: Sized {
 
 impl RLPSerialize for String {
     fn serialize(&self) -> Result<types::RLP, types::RLPError> {
-        Ok(RLP::RLPItem { value: self.clone() })
+        Ok(RLP::RLPItem { value: self.as_bytes().to_vec() })
     }
     fn deserialize(rlp: &types::RLP) -> Result<Self, types::RLPError> {
         match rlp {
-            &RLP::RLPItem { ref value } => Ok(value.clone()),
+            &RLP::RLPItem { ref value } => match String::from_utf8(value.clone()) {
+                Ok(str) => Ok(str),
+                Err(_) => Err(RLPError::RLPErrorUnknown)
+            }
             _ => Err(RLPError::RLPErrorUnknown)
         }
     }

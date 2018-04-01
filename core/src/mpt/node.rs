@@ -130,30 +130,17 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                 let mut value_item = value.serialize()?;
                 let mut rlp_list: Vec<RLP> = vec![];
                 for elem in branches {
-                    let elem_str_r =
-                        String::from_utf8(vec2nibble(&elem.to_vec()).to_vec());
-                    match elem_str_r {
-                        Ok(r) => {
-                            let elem_item = RLP::RLPItem { value: r };
-                            rlp_list.append(&mut vec![elem_item]);
-                        },
-                        Err(e) => {
-                            return Err(RLPError::RLPErrorUTF8);
-                        }
-                    }
+                    let elem_item = RLP::RLPItem { value: elem.to_vec() };
+                    rlp_list.append(&mut vec![elem_item]);
                 }
                 rlp_list.append(&mut vec![value_item]);
                 Ok(RLP::RLPList { list: rlp_list })
             },
             &TrieNode::ExtensionNode{ ref encoded_path, ref key } => {
-                let path_str_r = String::from_utf8(
-                    vec2nibble(encoded_path)
-                );
-                let key_str_r = String::from_utf8(
-                    vec2nibble(&key.to_vec()).to_vec().to_vec()
-                );
-                match (path_str_r, key_str_r) {
-                    (Ok(l), Ok(r)) => {
+                let tmp_path = encoded_path.clone();
+                let tmp_key = key.to_vec();
+                match (tmp_path, tmp_key) {
+                    (l, r) => {
                         let list = vec![
                             RLP::RLPItem { value: l },
                             RLP::RLPItem { value: r }
@@ -166,10 +153,10 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                 }
             },
             &TrieNode::LeafNode{ ref encoded_path, ref value } => {
-                let path_str_r = String::from_utf8(vec2nibble(encoded_path).to_vec());
+                let tmp_path = encoded_path.clone();
                 let value_rlp_item = value.serialize();
-                match (path_str_r, value_rlp_item) {
-                    (Ok(l), Ok(r)) => {
+                match (tmp_path, value_rlp_item) {
+                    (l, Ok(r)) => {
                         let list = vec![RLP::RLPItem { value: l }, r];
                         Ok(RLP::RLPList { list: list })
                     }
@@ -188,14 +175,13 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                        let item = &list[1];
                        match (path_item, item)  {
                            (&RLP::RLPItem { value: ref path }, rlp) => {
-                               let nibbles = path.as_bytes().to_vec();
+                               let nibbles = vec2nibble(path);
                                // load prefix from the first nibble.
                                let prefix = nibbles[0];
-
                                if prefix > 1u8 {
                                    //leafnode
                                    Ok(TrieNode::LeafNode {
-                                       encoded_path: nibble2vec(&path.as_bytes().to_vec()),
+                                       encoded_path: path.clone(),
                                        value: match T::deserialize(rlp) {
                                            Ok(r) => r,
                                            _ => { return Err(RLPError::RLPErrorUnknown); }
@@ -206,8 +192,8 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                                    match rlp {
                                        &RLP::RLPItem { value: ref key } => {
                                            Ok(TrieNode::ExtensionNode {
-                                               encoded_path: nibble2vec(&path.as_bytes().to_vec()),
-                                               key: from_slice_to_key(&nibble2vec(&key.as_bytes().to_vec()))
+                                               encoded_path:  path.clone(),
+                                               key: from_slice_to_key(key)
                                            })
                                        },
                                         _ => {
@@ -227,7 +213,7 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                            if index == 16 { break; }
                            match iter {
                                &RLP::RLPItem { ref value } => {
-                                   let key = from_slice_to_key(&nibble2vec(&value.as_bytes().to_vec()));
+                                   let key = from_slice_to_key(value);
                                    buffer.append(&mut vec![key]);
                                },
                                _ => { return Err(RLPError::RLPErrorUnknown); }
@@ -241,7 +227,7 @@ impl<T: RLPSerialize> RLPSerialize for TrieNode<T> {
                    _ => Err(RLPError::RLPErrorUnknown)
                }
            },
-           &RLP::RLPItem { ref value } => Err(RLPError::RLPErrorUnknown),
+           &RLP::RLPItem { ref value } => Err(RLPError::RLPErrorUnknown)
        }
     }
 }

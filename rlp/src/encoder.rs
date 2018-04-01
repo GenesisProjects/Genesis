@@ -59,25 +59,25 @@ impl Encoder {
         }
     }
 
-    fn encode_short_str_len(& self, input: &str) -> usize { 1 + input.len() }
+    fn encode_short_str_len(& self, input: &Vec<u8>) -> usize { 1 + input.len() }
 
-    fn encode_short_str(&mut self, input: &str) {
+    fn encode_short_str(&mut self, input: &Vec<u8>) {
         if input.len() > SHORT_STRING_MAX_LEN {
             panic!("String length out of range 0-55.");
         } else {
             let prefix: u8 = SHORT_STRING_PREFIX_BASE + input.len() as u8;
             self.buffer.write_u8(prefix);
-            self.buffer.write(input.as_bytes());
+            self.buffer.write(input);
         }
     }
 
-    fn encode_long_str_len(& self, input: &str) -> usize {
+    fn encode_long_str_len(& self, input: &Vec<u8>) -> usize {
         let l = input.len() as u64;
         let l_total_byte = total_bytes!(l);
         return 1usize + l_total_byte as usize + input.len() as usize;
     }
 
-    fn encode_long_str(&mut self, input: &str) {
+    fn encode_long_str(&mut self, input: &Vec<u8>) {
         if input.len() <= SHORT_STRING_MAX_LEN {
             panic!("String length is no enough for encoding.");
         } else {
@@ -91,13 +91,13 @@ impl Encoder {
             for i in 0..l_total_byte {
                 self.buffer.write_u8(len_bytes[i as usize]);
             }
-            self.buffer.write(input.as_bytes());
+            self.buffer.write(input);
         }
     }
 
-    fn encode_item_len(&self, input: &str) -> usize {
-        if input.len() == 1 && input.as_bytes()[0usize] <= SINGLE_BYTE_MAX_VALUE {
-            self.encode_byte_len( input.as_bytes()[0usize])
+    fn encode_item_len(&self, input: &Vec<u8>) -> usize {
+        if input.len() == 1 && input[0usize] <= SINGLE_BYTE_MAX_VALUE {
+            self.encode_byte_len( input[0usize])
         } else if input.len() <= SHORT_STRING_MAX_LEN {
             self.encode_short_str_len(input)
         } else {
@@ -105,9 +105,9 @@ impl Encoder {
         }
     }
 
-    fn encode_item(&mut self, input: &str) {
-        if input.len() == 1 && input.as_bytes()[0usize] <= SINGLE_BYTE_MAX_VALUE {
-            self.encode_byte( input.as_bytes()[0usize]);
+    fn encode_item(&mut self, input: &Vec<u8>) {
+        if input.len() == 1 && input[0usize] <= SINGLE_BYTE_MAX_VALUE {
+            self.encode_byte( input[0usize]);
         } else if input.len() <= SHORT_STRING_MAX_LEN {
             self.encode_short_str(input);
         } else {
@@ -125,7 +125,7 @@ impl Encoder {
             Some(len) => len,
             None =>  match input {
                 &RLP::RLPItem { ref value } => {
-                    let ret = self.encode_item_len(value.as_str());
+                    let ret = self.encode_item_len(value);
                     self.len_cache.insert(path.clone(),ret);
                     ret
                 },
@@ -152,7 +152,7 @@ impl Encoder {
     fn encode_list(&mut self, path: String, input: &RLP) {
         match input {
             &RLP::RLPItem { ref value } => {
-                self.encode_item(value.as_str());
+                self.encode_item(value);
             },
             &RLP::RLPList { ref list } => {
                 let mut l = 0u64;

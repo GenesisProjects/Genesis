@@ -71,19 +71,19 @@ impl Decoder {
                 if expected_len != 1 {
                     malformed_err()
                 } else {
-                    (Ok(RLP::RLPItem { value: String::from_utf8(vec![prefix]).unwrap() }), 1)
+                    (Ok(RLP::RLPItem { value: vec![prefix] }), 1)
                 }
             },
             // short string
             0x80u8 ... 0xb7u8 => {
                 let l = prefix - SHORT_STRING_PREFIX_BASE;
-                let seg_len = 11usize + l as usize;
+                let seg_len = 1usize + l as usize;
                 if expected_len != seg_len {
                     malformed_err()
                 } else {
-                    (Ok(RLP::RLPItem { value: String::from_utf8(
-                        input[start + 1usize .. start + 11usize + l as usize].to_vec()
-                    ).unwrap() }), seg_len)
+                    (Ok(RLP::RLPItem { value:
+                        input[start + 1usize .. start + 1usize + l as usize].to_vec()
+                     }), seg_len)
                 }
             },
             // long string
@@ -100,9 +100,7 @@ impl Decoder {
                 } else {
                     let offset = start + 1usize + (l_total_byte as usize);
                     (Ok(RLP::RLPItem {
-                        value: String::from_utf8(
-                            input[offset .. offset + l as usize].to_vec()
-                        ).unwrap()
+                        value: input[offset .. offset + l as usize].to_vec()
                     }), seg_len)
                 }
             },
