@@ -1,7 +1,6 @@
 extern crate common;
 extern crate rlp;
 
-use std::fmt;
 use std::iter::Iterator;
 use self::common::hash::*;
 use self::common::rust_base58::{ToBase58, FromBase58};
@@ -131,8 +130,12 @@ impl<T: RLPSerialize + Clone> TrieNode<T> {
         }
     }
 
-    pub fn new_Leaf_node(encoded_path: &EncodedPath, value: &T) -> Self {
+    pub fn new_leaf_node(encoded_path: &EncodedPath, value: &T) -> Self {
         TrieNode::LeafNode { encoded_path: encoded_path.clone(), value: value.clone() }
+    }
+
+    pub fn new_extension_node(encoded_path: &EncodedPath, key: &TrieKey) -> Self {
+        TrieNode::ExtensionNode { encoded_path: encoded_path.clone(), key: key.clone() }
     }
 }
 
