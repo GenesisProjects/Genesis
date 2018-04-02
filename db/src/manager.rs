@@ -1,7 +1,7 @@
 extern crate common;
 extern crate rlp;
 
-use self::common::hash::SerializableAndSHA256Hashable;
+use self::common::hash::{ SerializableAndSHA256Hashable, Hash };
 use self::rlp::RLPSerialize;
 use self::rlp::encoder::SHARED_ENCODER;
 use self::rlp::decoder::Decoder;
@@ -69,7 +69,7 @@ pub trait DBManagerOP {
     fn connect(&self,config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError>;
     fn disconnect(&self) -> Result<DBResult, DBError>;
 
-    fn put<T: RLPSerialize>(&self, value: &T);
+    fn put<T: RLPSerialize>(&self, value: &T) -> Hash;
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;
     fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T>;
     fn show_status(&self) -> Result<DBStatus, DBError>;
@@ -85,9 +85,10 @@ impl DBManagerOP for DBManager {
         Err(DBError::DBDisconnectError { msg: "Unknown Err" })
     }
 
-    fn put<T: RLPSerialize>(&self, value: &T) {
+    fn put<T: RLPSerialize>(&self, value: &T) -> Hash {
         let (key, encoded_rlp) = value.encrype_sha256().unwrap();
         CAHCE.lock().unwrap().insert(key.to_vec(), encoded_rlp);
+        key
     }
 
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {
@@ -132,8 +133,8 @@ impl DBManagerOP for DBManager {
         Err(DBError::DBDisconnectError { msg: "Unknown Err" })
     }
 
-    fn put<T: RLPSerialize>(&self, value: &T) {
-
+    fn put<T: RLPSerialize>(&self, value: &T) -> Hash {
+        [0u8; 32]
     }
 
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {

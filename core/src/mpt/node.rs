@@ -121,13 +121,18 @@ pub enum TrieNode<T: RLPSerialize + Clone> {
 }
 
 impl<T: RLPSerialize + Clone> TrieNode<T> {
-    pub fn new_branch_node(value: Option<&T>) -> Self {
-        let branches: [TrieKey; 16] = [[0u8; 32]; 16];
+    pub fn new_branch_node(bracnches: &[TrieKey; 16], value: Option<&T>) -> Self {
+        let mut new_branches: [TrieKey; 16] = [[0u8; 32]; 16];
+        new_branches.copy_from_slice(&bracnches[0..16]);
         if let Some(ref_value) = value {
-            TrieNode::BranchNode { branches: branches, value: Some(ref_value.clone()) }
+            TrieNode::BranchNode { branches: new_branches, value: Some(ref_value.clone()) }
         } else {
-            TrieNode::BranchNode { branches: branches, value: None }
+            TrieNode::BranchNode { branches: new_branches, value: None }
         }
+    }
+
+    pub fn new_Leaf_node(encoded_path: &EncodedPath, value: &T) -> Self {
+        TrieNode::LeafNode { encoded_path: encoded_path.clone(), value: value.clone() }
     }
 }
 
