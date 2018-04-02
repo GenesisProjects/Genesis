@@ -1,15 +1,3 @@
-/*
-type Trie struct {
-    db           *Database
-    root         node
-    originalRoot common.Hash
-
-    // Cache generation values.
-    // cachegen increases by one with each commit operation.
-    // new nodes are tagged with the current generation and unloaded
-    // when their generation is older than than cachegen-cachelimit.
-    cachegen, cachelimit uint16
-}*/
 extern crate common;
 extern crate db;
 extern crate rlp;
@@ -64,15 +52,50 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T)
    }
 }
 
-fn update_kev_node<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec<u8>, v: &T) -> TrieKey {
+fn update_kev_node<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec<u8>, new_value: &T) -> TrieKey {
     match SHARED_MANAGER.lock().unwrap().get(&node.to_vec()) {
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
             let nibbles = vec2nibble(encoded_path);
-            let (path, terminated) = decode_path(&nibbles);
+            let (ref path, terminated) = decode_path(&nibbles);
             if !terminated {
                 panic!("Malformed path")
             } else {
-                panic!("TODO")
+                let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+                let branch_key = if remain_path.len() == remain_cur_path.len() && remain_path.len() == 0 {
+                    let new_leaf_node = TrieNode::new_leaf_node(cur_path, new_value);
+                    SHARED_MANAGER.lock().unwrap().put(&new_leaf_node)
+                } else if remain_cur_path.len() == 0 {
+                    let mut new_branches = [[0u8; 32]; 16];
+                    let encoded_path = encode_path(&vec2nibble(&remain_path[1 .. remain_path.len()].to_vec()), true);
+                    let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, value);
+                    let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
+                    new_branches[remain_path[0] as usize] = child_key;
+                    let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(new_value));
+                    SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                } else if remain_path.len() == 0 {
+                    let mut new_branches = [[0u8; 32]; 16];
+                    let encoded_path = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), true);
+                    let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, new_value);
+                    let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
+                    new_branches[remain_cur_path[0] as usize] = child_key;
+                    let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(value));
+                    SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                } else {
+                    let mut new_branches = [[0u8; 32]; 16];
+                    let encoded_path_cur = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), true);
+                    let encoded_path = encode_path(&remain_path[1 .. remain_path.len()].to_vec(), true);
+                    let new_leaf_node_cur = TrieNode::new_leaf_node(&encoded_path_cur, new_value);
+                    let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, value);
+                    let child_key_cur = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node_cur);
+                    let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
+                    new_branches[remain_cur_path[0] as usize] = child_key_cur;
+                    new_branches[remain_path[0] as usize] = child_key;
+                    let new_branch_node = TrieNode::<T>::new_branch_node(&new_branches, None);
+                    SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                };
+                let encoded_path = encode_path(&shared_path, false);
+                let new_extension_node = TrieNode::<T>::new_extension_node(&encoded_path, &branch_key);
+                SHARED_MANAGER.lock().unwrap().put(&new_extension_node)
             }
         },
         Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
