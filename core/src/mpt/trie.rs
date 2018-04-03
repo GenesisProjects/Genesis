@@ -23,6 +23,12 @@ macro_rules! update {
     };
 }
 
+macro_rules! fetch {
+    ($node:expr) => {
+        SHARED_MANAGER.lock().unwrap().get(&($node).to_vec())
+    };
+}
+
 struct Trie<T: RLPSerialize + Clone> {
     root: TrieKey,
     phantom: PhantomData<T>
@@ -32,10 +38,57 @@ impl<T> Trie<T> where T: RLPSerialize + Clone {
     pub fn update(&mut self, path: &Vec<u8>, v: &T) {
         self.root = update_helper(&self.root, path, v);
     }
+
+    pub fn get(&self, path: &Vec<u8>) -> Option<T> {
+        get_helper(&self.root, path)
+    }
+}
+
+fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Option<T> {
+    match fetch!(node) {
+        Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
+            if let &Some(ref value) = value {
+                if path.len() == 0 {
+                    Some(value.clone())
+                } else {
+                    let nibble = path[0] as usize;
+                    let next_node = branches[nibble];
+                    get_helper(&next_node, &path[1..path.len()].to_vec())
+                }
+            } else {
+                if path.len() == 0 {
+                    None
+                } else {
+                    let nibble = path[0] as usize;
+                    let next_node = branches[nibble];
+                    get_helper(&next_node, &path[1..path.len()].to_vec())
+                }
+            }
+        },
+        Some(TrieNode::ExtensionNode { ref encoded_path, ref key }) => {
+            let nibbles = vec2nibble(encoded_path);
+            // decode the path for the node
+            let (ref cur_path, terminated) = decode_path(&nibbles);
+            let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+            get_helper(key, &remain_path)
+        },
+        Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
+            let nibbles = vec2nibble(encoded_path);
+            // decode the path for the node
+            let (ref cur_path, terminated) = decode_path(&nibbles);
+            let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+            if remain_cur_path.len() == 0 && remain_path.len() == 0 {
+                Some(value.clone())
+            } else {
+                None
+            }
+        },
+        _ => panic!("Unknown error!")
+    }
 }
 
 fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T) -> TrieKey {
-    match SHARED_MANAGER.lock().unwrap().get(&node.to_vec()) {
+    match fetch!(node) {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
             if path.len() == 0 {
                 let new_branch_node = &TrieNode::new_branch_node(branches, Some(v));
@@ -71,7 +124,7 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T)
 }
 
 fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, new_value: &T) -> TrieKey {
-    match SHARED_MANAGER.lock().unwrap().get(&node.to_vec()) {
+    match fetch!(node) {
         // if the node is a leaf node
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
             let nibbles = vec2nibble(encoded_path);
