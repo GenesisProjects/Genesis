@@ -63,6 +63,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec
                 let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
                 let branch_key = if remain_path.len() == remain_cur_path.len() && remain_path.len() == 0 {
                     let new_leaf_node = TrieNode::new_leaf_node(cur_path, new_value);
+                    SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
                     SHARED_MANAGER.lock().unwrap().put(&new_leaf_node)
                 } else if remain_cur_path.len() == 0 {
                     let mut new_branches = [[0u8; 32]; 16];
@@ -71,6 +72,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec
                     let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
                     new_branches[remain_path[0] as usize] = child_key;
                     let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(new_value));
+                    SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
                     SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
                 } else if remain_path.len() == 0 {
                     let mut new_branches = [[0u8; 32]; 16];
@@ -79,6 +81,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec
                     let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
                     new_branches[remain_cur_path[0] as usize] = child_key;
                     let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(value));
+                    SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
                     SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
                 } else {
                     let mut new_branches = [[0u8; 32]; 16];
@@ -95,6 +98,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec
                 };
                 let encoded_path = encode_path(&shared_path, false);
                 let new_extension_node = TrieNode::<T>::new_extension_node(&encoded_path, &branch_key);
+                SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
                 SHARED_MANAGER.lock().unwrap().put(&new_extension_node)
             }
         },
@@ -121,6 +125,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec
                         let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
                         new_branches[remain_cur_path[0] as usize] = child_key;
                         let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(value));
+                        SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
                         SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
                     }
                 } else {
@@ -128,6 +133,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec
                 };
                 let encoded_path = encode_path(&shared_path, false);
                 let new_extension_node = TrieNode::<T>::new_extension_node(&encoded_path, &branch_key);
+                SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
                 SHARED_MANAGER.lock().unwrap().put(&new_extension_node)
             }
         },
