@@ -211,7 +211,7 @@ impl<T: RLPSerialize + Clone> RLPSerialize for TrieNode<T> {
                                        }
                                    })
                                } else {
-                                   //ExtNode
+                                   //extNode
                                    match rlp {
                                        &RLP::RLPItem { value: ref key } => {
                                            Ok(TrieNode::ExtensionNode {

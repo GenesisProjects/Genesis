@@ -59,6 +59,10 @@ impl<T> Trie<T> where T: RLPSerialize + Clone {
     pub fn get(&self, path: &Vec<u8>) -> Option<T> {
         get_helper(&self.root, path)
     }
+
+    pub fn new(root: TrieKey) -> Trie<T> {
+        Trie::<T>{ root: root, phantom: PhantomData }
+    }
 }
 
 fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Option<T> {
@@ -96,10 +100,9 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Option
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             if remain_cur_path.len() == 0 && remain_path.len() == 0 {
                 Some(value.clone())
-            } else {
-                None
-            }
+            } else { None }
         },
+        None => None,
         _ => panic!("Unknown error!")
     }
 }
@@ -134,9 +137,7 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T)
             let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, v);
             SHARED_MANAGER.lock().unwrap().put(&new_leaf_node)
         },
-        _ => {
-            panic!("Unknown error!")
-        }
+        _ => { panic!("Unknown error!") }
    }
 }
 
@@ -189,9 +190,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                 // delete current node
                 delete!(node);
                 // if the share path is empty, then return the branch node, else make a new extension node point to the branch node.
-                if shared_path.len() == 0 {
-                    branch_key
-                } else {
+                if shared_path.len() == 0 { branch_key } else {
                     let encoded_path = encode_path(&shared_path, false);
                     let new_extension_node = TrieNode::<T>::new_extension_node(&encoded_path, &branch_key);
                     SHARED_MANAGER.lock().unwrap().put(&new_extension_node)
@@ -203,9 +202,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
             let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
             let (ref cur_path, terminated) = decode_path(&nibbles);
-            if terminated {
-                panic!("Malformed path")
-            } else {
+            if terminated { panic!("Malformed path") } else {
                 // compute the shared path of the node path and the input path, then split remain paths
                 let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
                 // compute new nodes for remain paths, attach them to a new branch node
@@ -240,9 +237,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                 };
                 delete!(node);
                 // if the share path is empty, then return the branch node, else make a new extension node point to the branch node.
-                if shared_path.len() == 0 {
-                    branch_key
-                } else {
+                if shared_path.len() == 0 { branch_key } else {
                     let encoded_path = encode_path(&shared_path, false);
                     let new_extension_node = TrieNode::<T>::new_extension_node(&encoded_path, &branch_key);
                     SHARED_MANAGER.lock().unwrap().put(&new_extension_node)
