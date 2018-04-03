@@ -52,12 +52,16 @@ fn cmp_path(path1: &Vec<u8>, path2: &Vec<u8>) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
 }
 
 impl<T> Trie<T> where T: RLPSerialize + Clone {
-    pub fn update(&mut self, path: &Vec<u8>, v: &T) {
-        self.root = update_helper(&self.root, path, v);
-    }
-
     pub fn get(&self, path: &Vec<u8>) -> Option<T> {
         get_helper(&self.root, path)
+    }
+
+    pub fn delete(&mut self, path: &Vec<u8>) {
+        self.root = delete_helper::<T>(&self.root, path);
+    }
+
+    pub fn update(&mut self, path: &Vec<u8>, v: &T) {
+        self.root = update_helper(&self.root, path, v);
     }
 
     pub fn new(root: TrieKey) -> Trie<T> {
@@ -104,6 +108,15 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Option
         },
         None => None,
         _ => panic!("Unknown error!")
+    }
+}
+
+fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> TrieKey {
+    match fetch!(node) {
+        Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
+            panic!("")
+        },
+        _ => panic!("")
     }
 }
 

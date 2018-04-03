@@ -1,10 +1,7 @@
 extern crate common;
 extern crate rlp;
 
-use std::iter::Iterator;
 use self::common::hash::*;
-use self::common::rust_base58::{ToBase58, FromBase58};
-
 use self::rlp::RLPSerialize;
 use self::rlp::types::*;
 use self::rlp::encoder::*;
