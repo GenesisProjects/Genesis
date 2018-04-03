@@ -70,7 +70,7 @@ pub trait DBManagerOP {
     fn disconnect(&self) -> Result<DBResult, DBError>;
 
     fn put<T: RLPSerialize>(&self, value: &T) -> Hash;
-    fn delete<T: RLPSerialize>(&self, value: &T) -> Hash;
+    fn delete<T: RLPSerialize>(&self, key: &Vec<u8>);
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;
     fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T>;
     fn show_status(&self) -> Result<DBStatus, DBError>;
@@ -86,9 +86,8 @@ impl DBManagerOP for DBManager {
         Err(DBError::DBDisconnectError { msg: "Unknown Err" })
     }
 
-    fn delete<T: RLPSerialize>(&self, value: &T) -> Hash {
-        let (key, encoded_rlp) = value.encrype_sha256().unwrap();
-        key
+    fn delete<T: RLPSerialize>(&self, key: &Vec<u8>) {
+
     }
 
     fn put<T: RLPSerialize>(&self, value: &T) -> Hash {
@@ -139,7 +138,7 @@ impl DBManagerOP for DBManager {
         Err(DBError::DBDisconnectError { msg: "Unknown Err" })
     }
 
-    fn delete<T: RLPSerialize>(&self, value: &T) -> Hash {
+    fn delete<T: RLPSerialize>(&self, key: &Vec<u8>) {
         Err(DBError::DBDisconnectError { msg: "Unknown Err" })
     }
 

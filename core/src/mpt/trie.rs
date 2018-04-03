@@ -117,14 +117,14 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec
                     panic!("TODO");
                     let mut new_branches = [[0u8; 32]; 16];
                     if remain_cur_path.len() == 1 {
-                        new_branches[remain_cur_path[0] as usize] = key;
+                        new_branches[remain_cur_path[0] as usize] = *key;
                         let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(new_value));
                     } else {
                         let encoded_path = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), true);
                         let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, new_value);
                         let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
                         new_branches[remain_cur_path[0] as usize] = child_key;
-                        let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(value));
+                        let new_branch_node = TrieNode::new_branch_node(&new_branches, None);
                         SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
                         SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
                     }
