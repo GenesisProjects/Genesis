@@ -11,6 +11,18 @@ use std::marker::PhantomData;
 
 const PATH_MAX_LEN: usize = 32usize;
 
+macro_rules! delete {
+    ($node:expr) => {{
+        SHARED_MANAGER.lock().unwrap().delete(&($node).to_vec());
+    }};
+}
+
+macro_rules! update {
+    ($node:expr) => {
+        SHARED_MANAGER.lock().unwrap().put($node)
+    };
+}
+
 struct Trie<T: RLPSerialize + Clone> {
     root: TrieKey,
     phantom: PhantomData<T>
@@ -26,9 +38,9 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T)
     match SHARED_MANAGER.lock().unwrap().get(&node.to_vec()) {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
             if path.len() == 0 {
-                let new_branch_node = TrieNode::new_branch_node(branches, Some(v));
-                SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
-                SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                let new_branch_node = &TrieNode::new_branch_node(branches, Some(v));
+                delete!(node);
+                update!(new_branch_node)
             } else {
                 let nibble = path[0] as usize;
                 let next_node = branches[nibble];
@@ -36,9 +48,9 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T)
                 let mut new_branches = [[0u8; 32]; 16];
                 new_branches.copy_from_slice(&branches[0..16]);
                 new_branches[nibble] = new_child_key;
-                let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(v));
-                SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
-                SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                let new_branch_node = &TrieNode::new_branch_node(&new_branches, Some(v));
+                delete!(node);
+                update!(new_branch_node)
             }
         },
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
@@ -72,41 +84,40 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                 let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
                 // compute new nodes for remain paths, attach them to a new branch node
                 let branch_key = if remain_path.len() == remain_cur_path.len() && remain_path.len() == 0 {
-                    let new_leaf_node = TrieNode::new_leaf_node(path, new_value);
-                    SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
-                    SHARED_MANAGER.lock().unwrap().put(&new_leaf_node)
+                    let new_leaf_node = &TrieNode::new_leaf_node(path, new_value);
+                    update!(new_leaf_node)
                 } else if remain_cur_path.len() == 0 {
                     let mut new_branches = [[0u8; 32]; 16];
                     let encoded_path = encode_path(&vec2nibble(&remain_path[1 .. remain_path.len()].to_vec()), true);
-                    let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, new_value);
-                    SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
-                    let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
+                    let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, new_value);
+                    let child_key = update!(new_leaf_node);
                     new_branches[remain_path[0] as usize] = child_key;
-                    let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(value));
-                    SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                    let new_branch_node = &TrieNode::new_branch_node(&new_branches, Some(value));
+                    update!(new_branch_node)
                 } else if remain_path.len() == 0 {
                     let mut new_branches = [[0u8; 32]; 16];
                     let encoded_path = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), true);
-                    let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, value);
-                    SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
-                    let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
+                    let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, value);
+                    let child_key = update!(new_leaf_node);
                     new_branches[remain_cur_path[0] as usize] = child_key;
-                    let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(new_value));
-                    SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                    let new_branch_node = &TrieNode::new_branch_node(&new_branches, Some(new_value));
+                    update!(new_branch_node)
                 } else {
                     let mut new_branches = [[0u8; 32]; 16];
                     let encoded_path_cur = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), true);
                     let encoded_path = encode_path(&remain_path[1 .. remain_path.len()].to_vec(), true);
-                    let new_leaf_node_cur = TrieNode::new_leaf_node(&encoded_path_cur, value);
-                    let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, new_value);
-                    SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
-                    let child_key_cur = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node_cur);
-                    let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
+                    let new_leaf_node_cur = &TrieNode::new_leaf_node(&encoded_path_cur, value);
+                    let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, new_value);
+                    let child_key_cur = update!(new_leaf_node_cur);
+                    let child_key = update!(new_leaf_node);
                     new_branches[remain_cur_path[0] as usize] = child_key_cur;
                     new_branches[remain_path[0] as usize] = child_key;
-                    let new_branch_node = TrieNode::<T>::new_branch_node(&new_branches, None);
-                    SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                    let new_branch_node = &TrieNode::<T>::new_branch_node(&new_branches, None);
+                    update!(new_branch_node)
                 };
+
+                // delete current node
+                delete!(node);
                 // if the share path is empty, then return the branch node, else make a new extension node point to the branch node.
                 if shared_path.len() == 0 {
                     branch_key
@@ -138,27 +149,26 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                         new_branches[remain_cur_path[0] as usize] = *key;
                     } else {
                         let encoded_path = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), false);
-                        let new_extension_node = TrieNode::<T>::new_extension_node(&encoded_path, key);
-                        let child_key = SHARED_MANAGER.lock().unwrap().put(&new_extension_node);
+                        let new_extension_node = &TrieNode::<T>::new_extension_node(&encoded_path, key);
+                        let child_key = update!(new_extension_node);
                         new_branches[remain_cur_path[0] as usize] = child_key;
                     }
-                    let new_branch_node = TrieNode::<T>::new_branch_node(&new_branches, Some(new_value));
-                    SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
-                    SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                    let new_branch_node = &TrieNode::<T>::new_branch_node(&new_branches, Some(new_value));
+                    update!(new_branch_node)
                 } else {
                     let mut new_branches = [[0u8; 32]; 16];
                     let encoded_path_cur = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), false);
                     let encoded_path = encode_path(&remain_path[1 .. remain_path.len()].to_vec(), true);
-                    let new_extension_node_cur = TrieNode::<T>::new_extension_node(&encoded_path_cur, key);
-                    let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, new_value);
-                    SHARED_MANAGER.lock().unwrap().delete(&node.to_vec());
-                    let child_key_cur = SHARED_MANAGER.lock().unwrap().put(&new_extension_node_cur);
-                    let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
+                    let new_extension_node_cur = &TrieNode::<T>::new_extension_node(&encoded_path_cur, key);
+                    let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, new_value);
+                    let child_key_cur = update!(new_extension_node_cur);
+                    let child_key = update!(new_leaf_node);
                     new_branches[remain_cur_path[0] as usize] = child_key_cur;
                     new_branches[remain_path[0] as usize] = child_key;
-                    let new_branch_node = TrieNode::<T>::new_branch_node(&new_branches, None);
-                    SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                    let new_branch_node = &TrieNode::<T>::new_branch_node(&new_branches, None);
+                    update!(new_branch_node)
                 };
+                delete!(node);
                 // if the share path is empty, then return the branch node, else make a new extension node point to the branch node.
                 if shared_path.len() == 0 {
                     branch_key
@@ -183,7 +193,11 @@ fn cmp_path(path1: &Vec<u8>, path2: &Vec<u8>) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
             break;
         }
     }
-    (path1[0 .. diff_pos].to_vec(), path1[diff_pos .. path1.len()].to_vec(), path2[diff_pos .. path2.len()].to_vec())
+    (
+        path1[0 .. diff_pos].to_vec(),
+        path1[diff_pos .. path1.len()].to_vec(),
+        path2[diff_pos .. path2.len()].to_vec()
+    )
 }
 
 
