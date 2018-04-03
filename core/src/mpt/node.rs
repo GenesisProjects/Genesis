@@ -270,3 +270,9 @@ impl<T: RLPSerialize + Clone> RLPSerialize for TrieNode<T> {
        }
     }
 }
+
+# [cfg(test)]
+mod tests {
+    # [test]
+    fn test_node() {}
+}

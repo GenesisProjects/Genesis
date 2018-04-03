@@ -48,3 +48,9 @@ impl<'a> Receipt<'a> {
         r
     }
 }
+
+# [cfg(test)]
+mod tests {
+    # [test]
+    fn test_receipt() {}
+}

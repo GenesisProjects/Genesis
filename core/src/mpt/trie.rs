@@ -247,3 +247,9 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
         _ => panic!("Input node is not a kv node.")
     }
 }
+
+# [cfg(test)]
+mod tests {
+    # [test]
+    fn test_trie() {}
+}

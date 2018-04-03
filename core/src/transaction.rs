@@ -67,9 +67,8 @@ impl Transaction {
     }
 }
 
-
-/*
-impl SHA256Hashable for Transaction {
-
+# [cfg(test)]
+mod tests {
+    # [test]
+    fn test_transaction() {}
 }
-*/

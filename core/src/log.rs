@@ -26,3 +26,9 @@ pub struct Log {
     /// index of the log in the receipt
     pub index: u32
 }
+
+# [cfg(test)]
+mod tests {
+    # [test]
+    fn test_log() {}
+}
