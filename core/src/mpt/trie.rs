@@ -52,7 +52,7 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T)
    }
 }
 
-fn update_kev_node<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec<u8>, new_value: &T) -> TrieKey {
+fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec<u8>, new_value: &T) -> TrieKey {
     match SHARED_MANAGER.lock().unwrap().get(&node.to_vec()) {
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
             let nibbles = vec2nibble(encoded_path);
@@ -99,7 +99,37 @@ fn update_kev_node<T: RLPSerialize + Clone>(node: &TrieKey, cur_path: &Vec<u8>, 
             }
         },
         Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
-            panic!("TODO")
+            let nibbles = vec2nibble(encoded_path);
+            let (ref path, terminated) = decode_path(&nibbles);
+            if terminated {
+                panic!("Malformed path")
+            } else {
+                let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+                let branch_key = if remain_path.len() == remain_cur_path.len() && remain_path.len() == 0 {
+                    update_helper(key, &remain_path, new_value)
+                } else if remain_cur_path.len() == 0 {
+                    update_helper(key, &remain_path, new_value)
+                } else if remain_path.len() == 0 {
+                    panic!("TODO");
+                    let mut new_branches = [[0u8; 32]; 16];
+                    if remain_cur_path.len() == 1 {
+                        new_branches[remain_cur_path[0] as usize] = key;
+                        let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(new_value));
+                    } else {
+                        let encoded_path = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), true);
+                        let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, new_value);
+                        let child_key = SHARED_MANAGER.lock().unwrap().put(&new_leaf_node);
+                        new_branches[remain_cur_path[0] as usize] = child_key;
+                        let new_branch_node = TrieNode::new_branch_node(&new_branches, Some(value));
+                        SHARED_MANAGER.lock().unwrap().put(&new_branch_node)
+                    }
+                } else {
+                    panic!("TODO");
+                };
+                let encoded_path = encode_path(&shared_path, false);
+                let new_extension_node = TrieNode::<T>::new_extension_node(&encoded_path, &branch_key);
+                SHARED_MANAGER.lock().unwrap().put(&new_extension_node)
+            }
         },
         _ => panic!("Input node is not a kv node.")
     }
