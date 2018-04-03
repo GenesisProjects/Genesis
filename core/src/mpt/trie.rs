@@ -9,6 +9,11 @@ use self::rlp::RLPSerialize;
 use std::cmp::min;
 use std::marker::PhantomData;
 
+pub struct Trie<T: RLPSerialize + Clone> {
+    root: TrieKey,
+    phantom: PhantomData<T>
+}
+
 const PATH_MAX_LEN: usize = 32usize;
 
 macro_rules! delete {
@@ -29,9 +34,21 @@ macro_rules! fetch {
     };
 }
 
-struct Trie<T: RLPSerialize + Clone> {
-    root: TrieKey,
-    phantom: PhantomData<T>
+#[inline]
+fn cmp_path(path1: &Vec<u8>, path2: &Vec<u8>) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+    let min_size = min(path1.len(), path2.len());
+    let mut diff_pos = 0usize;
+    for i in 0..min_size {
+        if path1[i] != path2[i] {
+            diff_pos = i;
+            break;
+        }
+    }
+    (
+        path1[0..diff_pos].to_vec(),
+        path1[diff_pos..path1.len()].to_vec(),
+        path2[diff_pos..path2.len()].to_vec()
+    )
 }
 
 impl<T> Trie<T> where T: RLPSerialize + Clone {
@@ -235,23 +252,3 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
         _ => panic!("Input node is not a kv node.")
     }
 }
-
-#[inline]
-fn cmp_path(path1: &Vec<u8>, path2: &Vec<u8>) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
-    let min_size = min(path1.len(), path2.len());
-    let mut diff_pos = 0usize;
-    for i in 0 .. min_size {
-        if path1[i] != path2[i] {
-            diff_pos = i;
-            break;
-        }
-    }
-    (
-        path1[0 .. diff_pos].to_vec(),
-        path1[diff_pos .. path1.len()].to_vec(),
-        path2[diff_pos .. path2.len()].to_vec()
-    )
-}
-
-
-
