@@ -126,7 +126,7 @@ impl Encoder {
             None =>  match input {
                 &RLP::RLPItem { ref value } => {
                     let ret = self.encode_item_len(value);
-                    self.len_cache.insert(path.clone(),ret);
+                    self.len_cache.insert(path,ret);
                     ret
                 },
                 &RLP::RLPList { ref list } => {
@@ -137,11 +137,11 @@ impl Encoder {
                     }
                     if total <= SHORT_LIST_MAX_LEN {
                         let ret = 1 + total;
-                        self.len_cache.insert(path.clone(),ret);
+                        self.len_cache.insert(path,ret);
                         ret
                     } else {
                         let ret = 1 + total_bytes!(total as u64) as usize + total as usize;
-                        self.len_cache.insert(path.clone(),ret);
+                        self.len_cache.insert(path,ret);
                         ret
                     }
                 },

@@ -118,7 +118,7 @@ impl Decoder {
                         if cur_pos > end { break; }
 
                         let seg_estimated_end = if cur_pos + 8usize > end { end } else { cur_pos + 8usize };
-                        let seg_len = Decoder::detect_len(input[cur_pos .. seg_estimated_end + 1].to_vec().clone());
+                        let seg_len = Decoder::detect_len(input[cur_pos .. seg_estimated_end + 1].to_vec());
                         let (r_rlp, _) = Decoder::decode_helper(input, cur_pos, cur_pos + seg_len - 1usize);
                         let rlp: Option<RLP> = match r_rlp {
                             Ok(rlp) => Some(rlp),
@@ -131,7 +131,7 @@ impl Decoder {
                             cur_pos = cur_pos + seg_len;
                         }
                     }
-                    (Ok(RLP::RLPList { list: result_list.clone() }), all_seg_len)
+                    (Ok(RLP::RLPList { list: result_list }), all_seg_len)
                 }
             },
             // long list
@@ -151,7 +151,7 @@ impl Decoder {
                     loop {
                         if cur_pos > end { break; }
                         let seg_estimated_end = if cur_pos + 8usize > end { end } else { cur_pos + 8usize };
-                        let seg_len = Decoder::detect_len(input[cur_pos .. seg_estimated_end + 1].to_vec().clone());
+                        let seg_len = Decoder::detect_len(input[cur_pos .. seg_estimated_end + 1].to_vec());
                         let (r_rlp, _) = Decoder::decode_helper(input, cur_pos, cur_pos + seg_len - 1usize);
                         let rlp: Option<RLP> = match r_rlp {
                             Ok(rlp) => Some(rlp),
@@ -164,7 +164,7 @@ impl Decoder {
                             cur_pos = cur_pos + seg_len;
                         }
                     }
-                    (Ok(RLP::RLPList { list: result_list.clone() }), all_seg_len)
+                    (Ok(RLP::RLPList { list: result_list }), all_seg_len)
                 }
             },
             // default
