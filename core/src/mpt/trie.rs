@@ -64,8 +64,8 @@ impl<T> Trie<T> where T: RLPSerialize + Clone {
         self.root = update_helper(&self.root, &vec2nibble(path), v);
     }
 
-    pub fn new(root: TrieKey) -> Trie<T> {
-        Trie::<T>{ root: root, phantom: PhantomData }
+    pub fn new() -> Trie<T> {
+        Trie::<T>{ root: zero_hash!(), phantom: PhantomData }
     }
 }
 
