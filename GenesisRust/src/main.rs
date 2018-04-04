@@ -11,5 +11,6 @@ fn main() {
     test.update(&"123".as_bytes().to_vec(), &"test".to_string());
     test.update(&"124".as_bytes().to_vec(), &"test".to_string());
     test.update(&"125".as_bytes().to_vec(), &"test".to_string());
-    let test_v = test.get(&"123".as_bytes().to_vec());
+    let test_v = test.get(&"125".as_bytes().to_vec());
+    print!("{:?}", test_v);
 }

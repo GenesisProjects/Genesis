@@ -170,7 +170,7 @@ impl Encoder {
                     }
                 } else {
                     let l_total_byte = total_bytes!(l);
-                    let prefix: u8 = LONG_STRING_PREFIX_BASE + l_total_byte;
+                    let prefix: u8 = LONG_LIST_PREFIX_BASE + l_total_byte;
                     self.buffer.write_u8(prefix);
 
                     let len_bytes: [u8; 8] = unsafe { transmute(l.to_le()) };

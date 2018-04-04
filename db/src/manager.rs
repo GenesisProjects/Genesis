@@ -43,7 +43,7 @@ pub struct DBManager {
 
 #[cfg(not(mock))]
 lazy_static! {
-    static ref CAHCE: Mutex<HashMap<Vec<u8>, Vec<u8>>> = {
+    pub static ref CAHCE: Mutex<HashMap<Vec<u8>, Vec<u8>>> = {
         Mutex::new(HashMap::new())
     };
 
