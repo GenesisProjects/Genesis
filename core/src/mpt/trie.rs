@@ -70,7 +70,8 @@ impl<T> Trie<T> where T: RLPSerialize + Clone {
 }
 
 fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Option<T> {
-    match fetch!(node) {
+    let node_type = fetch!(node);
+    match node_type {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
             if let &Some(ref value) = value {
                 if path.len() == 0 {
@@ -93,14 +94,14 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Option
         Some(TrieNode::ExtensionNode { ref encoded_path, ref key }) => {
             let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
-            let (ref cur_path, terminated) = decode_path(&nibbles);
+            let (ref cur_path, terminated) = decode_path(encoded_path);
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             get_helper(key, &remain_path)
         },
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
             let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
-            let (ref cur_path, terminated) = decode_path(&nibbles);
+            let (ref cur_path, terminated) = decode_path(encoded_path);
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             if remain_cur_path.len() == 0 && remain_path.len() == 0 {
                 Some(value.clone())
@@ -112,7 +113,8 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Option
 }
 
 fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> TrieKey {
-    match fetch!(node) {
+    let node_type = fetch!(node);
+    match node_type {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
             let mut new_branches: [TrieKey; 16] = [zero_hash!(); 16];
             for i in 0 .. 16 {
@@ -135,7 +137,7 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Tri
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
             let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
-            let (ref cur_path, terminated) = decode_path(&nibbles);
+            let (ref cur_path, terminated) = decode_path(encoded_path);
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             if remain_cur_path.len() == 0 && remain_path.len() == 0 {
                 delete!(node);
@@ -149,7 +151,7 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Tri
         Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
             let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
-            let (ref cur_path, terminated) = decode_path(&nibbles);
+            let (ref cur_path, terminated) = decode_path(encoded_path);
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             if remain_cur_path.len() != 0 {
                 let mut ret_node: TrieKey = zero_hash!();
@@ -170,7 +172,8 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Tri
 }
 
 fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T) -> TrieKey {
-    match fetch!(node) {
+    let node_type = fetch!(node);
+    match node_type {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
             if path.len() == 0 {
                 let new_branch_node = &TrieNode::new_branch_node(branches, Some(v));
@@ -196,20 +199,22 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T)
         },
         None => {
             let encoded_path = encode_path(&vec2nibble(path), true);
-            let new_leaf_node = TrieNode::new_leaf_node(&encoded_path, v);
-            SHARED_MANAGER.lock().unwrap().put(&new_leaf_node)
+            let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, v);
+            delete!(node);
+            update!(new_leaf_node)
         },
         _ => { panic!("Unknown error!") }
    }
 }
 
 fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, new_value: &T) -> TrieKey {
-    match fetch!(node) {
+    let node_type = fetch!(node);
+    match node_type {
         // if the node is a leaf node
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
             let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
-            let (ref cur_path, terminated) = decode_path(&nibbles);
+            let (ref cur_path, terminated) = decode_path(encoded_path);
             if !terminated {
                 panic!("Malformed path")
             } else {
@@ -263,7 +268,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
         Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
             let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
-            let (ref cur_path, terminated) = decode_path(&nibbles);
+            let (ref cur_path, terminated) = decode_path(encoded_path);
             if terminated { panic!("Malformed path") } else {
                 // compute the shared path of the node path and the input path, then split remain paths
                 let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);

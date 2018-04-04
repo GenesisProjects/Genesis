@@ -1,8 +1,10 @@
 extern crate gen_core;
 extern crate rlp;
+extern crate db;
 
 use gen_core::mpt::trie::*;
 use rlp::RLPSerialize;
+use db::manager::*;
 
 fn main() {
     let mut test = Trie::new([0u8; 32]);

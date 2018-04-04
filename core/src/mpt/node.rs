@@ -84,23 +84,20 @@ pub fn encode_path(nibble: &Vec<u8>, terminated: bool) -> EncodedPath {
 
 #[inline]
 pub fn decode_path(encoded_path: &Vec<u8>) -> (Vec<u8>, bool) {
-    let prefix = encoded_path[0] / 16u8;
+    let nibbles = vec2nibble(encoded_path);
+    let prefix = nibbles[0];
     match prefix {
         0u8 => {
-            let nibble = vec2nibble(encoded_path);
-            (nibble[2 .. nibble.len()].to_vec(), false)
+            (nibbles[2 .. nibbles.len()].to_vec(), false)
         },
         1u8 => {
-            let nibble = vec2nibble(encoded_path);
-            (nibble[1 .. nibble.len()].to_vec(), false)
+            (nibbles[1 .. nibbles.len()].to_vec(), false)
         },
         2u8 => {
-            let nibble = vec2nibble(encoded_path);
-            (nibble[2 .. nibble.len()].to_vec(), true)
+            (nibbles[2 .. nibbles.len()].to_vec(), true)
         },
         3u8 => {
-            let nibble = vec2nibble(encoded_path);
-            (nibble[1 .. nibble.len()].to_vec(), true)
+            (nibbles[1 .. nibbles.len()].to_vec(), true)
         }
         _ => {
             panic!("Invalid prefix");
