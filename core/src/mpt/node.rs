@@ -31,18 +31,18 @@ fn from_slice_to_branch(keys: &Vec<TrieKey>) -> [TrieKey; 16] {
 }
 
 #[inline]
-pub fn nibble2vec(nibble: &Vec<u8>) -> Vec<u8> {
-    if nibble.len() % 2 != 0 {
+pub fn nibble2vec(nibbles: &Vec<u8>) -> Vec<u8> {
+    if nibbles.len() % 2 != 0 {
         panic!("Invalid nibble length");
     }
     let mut output: Vec<u8> = vec![];
     let mut i = 0usize;
     loop {
-        if i + 2usize > nibble.len() { break; }
-        if nibble[i] >= 16u8 {
+        if i + 2usize > nibbles.len() { break; }
+        if nibbles[i] >= 16u8 {
             panic!("Invalid nibble entry");
         }
-        output.append(&mut vec![nibble[i] * 16u8 + nibble[i + 1usize]]);
+        output.append(&mut vec![nibbles[i] * 16u8 + nibbles[i + 1usize]]);
         i = i + 2usize;
     }
     output
@@ -59,23 +59,23 @@ pub fn vec2nibble(vec: &Vec<u8>) -> Vec<u8> {
 }
 
 #[inline]
-pub fn encode_path(nibble: &Vec<u8>, terminated: bool) -> EncodedPath {
-    let is_odd = (nibble.len() % 2 != 0);
+pub fn encode_path(nibbles: &Vec<u8>, terminated: bool) -> EncodedPath {
+    let is_odd = (nibbles.len() % 2 != 0);
     if !is_odd && !terminated {
         let mut tmp = vec![0u8, 0u8];
-        tmp.append(&mut nibble.clone());
+        tmp.append(&mut nibbles.clone());
         nibble2vec(&tmp)
     } else if is_odd && !terminated {
         let mut tmp = vec![1u8];
-        tmp.append(&mut nibble.clone());
+        tmp.append(&mut nibbles.clone());
         nibble2vec(&tmp)
     } else if !is_odd && terminated {
         let mut tmp = vec![2u8, 0u8];
-        tmp.append(&mut nibble.clone());
+        tmp.append(&mut nibbles.clone());
         nibble2vec(&tmp)
     } else if is_odd && terminated {
         let mut tmp = vec![3u8];
-        tmp.append(&mut nibble.clone());
+        tmp.append(&mut nibbles.clone());
         nibble2vec(&tmp)
     } else {
         nibble2vec(&vec![])

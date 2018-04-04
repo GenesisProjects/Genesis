@@ -53,15 +53,15 @@ fn cmp_path(path1: &Vec<u8>, path2: &Vec<u8>) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
 
 impl<T> Trie<T> where T: RLPSerialize + Clone {
     pub fn get(&self, path: &Vec<u8>) -> Option<T> {
-        get_helper(&self.root, path)
+        get_helper(&self.root, &vec2nibble(path))
     }
 
     pub fn delete(&mut self, path: &Vec<u8>) {
-        self.root = delete_helper::<T>(&self.root, path);
+        self.root = delete_helper::<T>(&self.root, &vec2nibble(path));
     }
 
     pub fn update(&mut self, path: &Vec<u8>, v: &T) {
-        self.root = update_helper(&self.root, path, v);
+        self.root = update_helper(&self.root, &vec2nibble(path), v);
     }
 
     pub fn new(root: TrieKey) -> Trie<T> {
@@ -192,13 +192,13 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T)
             }
         },
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
-            update_kv_node_helper(node, encoded_path, v)
+            update_kv_node_helper(node, path, v)
         },
         Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
-            update_kv_node_helper(node, encoded_path, v)
+            update_kv_node_helper(node, path, v)
         },
         None => {
-            let encoded_path = encode_path(&vec2nibble(path), true);
+            let encoded_path = encode_path(&path, true);
             let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, v);
             delete!(node);
             update!(new_leaf_node)
@@ -226,7 +226,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                     update!(new_leaf_node)
                 } else if remain_cur_path.len() == 0 {
                     let mut new_branches = [[0u8; 32]; 16];
-                    let encoded_path = encode_path(&vec2nibble(&remain_path[1 .. remain_path.len()].to_vec()), true);
+                    let encoded_path = encode_path(&remain_path[1 .. remain_path.len()].to_vec(), true);
                     let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, new_value);
                     let child_key = update!(new_leaf_node);
                     new_branches[remain_path[0] as usize] = child_key;
