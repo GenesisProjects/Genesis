@@ -40,9 +40,9 @@ fn cmp_path(path1: &Vec<u8>, path2: &Vec<u8>) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
     let mut diff_pos = 0usize;
     for i in 0..min_size {
         if path1[i] != path2[i] {
-            diff_pos = i;
             break;
         }
+        diff_pos = i + 1;
     }
     (
         path1[0..diff_pos].to_vec(),
@@ -92,14 +92,12 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Option
             }
         },
         Some(TrieNode::ExtensionNode { ref encoded_path, ref key }) => {
-            let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
             let (ref cur_path, terminated) = decode_path(encoded_path);
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             get_helper(key, &remain_path)
         },
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
-            let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
             let (ref cur_path, terminated) = decode_path(encoded_path);
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
@@ -107,7 +105,7 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Option
                 Some(value.clone())
             } else { None }
         },
-        None => None,
+        None => { None },
         _ => panic!("Unknown error!")
     }
 }
@@ -135,7 +133,6 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Tri
             }
         },
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
-            let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
             let (ref cur_path, terminated) = decode_path(encoded_path);
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
@@ -149,7 +146,6 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Tri
             }
         },
         Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
-            let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
             let (ref cur_path, terminated) = decode_path(encoded_path);
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
@@ -212,7 +208,6 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
     match node_type {
         // if the node is a leaf node
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
-            let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
             let (ref cur_path, terminated) = decode_path(encoded_path);
             if !terminated {
@@ -266,7 +261,6 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
         },
         // if the node is a extension node
         Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
-            let nibbles = vec2nibble(encoded_path);
             // decode the path for the node
             let (ref cur_path, terminated) = decode_path(encoded_path);
             if terminated { panic!("Malformed path") } else {
