@@ -8,8 +8,12 @@ use db::manager::*;
 
 fn main() {
     let mut test = Trie::new([0u8; 32]);
-    test.update(&"123".as_bytes().to_vec(), &"test".to_string());
-    test.update(&"124".as_bytes().to_vec(), &"testbbb".to_string());
-    let test_v = test.get(&"124".as_bytes().to_vec());
+    for i in 1 .. 10000 {
+        print!("{}\n",i);
+        let key = format!("{}", i);
+        test.update(&key.as_bytes().to_vec(), &"test".to_string());
+    }
+
+    let test_v = test.get(&"9998".as_bytes().to_vec());
     print!("{:?}", test_v);
 }
