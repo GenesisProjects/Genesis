@@ -114,9 +114,58 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> Option
 fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>) -> TrieKey {
     match fetch!(node) {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
-            panic!("")
+            let mut new_branches: [TrieKey; 16] = [zero_hash!(); 16];
+            for i in 0 .. 16 {
+                new_branches[i] = branches[i];
+            }
+            if path.len() == 0 {
+                let new_branch_node = &TrieNode::<T>::new_branch_node(&new_branches, None);
+                delete!(node);
+                update!(new_branch_node)
+            } else {
+                let nibble = path[0] as usize;
+                let next_node = &branches[nibble];
+                let new_node = delete_helper::<T>(next_node, &path[1 .. path.len()].to_vec());
+                new_branches[nibble] = new_node;
+                let new_branch_node = &TrieNode::<T>::new_branch_node(&new_branches, value.as_ref());
+                delete!(node);
+                update!(new_branch_node)
+            }
         },
-        _ => panic!("")
+        Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
+            let nibbles = vec2nibble(encoded_path);
+            // decode the path for the node
+            let (ref cur_path, terminated) = decode_path(&nibbles);
+            let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+            if remain_cur_path.len() == 0 && remain_path.len() == 0 {
+                delete!(node);
+                zero_hash!()
+            } else {
+                let mut ret_node: TrieKey = zero_hash!();
+                ret_node.copy_from_slice(&node[0 .. 32]);
+                ret_node
+            }
+        },
+        Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
+            let nibbles = vec2nibble(encoded_path);
+            // decode the path for the node
+            let (ref cur_path, terminated) = decode_path(&nibbles);
+            let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+            if remain_cur_path.len() != 0 {
+                let mut ret_node: TrieKey = zero_hash!();
+                ret_node.copy_from_slice(&node[0 .. 32]);
+                ret_node
+            } else {
+                let new_child_node = delete_helper::<T>(key, &remain_path);
+                let new_extension_node = &TrieNode::<T>::new_extension_node(encoded_path, &new_child_node);
+                delete!(node);
+                update!(new_extension_node)
+            }
+        },
+        None => {
+            zero_hash!()
+        },
+        _ => { panic!("Unknown error!") }
     }
 }
 
@@ -134,7 +183,7 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T)
                 let mut new_branches = [[0u8; 32]; 16];
                 new_branches.copy_from_slice(&branches[0..16]);
                 new_branches[nibble] = new_child_key;
-                let new_branch_node = &TrieNode::new_branch_node(&new_branches, Some(v));
+                let new_branch_node = &TrieNode::new_branch_node(&new_branches, value.as_ref());
                 delete!(node);
                 update!(new_branch_node)
             }

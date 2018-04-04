@@ -110,7 +110,7 @@ impl DBManagerOP for DBManager {
     }
 
     fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T> {
-        let (key, encoded_rlp) = value.encrype_sha256().unwrap();
+        let (key, _) = value.encrype_sha256().unwrap();
         match CAHCE.lock().unwrap().get(&key.to_vec()) {
             Some(v) => {
                 let rlp = Decoder::decode(v).unwrap();

@@ -15,9 +15,6 @@ use self::rlp::encoder::Encoder;
 /// Hash structure
 pub type Hash = [u8; 32];
 
-/// Empty Hash
-pub const ZERO_HASH: [u8; 32] = [0; 32];
-
 macro_rules! gen_hash {
     (sha256_str => $e:expr) => ({
         let mut sha = Sha256::new();
@@ -34,14 +31,7 @@ macro_rules! gen_hash {
 #[macro_export]
 macro_rules! zero_hash {
     () => ({
-        ZERO_HASH
-    });
-}
-
-#[macro_export]
-macro_rules! equal_hash {
-    ($e:expr) => ({
-        $e.eq(ZERO_HASH);
+        [0u8; 32]
     });
 }
 
@@ -51,8 +41,6 @@ macro_rules! hash_len {
         $e.len()
     });
 }
-
-
 
 /// Interface for hashable objects
 pub trait SerializableAndSHA256Hashable: RLPSerialize {
