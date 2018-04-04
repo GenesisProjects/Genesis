@@ -1,8 +1,10 @@
 extern crate common;
+extern crate rlp;
 
 use self::common::address::Address;
 use self::common::hash::Hash;
-
+use self::rlp::RLPSerialize;
+use self::rlp::types::*;
 ///
 ///
 ///
@@ -26,6 +28,17 @@ pub struct Log {
     /// index of the log in the receipt
     pub index: u32
 }
+
+impl RLPSerialize for Log {
+    fn serialize(&self) -> Result<RLP, RLPError> {
+        Err(RLPError::RLPErrorUnknown)
+    }
+
+    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
+        Err(RLPError::RLPErrorUnknown)
+    }
+}
+
 
 # [cfg(test)]
 mod tests {

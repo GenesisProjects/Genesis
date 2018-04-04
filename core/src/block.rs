@@ -1,10 +1,13 @@
 extern crate common;
 extern crate num;
+extern crate rlp;
 
 use self::common::hash::*;
 use self::common::address::*;
 use self::common::bloom::*;
 use self::num::bigint::BigInt;
+use self::rlp::RLPSerialize;
+use self::rlp::types::*;
 
 use log::Log;
 
@@ -20,7 +23,7 @@ pub mod nounce {
 ///
 ///
 #[derive(Debug)]
-struct BlockHeader {
+struct Block {
     pub parent: Hash,
     pub uncle: Hash,
     pub coinbase: Address,
@@ -35,6 +38,16 @@ struct BlockHeader {
     pub extra: Vec<u8>,
     pub digest: Hash,
     pub nounce: nounce::BlockNounce
+}
+
+impl RLPSerialize for Block {
+    fn serialize(&self) -> Result<RLP, RLPError> {
+        Err(RLPError::RLPErrorUnknown)
+    }
+
+    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
+        Err(RLPError::RLPErrorUnknown)
+    }
 }
 
 # [cfg(test)]

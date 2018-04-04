@@ -1,10 +1,13 @@
 extern crate common;
 extern crate num;
+extern crate rlp;
 
 use self::common::hash::*;
 use self::common::address::*;
 use self::common::bloom::*;
 use self::num::bigint::BigInt;
+use self::rlp::RLPSerialize;
+use self::rlp::types::*;
 use log::Log;
 
 #[derive(Debug)]
@@ -17,13 +20,13 @@ enum ReceiptStatus {
 
 /// Receipt represents the results of a transaction.
 #[derive(Debug)]
-struct Receipt<'a> {
+struct Receipt {
     /// Consensus fields
     pub post_state: Vec<u8>,
     pub status: ReceiptStatus,
     pub cumulative_gas_used: u64,
     pub logs_bloom: Option<Bloom<Log>>,
-    pub logs: Option<Vec<&'a Log>>,
+    pub logs: Option<Vec<Log>>,
 
     // Implementation fields (don't reorder!)
     txhash: Option<Hash>,
@@ -31,9 +34,9 @@ struct Receipt<'a> {
     gas_used: u64
 }
 
-impl<'a> Receipt<'a> {
+impl Receipt {
     /// NewReceipt creates a barebone transaction receipt, copying the init fields.
-    pub fn new(root: &'a Vec<u8>, failed: bool, cumulative_gas_used: u64) -> Self {
+    pub fn new(root: &Vec<u8>, failed: bool, cumulative_gas_used: u64) -> Self {
         let r = Receipt {
             post_state: root.to_vec(),
             status: ReceiptStatus::ReceiptStatusUnknown,
@@ -46,6 +49,16 @@ impl<'a> Receipt<'a> {
             gas_used: 0
         };
         r
+    }
+}
+
+impl RLPSerialize for Receipt {
+    fn serialize(&self) -> Result<RLP, RLPError> {
+        Err(RLPError::RLPErrorUnknown)
+    }
+
+    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
+        Err(RLPError::RLPErrorUnknown)
     }
 }
 

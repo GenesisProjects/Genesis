@@ -1,11 +1,14 @@
 extern crate common;
 extern crate num;
+extern crate rlp;
 
 use self::common::address::Address;
 use self::common::key::Signature;
 use self::common::hash::{ Hash, SerializableAndSHA256Hashable };
 use self::num::bigint::BigInt;
 use self::num::Zero;
+use self::rlp::RLPSerialize;
+use self::rlp::types::*;
 
 use std::marker::PhantomData;
 
@@ -27,12 +30,7 @@ pub struct TransactionBody {
 ///
 ///
 pub struct Transaction {
-    txdata: TransactionBody,
-
-    // caches
-    hash: Option<Hash>,
-    size: Option<u32>,
-    from: Option<Address>,
+    tx_body: TransactionBody
 }
 
 impl Transaction {
@@ -44,7 +42,7 @@ impl Transaction {
                gas_price: Option<BigInt>,
                data: &Vec<u8>) -> Box<Self> {
         Box::new(Transaction {
-            txdata: TransactionBody {
+            tx_body: TransactionBody {
                 account_nounce: nonce,
                 gas_price: match gas_price {
                     Some(v) => v,
@@ -60,10 +58,17 @@ impl Transaction {
                 payload: data.to_vec(),
                 sig: None
             },
-            hash: None,
-            size: None,
-            from: None,
         })
+    }
+}
+
+impl RLPSerialize for Transaction {
+    fn serialize(&self) -> Result<RLP, RLPError> {
+        Err(RLPError::RLPErrorUnknown)
+    }
+
+    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
+        Err(RLPError::RLPErrorUnknown)
     }
 }
 
