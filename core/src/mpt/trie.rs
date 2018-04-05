@@ -5,6 +5,7 @@ extern crate rlp;
 use super::node::*;
 use self::db::manager::*;
 use self::rlp::RLPSerialize;
+use self::common::hash::*;
 
 use std::cmp::min;
 use std::marker::PhantomData;
@@ -34,7 +35,8 @@ impl<'a, T> Trie<'a, T> where T: RLPSerialize + Clone {
     }
 }
 
-const PATH_MAX_LEN: usize = 32usize;
+const PATH_MAX_LEN: usize = 64usize;
+
 
 macro_rules! delete {
     ($node:expr, $db:expr) => {{
@@ -80,6 +82,7 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mute
                     Some(value.clone())
                 } else {
                     let nibble = path[0] as usize;
+                    assert!((nibble as u8) < MAX_NIBBLE_VALUE, "Invalid nibble");
                     let next_node = branches[nibble];
                     get_helper(&next_node, &path[1..path.len()].to_vec(), db)
                 }
@@ -88,6 +91,7 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mute
                     None
                 } else {
                     let nibble = path[0] as usize;
+                    assert!((nibble as u8) < MAX_NIBBLE_VALUE, "Invalid nibble");
                     let next_node = branches[nibble];
                     get_helper(&next_node, &path[1..path.len()].to_vec(), db)
                 }
@@ -116,8 +120,8 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &M
     let node_type = fetch!(node, db);
     match node_type {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
-            let mut new_branches: [TrieKey; 16] = [zero_hash!(); 16];
-            for i in 0 .. 16 {
+            let mut new_branches: [TrieKey; MAX_BRANCHE_NUM] = [zero_hash!(); MAX_BRANCHE_NUM];
+            for i in 0 .. MAX_BRANCHE_NUM {
                 new_branches[i] = branches[i];
             }
             if path.len() == 0 {
@@ -126,6 +130,7 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &M
                 update!(new_branch_node, db)
             } else {
                 let nibble = path[0] as usize;
+                assert!((nibble as u8) < MAX_NIBBLE_VALUE, "Invalid nibble");
                 let next_node = &branches[nibble];
                 let new_node = delete_helper::<T>(next_node, &path[1 .. path.len()].to_vec(), db);
                 new_branches[nibble] = new_node;
@@ -143,7 +148,7 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &M
                 zero_hash!()
             } else {
                 let mut ret_node: TrieKey = zero_hash!();
-                ret_node.copy_from_slice(&node[0 .. 32]);
+                ret_node.copy_from_slice(&node[0 .. HASH_LEN]);
                 ret_node
             }
         },
@@ -153,7 +158,7 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &M
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             if remain_cur_path.len() != 0 {
                 let mut ret_node: TrieKey = zero_hash!();
-                ret_node.copy_from_slice(&node[0 .. 32]);
+                ret_node.copy_from_slice(&node[0 .. HASH_LEN]);
                 ret_node
             } else {
                 let new_child_node = delete_helper::<T>(key, &remain_path, db);
@@ -179,10 +184,11 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T,
                 update!(new_branch_node, db)
             } else {
                 let nibble = path[0] as usize;
+                assert!((nibble as u8) < MAX_NIBBLE_VALUE, "Invalid nibble");
                 let next_node = branches[nibble];
                 let new_child_key = update_helper(&next_node, &path[1..path.len()].to_vec(), v, db);
-                let mut new_branches = [[0u8; 32]; 16];
-                new_branches.copy_from_slice(&branches[0..16]);
+                let mut new_branches = [zero_hash!(); MAX_BRANCHE_NUM];
+                new_branches.copy_from_slice(&branches[0 .. MAX_BRANCHE_NUM]);
                 new_branches[nibble] = new_child_key;
                 let new_branch_node = &TrieNode::new_branch_node(&new_branches, value.as_ref());
                 delete!(node, db);
@@ -198,7 +204,7 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T,
         None => {
             let encoded_path = encode_path(&path, true);
             let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, v);
-            delete!(node,db);
+            delete!(node, db);
             update!(new_leaf_node, db)
         },
         _ => { panic!("Unknown error!") }
@@ -222,7 +228,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                     let new_leaf_node = &TrieNode::new_leaf_node(path, new_value);
                     update!(new_leaf_node, db)
                 } else if remain_cur_path.len() == 0 {
-                    let mut new_branches = [[0u8; 32]; 16];
+                    let mut new_branches = [zero_hash!(); MAX_BRANCHE_NUM];
                     let encoded_path = encode_path(&remain_path[1 .. remain_path.len()].to_vec(), true);
                     let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, new_value);
                     let child_key = update!(new_leaf_node, db);
@@ -230,7 +236,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                     let new_branch_node = &TrieNode::new_branch_node(&new_branches, Some(value));
                     update!(new_branch_node, db)
                 } else if remain_path.len() == 0 {
-                    let mut new_branches = [[0u8; 32]; 16];
+                    let mut new_branches = [zero_hash!(); MAX_BRANCHE_NUM];
                     let encoded_path = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), true);
                     let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, value);
                     let child_key = update!(new_leaf_node, db);
@@ -238,7 +244,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                     let new_branch_node = &TrieNode::new_branch_node(&new_branches, Some(new_value));
                     update!(new_branch_node, db)
                 } else {
-                    let mut new_branches = [[0u8; 32]; 16];
+                    let mut new_branches = [zero_hash!(); MAX_BRANCHE_NUM];
                     let encoded_path_cur = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), true);
                     let encoded_path = encode_path(&remain_path[1 .. remain_path.len()].to_vec(), true);
                     let new_leaf_node_cur = &TrieNode::new_leaf_node(&encoded_path_cur, value);
@@ -273,7 +279,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                 } else if remain_cur_path.len() == 0 {
                     update_helper(key, &remain_path, new_value, db)
                 } else if remain_path.len() == 0 {
-                    let mut new_branches = [[0u8; 32]; 16];
+                    let mut new_branches = [zero_hash!(); MAX_BRANCHE_NUM];
                     if remain_cur_path.len() == 1 {
                         new_branches[remain_cur_path[0] as usize] = *key;
                     } else {
@@ -285,7 +291,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                     let new_branch_node = &TrieNode::<T>::new_branch_node(&new_branches, Some(new_value));
                     update!(new_branch_node, db)
                 } else {
-                    let mut new_branches = [[0u8; 32]; 16];
+                    let mut new_branches = [zero_hash!(); MAX_BRANCHE_NUM];
                     let encoded_path_cur = encode_path(&remain_cur_path[1 .. remain_cur_path.len()].to_vec(), false);
                     let encoded_path = encode_path(&remain_path[1 .. remain_path.len()].to_vec(), true);
                     let new_extension_node_cur = &TrieNode::<T>::new_extension_node(&encoded_path_cur, key);

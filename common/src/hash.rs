@@ -12,8 +12,11 @@ use self::rlp::encoder::Encoder;
 /// macro gen_hash! takes (*_str => '&str' type data) and (*_raw => '&[u8]' type data) as input
 /// it generates a 'String' type output
 
+/// Hash lenth
+pub const HASH_LEN: usize = 32usize;
+
 /// Hash structure
-pub type Hash = [u8; 32];
+pub type Hash = [u8; HASH_LEN];
 
 macro_rules! gen_hash {
     (sha256_str => $e:expr) => ({
@@ -31,7 +34,7 @@ macro_rules! gen_hash {
 #[macro_export]
 macro_rules! zero_hash {
     () => ({
-        [0u8; 32]
+        [0u8; HASH_LEN]
     });
 }
 
@@ -55,8 +58,8 @@ impl<T> SerializableAndSHA256Hashable for T where T: RLPSerialize {
             Ok(r) => {
                 let encoded_rlp = SHARED_ENCODER.lock().unwrap().encode(&r);
                 let data: String = gen_hash!(sha256_raw => &encoded_rlp);
-                let mut result: Hash = [0; 32];
-                result.clone_from_slice(&data.as_bytes()[0..32]);
+                let mut result: Hash = [0; HASH_LEN];
+                result.clone_from_slice(&data.as_bytes()[0 .. HASH_LEN]);
                 Some((result, encoded_rlp))
             },
             Err(_) => {
