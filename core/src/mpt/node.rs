@@ -119,6 +119,7 @@ pub enum TrieNode<T: RLPSerialize + Clone> {
 }
 
 impl<T: RLPSerialize + Clone> TrieNode<T> {
+    #[inline]
     pub fn new_branch_node(branches: &[TrieKey; MAX_BRANCHE_NUM], value: Option<&T>) -> Self {
         let mut new_branches: [TrieKey; MAX_BRANCHE_NUM] = [zero_hash!(); MAX_BRANCHE_NUM];
         new_branches.copy_from_slice(&branches[0 .. MAX_BRANCHE_NUM]);
@@ -129,10 +130,12 @@ impl<T: RLPSerialize + Clone> TrieNode<T> {
         }
     }
 
+    #[inline]
     pub fn new_leaf_node(encoded_path: &EncodedPath, value: &T) -> Self {
         TrieNode::LeafNode { encoded_path: encoded_path.clone(), value: value.clone() }
     }
 
+    #[inline]
     pub fn new_extension_node(encoded_path: &EncodedPath, key: &TrieKey) -> Self {
         TrieNode::ExtensionNode { encoded_path: encoded_path.clone(), key: key.clone() }
     }
