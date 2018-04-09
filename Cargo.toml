@@ -4,5 +4,6 @@ members = [
     "common",
     "core",
     "db",
+    "network",
     "rlp"
 ]
