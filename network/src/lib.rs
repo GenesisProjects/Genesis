@@ -1,2 +1,6 @@
+pub mod peer;
+pub mod nat;
+
 #[macro_use]
-extern crate mio;
+pub extern crate mio;
+extern crate bytebuffer;

@@ -7,3 +7,5 @@ authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 mio = "0.6"
 common = { version = "0.1.0", path = "../common" }
 role = { version = "0.1.0", path = "../role" }
+
+bytebuffer = "0.2.1"
