@@ -56,7 +56,10 @@ pub mod stun {
     ///
 
     pub struct STUNHeader {
-
+        msg_type: STUNMessageType,
+        msg_len: u16,
+        magic_cookie: u32,
+        tx_id: [u32; 3]
     }
 
 }
