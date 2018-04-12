@@ -31,22 +31,15 @@ impl STUNManager {
     }
 }
 
-/// STUN datagram
-/// 0                   1                   2                   3
-/// 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-/// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-/// |0 0|     STUN Message Type     |         Message Length        |
-/// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-/// |                         Magic Cookie                          |
-/// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-/// |                                                               |
-/// |                     Transaction ID (96 bits)                  |
-/// |                                                               |
-/// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-///
+impl STUNMessageType {
+    fn write_msg_type(&self, manager: &mut STUNManager) {
+        manager.out_buffer.write_bits(0, 2);
+        manager.out_buffer.write_bits(self.raw_value() as u64, 14);
+    }
 
-struct STUNHeader {
+    /*fn read_msg_type(manager: &STUNManager) -> Self {
 
+    }*/
 }
 
 impl STUNHeader {
