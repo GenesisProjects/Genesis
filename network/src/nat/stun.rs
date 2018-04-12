@@ -2,23 +2,22 @@
 /// reference: [[https://www.rfc-editor.org/rfc/rfc5389.txt]]
 
 use bytebuffer::*;
+use super::defines::stun::*;
+
 use std::net::UdpSocket;
 
 struct STUNManager {
-    buffer: ByteBuffer,
+    in_buffer: ByteBuffer,
+    out_buffer: ByteBuffer,
 }
 
 impl STUNManager {
-    pub fn new_with_size(size: usize) -> Self {
-        let mut buffer = ByteBuffer::new();
-        buffer.resize(size);
-        STUNManager { buffer: buffer }
-    }
-
     pub fn new() -> Self {
-        let mut buffer = ByteBuffer::new();
-        buffer.resize(ENCODER_BUFFER_SIZE);
-        STUNManager { buffer: buffer }
+        let mut in_buffer = ByteBuffer::new();
+        in_buffer.resize(STUN_IN_BUFFER_SIZE);
+        let mut out_buffer = ByteBuffer::new();
+        out_buffer.resize(STUN_OUT_BUFFER_SIZE);
+        STUNManager { in_buffer: buffer, out_buffer: buffer }
     }
 }
 
@@ -48,6 +47,10 @@ struct STUNHeader {
 
 impl STUNHeader {
     fn write_header(&self, manager: &mut STUNManager) {
+
+    }
+
+    fn read_header(&self, manager: &mut STUNManager) {
 
     }
 }
