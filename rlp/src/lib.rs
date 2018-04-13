@@ -3,6 +3,7 @@ extern crate serde;
 
 #[macro_use]
 pub extern crate lazy_static;
+pub extern crate bytebuffer;
 
 extern crate serde_json;
 
@@ -27,7 +28,7 @@ impl RLPSerialize for String {
     }
     fn deserialize(rlp: &types::RLP) -> Result<Self, types::RLPError> {
         match rlp {
-            &RLP::RLPItem { ref value } => match String::from_utf8(value.clone()) {
+            &RLP::RLPItem { ref value } => match String::from_utf8(value.to_owned()) {
                 Ok(str) => Ok(str),
                 Err(_) => Err(RLPError::RLPErrorUnknown)
             }

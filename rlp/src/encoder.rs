@@ -116,9 +116,9 @@ impl Encoder {
     }
 
     fn encode_list_len(&mut self, path: String, input: &RLP) -> usize {
-        let cached_result: Option<usize> = match self.len_cache.entry(path.clone()) {
+        let cached_result: Option<usize> = match self.len_cache.entry(path.to_owned()) {
             Vacant(entry) => None,
-            Occupied(entry) => Some(entry.get().clone()),
+            Occupied(entry) => Some(entry.get().to_owned()),
         };
 
         match cached_result {

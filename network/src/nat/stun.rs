@@ -37,15 +37,16 @@ impl STUNMessageType {
         manager.out_buffer.write_bits(self.raw_value() as u64, 14);
     }
 
-    fn read_msg_type(manager: &STUNManager) -> Self {
-        manager.in_buffer.read_bits(2);
-        match manager.in_buffer.read_bits(14) {
+    fn read_msg_type(manager: &mut STUNManager) -> Self {
+        manager.in_buffer.read_bits(2u8);
+        match manager.in_buffer.read_bits(14u8) {
             0x0001u64 => STUNMessageType::BindingRequest,
             0x0111u64 => STUNMessageType::BindingResponse,
             0x0111u64 => STUNMessageType::BindingErrorResponse,
             0x0002u64 => STUNMessageType::SharedSecretRequest,
-            0x0102u16 => STUNMessageType::SharedSecretResponse,
-            0x0112u16 => STUNMessageType::SharedSecretErrorResponse
+            0x0102u64 => STUNMessageType::SharedSecretResponse,
+            0x0112u64 => STUNMessageType::SharedSecretErrorResponse,
+            _ => panic!("Unreachable!")
         }
     }
 }

@@ -1,10 +1,6 @@
 ///https://blog.csdn.net/ggq89/article/details/78629008
 
-//TODO: Add cache for recursive lenth calculation.
-
-extern crate bytebuffer;
-
-use self::bytebuffer::*;
+use bytebuffer::*;
 use defines::*;
 use types::*;
 use std::io::{Read, Write, Result};

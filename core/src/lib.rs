@@ -6,3 +6,5 @@ pub mod receipt;
 
 #[macro_use]
 pub extern crate common;
+pub extern crate rlp;
+pub extern crate db;

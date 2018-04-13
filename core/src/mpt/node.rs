@@ -1,11 +1,8 @@
-extern crate common;
-extern crate rlp;
-
-use self::common::hash::*;
-use self::rlp::RLPSerialize;
-use self::rlp::types::*;
-use self::rlp::encoder::*;
-use self::rlp::decoder::*;
+use common::hash::*;
+use rlp::RLPSerialize;
+use rlp::types::*;
+use rlp::encoder::*;
+use rlp::decoder::*;
 
 pub type TrieKey = Hash;
 pub type EncodedPath = Vec<u8>;

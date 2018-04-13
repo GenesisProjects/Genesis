@@ -1,11 +1,7 @@
-extern crate common;
-extern crate db;
-extern crate rlp;
-
 use super::node::*;
-use self::db::manager::*;
-use self::rlp::RLPSerialize;
-use self::common::hash::*;
+use db::manager::*;
+use rlp::RLPSerialize;
+use common::hash::*;
 
 use std::cmp::min;
 use std::marker::PhantomData;
@@ -92,7 +88,7 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mute
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
             if let &Some(ref value) = value {
                 if path.len() == 0 {
-                    Some(value.clone())
+                    Some(value.to_owned())
                 } else {
                     let nibble = next_nibble!(path);
                     assert!((nibble as u8) < MAX_NIBBLE_VALUE, "Invalid nibble");
@@ -121,7 +117,7 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mute
             let (ref cur_path, terminated) = decode_path(encoded_path);
             let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             if remain_cur_path.len() == 0 && remain_path.len() == 0 {
-                Some(value.clone())
+                Some(value.to_owned())
             } else { None }
         },
         None => { None },
