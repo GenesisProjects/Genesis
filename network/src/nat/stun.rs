@@ -3,6 +3,8 @@
 
 use bytebuffer::*;
 use super::defines::stun::*;
+use super::SocketInfo;
+
 use std::net::UdpSocket;
 
 macro_rules! msg_class_from_type {
@@ -59,6 +61,10 @@ impl STUNHeader {
     /*fn read_header(manager: &STUNManager) -> Self {
 
     }*/
+}
+
+pub fn map_external_address_stun(local: &SocketInfo) -> Option<SocketInfo> {
+    None
 }
 
 
