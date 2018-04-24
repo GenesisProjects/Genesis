@@ -1,6 +1,7 @@
 pub mod block;
 pub mod log;
 pub mod mpt;
+pub mod pool;
 pub mod transaction;
 pub mod receipt;
 
