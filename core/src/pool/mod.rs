@@ -16,7 +16,7 @@ impl<T: Poolable> Pool<T> {
         let mut working_pool: Vec<Box<T>> = vec![];
         let mut recycle_pool: Vec<Box<T>> = vec![];
         for i in 0usize .. max {
-            working_pool.push(Box::new(T::empty_obj()));
+            recycle_pool.push(Box::new(T::empty_obj()));
         }
         let new_pool = Pool {
             max_size: max,
