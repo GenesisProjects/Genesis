@@ -10,7 +10,7 @@ use self::num::Zero;
 use self::rlp::RLPSerialize;
 use self::rlp::types::*;
 
-use pool::Poolable;
+use gen_network::pool::*;
 
 use std::marker::PhantomData;
 
@@ -79,7 +79,7 @@ impl Poolable for Transaction {
         unimplemented!()
     }
 
-    fn unique_id(&self) -> String {
+    fn unique_id(&self) -> &String {
         unimplemented!()
     }
 }

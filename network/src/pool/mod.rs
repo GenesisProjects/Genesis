@@ -1,6 +1,6 @@
 pub trait Poolable {
     fn empty_obj() -> Self;
-    fn unique_id(&self) -> String;
+    fn unique_id(&self) -> &String;
 }
 
 #[derive(Debug)]
