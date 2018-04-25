@@ -18,7 +18,7 @@ enum PeerStatus {
 }
 
 pub struct Peer {
-    socket: SocketAddr,
+    ip_addr: SocketAddr,
     port: u16,
     peer_type: PeerType,
     connected_at: SystemTime,
