@@ -9,6 +9,7 @@ config = "0.8"
 igd = "0.7"
 mio = "0.6"
 slab = "0.2"
+snap = "0.2"
 
 common = { version = "0.1.0", path = "../common" }
 role = { version = "0.1.0", path = "../role" }
