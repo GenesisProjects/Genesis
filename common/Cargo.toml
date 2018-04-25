@@ -14,4 +14,5 @@ bit-vec = "0.4.4"
 siphasher = "^0.2.2"
 
 rlp = { version = "0.1.0", path = "../rlp" }
+gen_utils = { version = "0.1.0", path = "../util" }
 

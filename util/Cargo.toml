@@ -1,0 +1,7 @@
+[package]
+name = "gen_utils"
+version = "0.1.0"
+authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
+
+[dependencies]
+log = "0.4"
