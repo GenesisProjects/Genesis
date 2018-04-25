@@ -4,9 +4,17 @@ use std::time::{Duration, SystemTime};
 use peer_manager::PeerManager;
 use session::Session;
 
+use common::address::Address;
+
 enum PeerType {
     Normal,
-    Producer,
+    Super,
+}
+
+enum PeerStatus {
+    Actived,
+    Disabled,
+    Disconnected,
 }
 
 pub struct Peer {
@@ -16,6 +24,8 @@ pub struct Peer {
     connected_at: SystemTime,
     data_send: usize,
     data_received: usize,
+    address: Address,
+    status: PeerStatus,
     session: Session,
 }
 

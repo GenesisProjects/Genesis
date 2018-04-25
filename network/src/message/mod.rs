@@ -1,4 +1,4 @@
-pub mod event;
+pub mod defines;
 
 pub struct MessageCenter {
 
