@@ -13,9 +13,16 @@ pub struct MessageCenter {
 
 impl MessageCenter {
     fn new(addr: &SocketAddr) -> Option<Self> {
-        listener = TcpListener::bind(addr).unwrap_or(None);
+        let listener = TcpListener::bind(addr).unwrap();
         let poll = Poll::new().unwrap();
-        let event_loop = event_loop::new(poll);
+        let event_loop = EventLoop::new(poll);
+        panic!("")
+        /*if let Some(l) = listener {
+            Some(MessageCenter { ip_addr: addr.to_owned(), event_loop: event_loop, listener: l })
+        } else {
+            None
+        }*/
+
     }
 }
 
@@ -30,18 +37,19 @@ impl EventLoop {
     }
 
     fn start(&mut self) {
-        let handle = thread::spawn(|| {
+        let mut events = Events::with_capacity(1024);
+        /*let handle = thread::spawn(|| {
             // Create storage for events
-            let mut events = Events::with_capacity(1024);
+
             // Start main loop
             loop {
-                poll.poll(&mut events, None).unwrap();
+                self.poll.poll(&mut events, None).unwrap();
 
                 for event in events.iter() {
 
                 }
             }
         });
-        self.handle = handle;
+        self.handle = Some(handle);*/
     }
 }

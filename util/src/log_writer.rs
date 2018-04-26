@@ -55,39 +55,45 @@ impl LogWritter {
     #[inline]
     pub fn debug(&self, domain: &'static str, msg: &'static str, log_level: LogLevel) {
         if self.debug_enabled {
-
+            self.append_file(domain, msg, LogType::DEBUG, log_level);
         }
     }
 
     #[inline]
     pub fn info(&self, domain: &'static str, msg: &'static str, log_level: LogLevel) {
-
-
-        unimplemented!()
+        if self.info_enabled {
+            self.append_file(domain, msg, LogType::INFO, log_level);
+        }
     }
 
     #[inline]
     pub fn warn(&self, domain: &'static str, msg: &'static str, log_level: LogLevel) {
-        unimplemented!()
+        if self.warn_enabled {
+            self.append_file(domain, msg, LogType::WARN, log_level);
+        }
     }
 
     #[inline]
     pub fn error(&self, domain: &'static str, msg: &'static str, log_level: LogLevel) {
-        unimplemented!()
+        if self.error_enabled {
+            self.append_file(domain, msg, LogType::ERROR, log_level);
+        }
     }
 
     #[inline]
     fn gen_format(msg: &'static str, log_type: LogType, log_level: LogLevel) -> String {
         let now = Utc::now();
         let time_str = now.format("%b %-d, %-I:%M").to_string();
-        format!("{:?} [{:?}] [{:?}] {}", time_str, log_type, log_level, msg)
+        let content = format!("{:?} [{:?}] [{:?}] {}", time_str, log_type, log_level, msg);
+        println!("{:?}", content);
+        content
     }
 
     #[inline]
     fn append_file(&self, domain: &'static str, msg: &'static str, log_type: LogType, log_level: LogLevel) {
         let mut file = OpenOptions::new().write(true).append(true).create_new(true).open(self.log_path.to_owned() + domain + ".log").unwrap();
         let content = LogWritter::gen_format(msg, log_type, log_level);
-        if let Err(e) = writeln!(file, "") {
+        if let Err(e) = writeln!(file, "{}", content) {
             eprintln!("Couldn't write to file: {}", e);
         }
     }
