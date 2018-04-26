@@ -4,15 +4,16 @@ use std::sync::RwLock;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::fs::{File, OpenOptions};
-
+use std::collections::HashMap;
 use std::path::Path;
 
 use config_parser::SETTINGS;
 
 lazy_static! {
     pub static ref LOGGER: RwLock<LogWritter> = {
-        let path = (SETTINGS.read().unwrap().get::<String>("logPath").unwrap());
-        let mut logger = LogWritter::new(&path);
+        let default_config = SETTINGS.read().unwrap();
+        let path = default_config.to_owned().get_str("log_path").unwrap();
+        let logger = LogWritter::new(&path);
         RwLock::new(logger)
     };
 }
@@ -83,15 +84,15 @@ impl LogWritter {
     #[inline]
     fn gen_format(msg: &'static str, log_type: LogType, log_level: LogLevel) -> String {
         let now = Utc::now();
-        let time_str = now.format("%b %-d, %-I:%M").to_string();
-        let content = format!("{:?} [{:?}] [{:?}] {}", time_str, log_type, log_level, msg);
+        let time_str = now.format("%Y-%m-%d %H:%M:%S").to_string();
+        let content = format!("{} [{:?}] [{:?}] {}", time_str, log_type, log_level, msg);
         println!("{:?}", content);
         content
     }
 
     #[inline]
     fn append_file(&self, domain: &'static str, msg: &'static str, log_type: LogType, log_level: LogLevel) {
-        let mut file = OpenOptions::new().write(true).append(true).create_new(true).open(self.log_path.to_owned() + domain + ".log").unwrap();
+        let mut file = OpenOptions::new().write(true).append(true).create(true).open(self.log_path.to_owned() + domain + ".log").unwrap();
         let content = LogWritter::gen_format(msg, log_type, log_level);
         if let Err(e) = writeln!(file, "{}", content) {
             eprintln!("Couldn't write to file: {}", e);
