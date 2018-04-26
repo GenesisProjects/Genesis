@@ -15,6 +15,7 @@ Cargo.lock
 .gradle
 out/
 build/
+log/
 gen/
 deps/
 exampleProject

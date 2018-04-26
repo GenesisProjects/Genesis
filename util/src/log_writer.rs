@@ -5,15 +5,16 @@ use std::io::prelude::*;
 use std::io::BufWriter;
 use std::fs::{File, OpenOptions};
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path,PathBuf};
+use std::env;
 
 use config_parser::SETTINGS;
 
 lazy_static! {
     pub static ref LOGGER: RwLock<LogWritter> = {
-        let default_config = SETTINGS.read().unwrap();
-        let path = default_config.to_owned().get_str("log_path").unwrap();
-        let logger = LogWritter::new(&path);
+        let mut path_buff = env::current_dir().unwrap();
+        path_buff.push("log");
+        let logger = LogWritter::new(&path_buff);
         RwLock::new(logger)
     };
 }
@@ -39,7 +40,7 @@ pub struct LogWritter {
     warn_enabled: bool,
     error_enabled: bool,
 
-    log_path: String,
+    log_path: PathBuf,
     fs: Option<File>
 }
 
@@ -49,7 +50,7 @@ impl LogWritter {
     pub fn enabled_warn(&mut self, on: bool)  { self.warn_enabled = on; }
     pub fn enabled_error(&mut self, on: bool) { self.error_enabled = on; }
 
-    pub fn new(log_path: &String) -> Self {
+    pub fn new(log_path: &PathBuf) -> Self {
         LogWritter { debug_enabled: true, info_enabled: true, warn_enabled: true, error_enabled: true, log_path: log_path.to_owned(), fs: None }
     }
 
@@ -92,7 +93,10 @@ impl LogWritter {
 
     #[inline]
     fn append_file(&self, domain: &'static str, msg: &'static str, log_type: LogType, log_level: LogLevel) {
-        let mut file = OpenOptions::new().write(true).append(true).create(true).open(self.log_path.to_owned() + domain + ".log").unwrap();
+        let mut tamp_path = self.log_path.to_owned();
+        tamp_path.push(domain);
+        tamp_path.with_extension("log");
+        let mut file = OpenOptions::new().write(true).append(true).create(true).open(tamp_path).unwrap();
         let content = LogWritter::gen_format(msg, log_type, log_level);
         if let Err(e) = writeln!(file, "{}", content) {
             eprintln!("Couldn't write to file: {}", e);
