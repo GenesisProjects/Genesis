@@ -4,4 +4,7 @@ version = "0.1.0"
 authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
-log = "0.4"
+lazy_static = "1.0.0"
+chrono = "0.4.2"
+config = "0.8"
+serde = "1.0.37"
