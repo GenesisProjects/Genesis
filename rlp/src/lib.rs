@@ -1,9 +1,11 @@
+pub const DOMAIN: &'static str = "rlp";
+
 #[macro_use]
 extern crate serde;
-
 #[macro_use]
 pub extern crate lazy_static;
 pub extern crate bytebuffer;
+pub extern crate gen_utils;
 
 extern crate serde_json;
 
@@ -14,6 +16,8 @@ pub mod types;
 
 use self::serde::ser::Serialize;
 use self::serde::de::Deserialize;
+
+use self::gen_utils::log_writer::LOGGER;
 
 use types::{ RLPError, RLP };
 

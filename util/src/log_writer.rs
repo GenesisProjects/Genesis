@@ -55,35 +55,63 @@ impl LogWritter {
     }
 
     #[inline]
-    pub fn debug(&self, domain: &'static str, msg: &'static str, log_level: LogLevel) {
+    pub fn debug_with_level(&self, domain: &'static str, msg: &str, log_level: LogLevel) {
         if self.debug_enabled {
             self.append_file(domain, msg, LogType::DEBUG, log_level);
         }
     }
 
     #[inline]
-    pub fn info(&self, domain: &'static str, msg: &'static str, log_level: LogLevel) {
+    pub fn debug(&self, domain: &'static str, msg: &str) {
+        if self.debug_enabled {
+            self.append_file(domain, msg, LogType::DEBUG, LogLevel::LOW);
+        }
+    }
+
+    #[inline]
+    pub fn info_with_level(&self, domain: &'static str, msg: &str, log_level: LogLevel) {
         if self.info_enabled {
             self.append_file(domain, msg, LogType::INFO, log_level);
         }
     }
 
     #[inline]
-    pub fn warn(&self, domain: &'static str, msg: &'static str, log_level: LogLevel) {
+    pub fn info(&self, domain: &'static str, msg: &str) {
+        if self.info_enabled {
+            self.append_file(domain, msg, LogType::INFO, LogLevel::LOW);
+        }
+    }
+
+    #[inline]
+    pub fn warn_with_level(&self, domain: &'static str, msg: &str, log_level: LogLevel) {
         if self.warn_enabled {
             self.append_file(domain, msg, LogType::WARN, log_level);
         }
     }
 
     #[inline]
-    pub fn error(&self, domain: &'static str, msg: &'static str, log_level: LogLevel) {
+    pub fn warn(&self, domain: &'static str, msg: &str) {
+        if self.warn_enabled {
+            self.append_file(domain, msg, LogType::WARN, LogLevel::LOW);
+        }
+    }
+
+    #[inline]
+    pub fn error_with_level(&self, domain: &'static str, msg: &str, log_level: LogLevel) {
         if self.error_enabled {
             self.append_file(domain, msg, LogType::ERROR, log_level);
         }
     }
 
     #[inline]
-    fn gen_format(msg: &'static str, log_type: LogType, log_level: LogLevel) -> String {
+    pub fn error(&self, domain: &'static str, msg: &str) {
+        if self.error_enabled {
+            self.append_file(domain, msg, LogType::ERROR, LogLevel::LOW);
+        }
+    }
+
+    #[inline]
+    fn gen_format(msg: &str, log_type: LogType, log_level: LogLevel) -> String {
         let now = Utc::now();
         let time_str = now.format("%Y-%m-%d %H:%M:%S").to_string();
         let content = format!("{} [{:?}] [{:?}] {}", time_str, log_type, log_level, msg);
@@ -92,7 +120,7 @@ impl LogWritter {
     }
 
     #[inline]
-    fn append_file(&self, domain: &'static str, msg: &'static str, log_type: LogType, log_level: LogLevel) {
+    fn append_file(&self, domain: &'static str, msg: &str, log_type: LogType, log_level: LogLevel) {
         let mut tamp_path = self.log_path.to_owned();
         tamp_path.push(domain);
         tamp_path.with_extension("log");
