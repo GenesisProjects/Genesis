@@ -9,5 +9,6 @@ db = { version = "0.1.0", path = "../db" }
 gen_network = { version = "0.1.0", path = "../network" }
 rlp = { version = "0.1.0", path = "../rlp" }
 gen_utils = { version = "0.1.0", path = "../util" }
+parity-wasm = "0.27"
 
 num = "0.1.30"
