@@ -4,9 +4,9 @@ use std::collections::LinkedList;
 
 const DEFAULT_MSG_QUEUE_SIZE: usize = 1024;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum SignalType {
-    Normal
+    Append
 }
 
 struct MessageQueue {
@@ -62,7 +62,7 @@ pub struct MessageCenter {
 impl MessageCenter {
     pub fn new() -> Self {
         let msg_queue = MessageQueue::new(DEFAULT_MSG_QUEUE_SIZE);
-        let cond_var_pair = (Mutex::<SignalType>::new(SignalType::Normal), Condvar::new());
+        let cond_var_pair = (Mutex::<SignalType>::new(SignalType::Append), Condvar::new());
         let msg_queue_arc_pointer = RefCell::new(msg_queue);
         MessageCenter {
             cond_var_pair: Arc::new(cond_var_pair),
@@ -72,7 +72,7 @@ impl MessageCenter {
 
     pub fn new_with_size(size: usize) -> Self {
         let msg_queue = MessageQueue::new(size);
-        let cond_var_pair = (Mutex::<SignalType>::new(SignalType::Normal), Condvar::new());
+        let cond_var_pair = (Mutex::<SignalType>::new(SignalType::Append), Condvar::new());
         let msg_queue_arc_pointer = RefCell::new(msg_queue);
         MessageCenter {
             cond_var_pair: Arc::new(cond_var_pair),
@@ -87,9 +87,15 @@ impl MessageCenter {
         cond_var.notify_one();
     }
 
-    pub fn fetch_msg(&mut self) -> u16 {
+    pub fn accept_msg(&mut self) -> u16 {
         let (ref mutex_lock, ref cond_var) = *(self.cond_var_pair);
         let mut sync_start = mutex_lock.lock().unwrap();
+        // if the queue is not empty
+        if !self.msg_queue_pointer.borrow().is_empty() {
+            return self.msg_queue_pointer.borrow_mut().dequeue_msg().unwrap();
+        }
+
+        // else wait for new msg
         let mut result: u16;
         // loop to avoid spurious wakeup
         loop {
@@ -100,5 +106,11 @@ impl MessageCenter {
             }
         }
         result
+    }
+
+    pub fn flush(&mut self) -> LinkedList<u16> {
+        let (ref mutex_lock, ref cond_var) = *(self.cond_var_pair);
+        mutex_lock.lock().unwrap();
+        self.msg_queue_pointer.borrow_mut().flush()
     }
 }
