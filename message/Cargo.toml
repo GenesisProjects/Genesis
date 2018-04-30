@@ -7,6 +7,7 @@ authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 bytebuffer = "0.2.1"
 config = "0.8"
 igd = "0.7"
+lazy_static = "1.0.0"
 mio = "0.6"
 slab = "0.2"
 rand = "0.4.2"

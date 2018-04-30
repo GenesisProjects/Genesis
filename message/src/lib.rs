@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate gen_utils;
 extern crate rand;
 
@@ -8,6 +10,12 @@ use std::collections::{LinkedList, HashMap};
 
 const DEFAULT_MSG_QUEUE_SIZE: usize = 1024;
 
+lazy_static! {
+    pub static ref MESSAGE_CENTER: Mutex<MessageCenter> = {
+        Mutex::new(MessageCenter::new())
+    };
+}
+
 fn random_string(length: usize) -> String {
     use rand::Rng;
     let s = rand::thread_rng()
@@ -17,7 +25,7 @@ fn random_string(length: usize) -> String {
     s
 }
 
-struct MessageQueue {
+pub struct MessageQueue {
     queue: LinkedList<u16>,
     limit: usize
 }
@@ -64,10 +72,11 @@ impl MessageQueue {
 /// Message channel is thread safe.
 pub struct MessageChannel {
     pub uid: String,
-    cond_var_pair: Arc<(Mutex<RefCell<MessageQueue>>, Condvar)>
+    pub cond_var_pair: Arc<(Mutex<RefCell<MessageQueue>>, Condvar)>
 }
 
-unsafe impl std::marker::Send for MessageChannel { }
+unsafe impl std::marker::Send for MessageChannel {}
+unsafe impl std::marker::Sync for MessageChannel {}
 
 impl MessageChannel {
     pub fn new() -> Self {
@@ -76,6 +85,13 @@ impl MessageChannel {
         MessageChannel {
             uid: random_string(32),
             cond_var_pair: cond_var_pair
+        }
+    }
+
+    pub fn new_with_pair(name: &String, cond_var_pair: Arc<(Mutex<RefCell<MessageQueue>>, Condvar)>) -> Self {
+        MessageChannel {
+            uid: name.to_owned(),
+            cond_var_pair: cond_var_pair.clone()
         }
     }
 
@@ -169,7 +185,21 @@ impl MessageCenter {
         }
     }
 
-    fn channels_exist_by_name(&self, name: &String) -> bool {
+    pub fn channels_by_name(&mut self, name: &String) -> Vec<&mut MessageChannel> {
+        let existed = self.channels_exist_by_name(name);
+        if !existed {
+            vec![]
+        } else {
+            let channels = self.channel_map.get_mut(name).unwrap();
+            let mut result = vec![];
+            for e in channels {
+                result.push(e)
+            }
+            result
+        }
+    }
+
+    pub fn channels_exist_by_name(&self, name: &String) -> bool {
         let channels = self.channel_map.get(name);
         match channels {
             Some(_) => { true },
