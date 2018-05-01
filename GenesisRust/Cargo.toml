@@ -9,4 +9,5 @@ gen_core = { version = "0.1.0", path = "../core" }
 gen_network = { version = "0.1.0", path = "../network" }
 rlp = { version = "0.1.0", path = "../rlp" }
 db = { version = "0.1.0", path = "../db" }
+gen_message = { version = "0.1.0", path = "../message" }
 gen_utils = { version = "0.1.0", path = "../util" }
