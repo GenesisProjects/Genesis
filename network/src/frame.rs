@@ -1,6 +1,13 @@
 use common::key::PublicKey;
 use bytebuffer::ByteBuffer;
 use std::io::{Error, ErrorKind};
+use std::sync::Mutex;
+
+lazy_static! {
+    pub static ref SHARED_FRAME_READER: Mutex<FrameReader> = {
+        Mutex::new(FrameReader::new())
+    };
+}
 
 /// Frame Struct
 /// 0                   1                   2                   3
@@ -83,13 +90,21 @@ impl Frame {
     }
 }
 
-struct FrameReader {
+pub struct FrameReader {
     cache: [u8; WINDOW_SIZE],
     r_pos: usize,
     w_pos: usize
 }
 
 impl FrameReader {
+    pub fn new() -> Self {
+        FrameReader {
+            cache: [0u8; WINDOW_SIZE],
+            r_pos: 0,
+            w_pos: 0
+        }
+    }
+
     pub fn flush(&mut self) {
         self.w_pos = 0;
         self.r_pos = 0;
@@ -97,7 +112,7 @@ impl FrameReader {
 
     pub fn read_one_frame(&mut self) -> Result<Frame, Error> {
         let len = self.data_len();
-        match self.find_tail() {
+        match self.find_cur_frame_len() {
             Some(offset) => {
                 if offset > FRAME_MAX_SIZE {
                     self.r_pos = (self.r_pos + offset) % WINDOW_SIZE;
@@ -125,6 +140,14 @@ impl FrameReader {
         } else {
             self.write_cache(&frame_buff[0 .. frame_len]);
             Ok(frame_len)
+        }
+    }
+
+    pub fn append_data(&mut self, data: &Vec<u8>) -> Result<usize, Error> {
+        if data.len() + self.data_len() > WINDOW_SIZE {
+            Err(Error::new(ErrorKind::InvalidData, "Reach max window size"))
+        } else {
+            self.write_cache(&data[0 .. data.len()])
         }
     }
 
@@ -171,7 +194,7 @@ impl FrameReader {
         }
     }
 
-    fn find_tail(&self) -> Option<usize> {
+    fn find_cur_frame_len(&self) -> Option<usize> {
         let len = self.data_len();
 
         if len < 4 {

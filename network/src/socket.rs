@@ -5,7 +5,7 @@ use std::mem;
 use std::net::{Shutdown, SocketAddr};
 use std::time::Instant;
 use bytebuffer::*;
-use frame::Frame;
+use frame::*;
 
 const READ_BUF_LEN: usize = 1024 * 1024;
 const WRITE_BUF_LEN: usize = 1024 * 1024;
@@ -16,6 +16,8 @@ pub struct PeerSocket {
     stream: TcpStream,
     read_buffer: ByteBuffer,
     write_queue: ByteBuffer,
+    cur_read_buffer_size: usize,
+    cur_write_queue_size: usize,
 }
 
 impl PeerSocket {
@@ -30,6 +32,8 @@ impl PeerSocket {
                 stream: r,
                 read_buffer: read_buf,
                 write_queue: write_buf,
+                cur_read_buffer_size: 0usize,
+                cur_write_queue_size: 0usize
             }),
             Err(e) => Err(e)
         }
@@ -45,6 +49,8 @@ impl PeerSocket {
             stream: stream,
             read_buffer: read_buf,
             write_queue: write_buf,
+            cur_read_buffer_size: 0usize,
+            cur_write_queue_size: 0usize
         }
     }
 
@@ -59,6 +65,7 @@ impl PeerSocket {
                     match self.read_buffer.write(&buffer[index .. bytes_read]) {
                         Ok(size) => {
                             if size < bytes_read {
+                                self.cur_read_buffer_size += size;
                                 index += size;
                             } else {
                                 return Ok(bytes_read);
@@ -85,6 +92,7 @@ impl PeerSocket {
                     match self.stream.write(&buffer[index .. bytes_write]) {
                         Ok(size) => {
                             if size < bytes_write {
+                                self.cur_write_queue_size -= size;
                                 index += size;
                             } else {
                                 return Ok(bytes_write);
@@ -101,8 +109,23 @@ impl PeerSocket {
 
     }
 
-    pub fn read_frame_from_cache(&mut self) -> Result<Frame> {
-        unimplemented!()
+    pub fn read_frames_from_cache(&mut self) -> Vec<Frame> {
+        let mut result: Vec<Frame> = vec![];
+
+        let temp = self.read_buffer.read_bytes(self.cur_read_buffer_size);
+        let mut reader = SHARED_FRAME_READER.lock().unwrap();
+        reader.append_data(&temp);
+
+        loop {
+            match reader.read_one_frame() {
+                Ok(f) => { result.push(f); },
+                Err(e) => match e.kind() {
+                    ErrorKind::WouldBlock => { break; },
+                    _ => { continue; }
+                }
+            }
+        }
+        result
     }
 
     pub fn write_frame_to_cache(&mut self, frame: &Frame) -> Result<usize>  {
