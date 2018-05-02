@@ -83,8 +83,20 @@ impl FrameReader {
         unimplemented!()
     }
 
-    fn read_cache(&mut self, size: usize) {
-        unimplemented!()
+    fn read_cache(&mut self, buffer: &mut [u8]) -> Result<usize, Error> {
+        if buffer.len() > self.data_len() {
+            Err(Error::new(ErrorKind::InvalidData, "Data is not ready"))
+        } else {
+            if self.r_pos + buffer.len() >= WINDOW_SIZE {
+                let tail_len = WINDOW_SIZE - self.r_pos + 1;
+                buffer[0 .. tail_len].copy_from_slice(self.cache[self.r_pos .. WINDOW_SIZE]);
+                buffer[tail_len .. buffer.len()].copy_from_slice(self.cache[0 .. buffer.len() - tail_len]);
+            } else {
+                buffer[0 .. buffer.len()].copy_from_slice(self.cache[self.r_pos .. self.r_pos + buffer.len()]);
+            }
+            self.r_pos = (self.r_pos + buffer.len()) % WINDOW_SIZE;
+            Ok(buffer.len())
+        }
     }
 
     fn write_cache(&mut self, buffer: &[u8]) -> Result<usize, Error> {
@@ -92,8 +104,15 @@ impl FrameReader {
         if buffer.len() + len > WINDOW_SIZE {
             Err(Error::new(ErrorKind::InvalidData, "The frame data is overflow"))
         } else {
-            let a = self.cache[self.w_pos .. WINDOW_SIZE].clone_from_slice(buffer[0 .. WINDOW_SIZE - self.w_pos + 1]);
-            unimplemented!()
+            if self.w_pos + buffer.len() >= WINDOW_SIZE {
+                let tail_len = WINDOW_SIZE - self.w_pos + 1;
+                self.cache[self.w_pos .. WINDOW_SIZE].copy_from_slice(buffer[0 .. tail_len]);
+                self.cache[0 .. buffer.len() - tail_len].copy_from_slice(buffer[tail_len .. buffer.len()]);
+            } else {
+                self.cache[self.w_pos .. self.w_pos + buffer.len()].copy_from_slice(buffer[0 .. buffer.len()]);
+            }
+            self.w_pos = (self.w_pos + buffer.len()) % WINDOW_SIZE;
+            Ok(buffer.len())
         }
     }
 
