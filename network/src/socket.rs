@@ -10,6 +10,8 @@ use frame::Frame;
 const READ_BUF_LEN: usize = 1024 * 1024;
 const WRITE_BUF_LEN: usize = 1024 * 1024;
 
+static mut BUFFER: [u8; 64 * 1024] = [0; 64 * 1024];
+
 pub struct PeerSocket {
     stream: TcpStream,
     read_buffer: ByteBuffer,
@@ -73,8 +75,9 @@ impl PeerSocket {
     }
 
     pub fn write_stream_from_cache(&mut self) -> Result<usize> {
-        // the gen writing window is max at 64k (64 * 1024)
+        // the genesis writing window is max at 64k (64 * 1024)
         let mut buffer = [0; 64 * 1024];
+
         match self.write_queue.read(&mut buffer[ .. ]) {
             Ok(bytes_write) => {
                 let mut index: usize = 0;
