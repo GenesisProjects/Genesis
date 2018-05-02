@@ -26,8 +26,10 @@ use std::io::{Error, ErrorKind};
 /// |1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1|
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-const STUFFING_BYTES: u32 = 0xffffffff;
-const WINDOW_SIZE: usize = 1024 * 1024 * 16;
+const STUFFING_BYTES: u32   = 0xffffffff;
+const WINDOW_SIZE: usize    = 1024 * 1024 * 16;
+
+const FRAME_MAX_SIZE: usize = 1024 * 16;
 
 enum FrameType {
     Request,
@@ -37,8 +39,8 @@ enum FrameType {
 
 enum Task {
     SyncBlock,
-    SyncTransaction,
     SyncChain,
+    SyncTransaction,
     SyncAccount,
     SyncLog,
 }
@@ -66,6 +68,19 @@ pub struct Frame {
     pub_key: PublicKey,
     role: Role,
     seq: SEQ,
+    ext1: u32,
+    ext2: u32,
+    payload: Vec<u8>
+}
+
+impl Frame {
+    pub fn new(buff: &[u8]) -> Option<Self> {
+        unimplemented!()
+    }
+
+    pub fn serialize_frame(&self) -> Vec<u8> {
+        unimplemented!()
+    }
 }
 
 struct FrameReader {
@@ -75,12 +90,42 @@ struct FrameReader {
 }
 
 impl FrameReader {
-    pub fn read_frame(&mut self, buffer: &mut ByteBuffer) -> Result<Option<Frame>, Error> {
-        if !stick_mode {
-            self.flush();
-        }
+    pub fn flush(&mut self) {
+        self.w_pos = 0;
+        self.r_pos = 0;
+    }
+
+    pub fn read_one_frame(&mut self) -> Result<Frame, Error> {
         let len = self.data_len();
-        unimplemented!()
+        match self.find_tail() {
+            Some(offset) => {
+                if offset > FRAME_MAX_SIZE {
+                    self.r_pos = (self.r_pos + offset) % WINDOW_SIZE;
+                    Err(Error::new(ErrorKind::InvalidData, "Current frame is over max size, will be ignored"))
+                } else {
+                    let mut frame_buff: [u8; FRAME_MAX_SIZE] = [0u8; FRAME_MAX_SIZE];
+                    self.read_cache(&mut frame_buff[0 .. offset]);
+                    match Frame::new(&frame_buff[0 .. offset]) {
+                        Some(f) => Ok(f),
+                        None => Err(Error::new(ErrorKind::InvalidData, "Malformed frame"))
+                    }
+                }
+            },
+            None => Err(Error::new(ErrorKind::WouldBlock, "The frame is not ready"))
+        }
+    }
+
+    pub fn write_one_frame(&mut self, frame: &Frame) -> Result<usize, Error> {
+        let frame_buff = frame.serialize_frame();
+        let frame_len = frame_buff.len();
+        if frame_len + self.data_len() > WINDOW_SIZE {
+            Err(Error::new(ErrorKind::InvalidData, "Reach max window size"))
+        } else if frame_len > FRAME_MAX_SIZE {
+            Err(Error::new(ErrorKind::InvalidData, "Current frame is over max size, will be ignored"))
+        } else {
+            self.write_cache(&frame_buff[0 .. frame_len]);
+            Ok(frame_len)
+        }
     }
 
     fn read_cache(&mut self, buffer: &mut [u8]) -> Result<usize, Error> {
@@ -89,10 +134,12 @@ impl FrameReader {
         } else {
             if self.r_pos + buffer.len() >= WINDOW_SIZE {
                 let tail_len = WINDOW_SIZE - self.r_pos + 1;
-                buffer[0 .. tail_len].copy_from_slice(self.cache[self.r_pos .. WINDOW_SIZE]);
-                buffer[tail_len .. buffer.len()].copy_from_slice(self.cache[0 .. buffer.len() - tail_len]);
+                let buff_len =  buffer.len();
+                buffer[0 .. tail_len].copy_from_slice(&self.cache[self.r_pos .. WINDOW_SIZE]);
+                buffer[tail_len .. buff_len].copy_from_slice(&self.cache[0 .. buff_len - tail_len]);
             } else {
-                buffer[0 .. buffer.len()].copy_from_slice(self.cache[self.r_pos .. self.r_pos + buffer.len()]);
+                let buff_len =  buffer.len();
+                buffer[0 .. buff_len].copy_from_slice(&self.cache[self.r_pos .. self.r_pos + buff_len]);
             }
             self.r_pos = (self.r_pos + buffer.len()) % WINDOW_SIZE;
             Ok(buffer.len())
@@ -106,10 +153,10 @@ impl FrameReader {
         } else {
             if self.w_pos + buffer.len() >= WINDOW_SIZE {
                 let tail_len = WINDOW_SIZE - self.w_pos + 1;
-                self.cache[self.w_pos .. WINDOW_SIZE].copy_from_slice(buffer[0 .. tail_len]);
-                self.cache[0 .. buffer.len() - tail_len].copy_from_slice(buffer[tail_len .. buffer.len()]);
+                self.cache[self.w_pos .. WINDOW_SIZE].copy_from_slice(&buffer[0 .. tail_len]);
+                self.cache[0 .. buffer.len() - tail_len].copy_from_slice(&buffer[tail_len .. buffer.len()]);
             } else {
-                self.cache[self.w_pos .. self.w_pos + buffer.len()].copy_from_slice(buffer[0 .. buffer.len()]);
+                self.cache[self.w_pos .. self.w_pos + buffer.len()].copy_from_slice(&buffer[0 .. buffer.len()]);
             }
             self.w_pos = (self.w_pos + buffer.len()) % WINDOW_SIZE;
             Ok(buffer.len())
@@ -135,14 +182,9 @@ impl FrameReader {
                 && self.cache[(i + 1) % WINDOW_SIZE] == 0xffu8
                 && self.cache[(i + 2) % WINDOW_SIZE] == 0xffu8
                 && self.cache[(i + 3) % WINDOW_SIZE] == 0xffu8 {
-                return Some(i + 4 - r_pos);
+                return Some(i + 4 - self.r_pos);
             }
         }
         None
-    }
-
-    fn flush(&mut self) {
-        self.w_pos = 0;
-        self.r_pos = 0;
     }
 }
