@@ -6,6 +6,102 @@ extern crate gen_utils;
 use std::env::args;
 use std::fs::File;
 
+#[derive(Clone, Debug)]
+pub struct ModuleRef(pub(crate) Rc<ModuleInstance>);
+
+impl ::std::ops::Deref for ModuleRef {
+	type Target = ModuleInstance;
+	fn deref(&self) -> &ModuleInstance {
+		&self.0
+	}
+}
+
+/// An external value is the runtime representation of an entity
+/// that can be imported or exported.
+pub enum ExternVal {
+	/// [Function][`FuncInstance`].
+	///
+	/// [`FuncInstance`]: struct.FuncInstance.html
+	Func(FuncRef),
+	/// [Table][`TableInstance`].
+	///
+	/// [`TableInstance`]: struct.TableInstance.html
+	Table(TableRef),
+	/// [Memory][`MemoryInstance`].
+	///
+	/// [`MemoryInstance`]: struct.MemoryInstance.html
+	Memory(MemoryRef),
+	/// [Global][`GlobalInstance`].
+	///
+	/// Should be immutable.
+	///
+	/// [`GlobalInstance`]: struct.GlobalInstance.html
+	Global(GlobalRef),
+}
+
+impl Clone for ExternVal {
+	fn clone(&self) -> Self {
+		match *self {
+			ExternVal::Func(ref func) => ExternVal::Func(func.clone()),
+			ExternVal::Table(ref table) => ExternVal::Table(table.clone()),
+			ExternVal::Memory(ref memory) => ExternVal::Memory(memory.clone()),
+			ExternVal::Global(ref global) => ExternVal::Global(global.clone()),
+		}
+	}
+}
+
+impl fmt::Debug for ExternVal {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(
+			f,
+			"ExternVal {{ {} }}",
+			match *self {
+				ExternVal::Func(_) => "Func",
+				ExternVal::Table(_) => "Table",
+				ExternVal::Memory(_) => "Memory",
+				ExternVal::Global(_) => "Global",
+			}
+		)
+	}
+}
+
+impl ExternVal {
+	/// Get underlying function reference if this `ExternVal` contains
+	/// a function, or `None` if it is some other kind.
+	pub fn as_func(&self) -> Option<&FuncRef> {
+		match *self {
+			ExternVal::Func(ref func) => Some(func),
+			_ => None,
+		}
+	}
+
+	/// Get underlying table reference if this `ExternVal` contains
+	/// a table, or `None` if it is some other kind.
+	pub fn as_table(&self) -> Option<&TableRef> {
+		match *self {
+			ExternVal::Table(ref table) => Some(table),
+			_ => None,
+		}
+	}
+
+	/// Get underlying memory reference if this `ExternVal` contains
+	/// a memory, or `None` if it is some other kind.
+	pub fn as_memory(&self) -> Option<&MemoryRef> {
+		match *self {
+			ExternVal::Memory(ref memory) => Some(memory),
+			_ => None,
+		}
+	}
+
+	/// Get underlying global variable reference if this `ExternVal` contains
+	/// a global, or `None` if it is some other kind.
+	pub fn as_global(&self) -> Option<&GlobalRef> {
+		match *self {
+			ExternVal::Global(ref global) => Some(global),
+			_ => None,
+		}
+	}
+}
 
 #[derive(Debug)]
 pub struct ModuleInstance {
