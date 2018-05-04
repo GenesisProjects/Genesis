@@ -38,13 +38,13 @@ const WINDOW_SIZE: usize    = 1024 * 1024 * 16;
 
 const FRAME_MAX_SIZE: usize = 1024 * 16;
 
-enum FrameType {
+pub enum FrameType {
     Request,
     Response,
     Transmit
 }
 
-enum Task {
+pub enum Task {
     SyncBlock,
     SyncChain,
     SyncTransaction,
@@ -52,7 +52,7 @@ enum Task {
     SyncLog,
 }
 
-enum Role {
+pub enum Role {
     Producer,
     Normal
 }
@@ -82,6 +82,48 @@ pub struct Frame {
 
 impl Frame {
     pub fn new(buff: &[u8]) -> Option<Self> {
+        let mut buffer = ByteBuffer::from_bytes(buff);
+
+        let prefix =  buffer.read_bits(7);
+        if prefix != 0 {
+            return None;
+        }
+
+        let frame_type = match buffer.read_bits(4) {
+            0u64 => FrameType::Request,
+            1u64 => FrameType::Response,
+            2u64 => FrameType::Transmit,
+            _ => { return None; }
+        };
+
+        let role = match buffer.read_bits(4) {
+            0u64 => Role::Producer,
+            1u64 => Role::Normal,
+            _ => { return None; }
+        };
+
+        let has_rlp_payload =  match buffer.read_bits(1) {
+            0u64 => false,
+            1u64 => true,
+            _ => { return None; }
+        };
+
+
+        let task =  match buffer.read_bits(7) {
+            0u64 => Task::SyncBlock,
+            1u64 => Task::SyncChain,
+            2u64 => Task::SyncTransaction,
+            3u64 => Task::SyncAccount,
+            4u64 => Task::SyncLog,
+        };
+
+        let code =  match buffer.read_bits(9) {
+            0u64 => ReponseCode::Ok,
+            1u64 => ReponseCode::Err,
+        };
+
+
+
         unimplemented!()
     }
 
