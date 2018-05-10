@@ -271,6 +271,7 @@ impl FrameReader {
                 self.cache[0..buffer.len() - tail_len].copy_from_slice(&buffer[tail_len..buffer.len()]);
             } else {
                 self.cache[self.w_pos..self.w_pos + buffer.len()].copy_from_slice(&buffer[0..buffer.len()]);
+                self.cache[self.w_pos..self.w_pos + buffer.len()].copy_from_slice(&buffer[0..buffer.len()]);
             }
             self.w_pos = (self.w_pos + buffer.len()) % WINDOW_SIZE;
             Ok(buffer.len())

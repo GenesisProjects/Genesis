@@ -13,6 +13,7 @@ pub extern crate bytebuffer;
 #[macro_use]
 pub extern crate common;
 #[macro_use]
+pub extern crate chrono;
 pub extern crate lazy_static;
 pub extern crate mio;
 pub extern crate mio_extras;

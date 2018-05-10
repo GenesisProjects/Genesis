@@ -1,14 +1,11 @@
 use peer::*;
+use session::*;
 
 use std::collections::HashMap;
 
 use common::address::Address;
 
-struct PeerInfo {
-    peer: Peer,
-}
-
 pub struct P2PController {
-    peers_list: HashMap<String, PeerInfo>,
-    black_list: HashMap<String, PeerInfo>,
+    session_list: HashMap<String, Session>,
+    black_list: HashMap<String, Address>,
 }
