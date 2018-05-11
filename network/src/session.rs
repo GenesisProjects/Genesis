@@ -12,6 +12,7 @@ use frame::*;
 use socket::*;
 
 enum SessionStatus {
+    Init,
     Connected,
     Disconnected,
     Transmitting,
@@ -20,7 +21,7 @@ enum SessionStatus {
 pub struct Session {
     socket: PeerSocket,
     status: SessionStatus,
-    cur_task: Task,
+    cur_task: Option<Task>,
     account: Address,
     addr: SocketAddr,
     created: DateTime<Utc>,
@@ -31,7 +32,27 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn connect(addr: &SocketAddr) -> Self {
+    pub fn connect(addr: &SocketAddr, account: Address) -> Result<Self> {
+        match PeerSocket::connect(addr) {
+            Ok(r) => {
+                Ok(Session {
+                    socket: r,
+                    status: SessionStatus::Init,
+                    cur_task: None,
+                    account: account.clone(),
+                    addr: addr.clone(),
+                    created: Utc::now(),
+                    data_send: 0,
+                    data_recv: 0,
+                    frame_send: 0,
+                    frame_recv: 0
+                })
+            },
+            e@Err(_) => e
+        }
+    }
+
+    pub fn disconnect(addr: &SocketAddr) -> Self {
 
     }
 
