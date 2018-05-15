@@ -7,7 +7,7 @@ use std::io::*;
 use std::net::{Shutdown, SocketAddr};
 use std::time::Instant;
 
-use common::address::*;
+use common::address::Address as Account;
 use frame::*;
 use socket::*;
 
@@ -22,7 +22,7 @@ pub struct Session {
     socket: PeerSocket,
     status: SessionStatus,
     cur_task: Option<Task>,
-    account: Address,
+    account: Account,
     addr: SocketAddr,
     created: DateTime<Utc>,
     data_send: usize,
@@ -32,7 +32,7 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn connect(addr: &SocketAddr, account: Address) -> Result<Self> {
+    pub fn connect(addr: &SocketAddr, account: Account) -> Result<Self> {
         match PeerSocket::connect(addr) {
             Ok(r) => {
                 Ok(Session {
