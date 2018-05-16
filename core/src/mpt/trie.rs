@@ -210,7 +210,7 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T,
             let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, v);
             mpt_db_replace!(node, new_leaf_node, db)
         },
-        _ => { panic!("Unknown error!") }
+        _ => panic!("Unknown error!")
    }
 }
 

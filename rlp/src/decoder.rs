@@ -51,9 +51,7 @@ impl Decoder {
                 1usize + l_total_byte as usize + l as usize
             },
             // default
-            _ => {
-                0
-            }
+            _ => 0
         }
     }
 
