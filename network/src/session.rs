@@ -18,17 +18,35 @@ enum SessionStatus {
     Transmitting,
 }
 
-pub struct Session {
-    socket: PeerSocket,
-    status: SessionStatus,
-    cur_task: Option<Task>,
-    account: Account,
-    addr: SocketAddr,
-    created: DateTime<Utc>,
+pub struct TaskContext {
     data_send: usize,
     data_recv: usize,
     frame_send: usize,
     frame_recv: usize,
+    cur_task: Task,
+    last_frame: Option<FrameRef>
+}
+
+impl TaskContext {
+    pub fn new() -> Self {
+        TaskContext {
+            data_send: 0,
+            data_recv: 0,
+            frame_send: 0,
+            frame_recv: 0,
+            cur_task: Task::Idle,
+            last_frame: None
+        }
+    }
+}
+
+pub struct Session {
+    socket: PeerSocket,
+    status: SessionStatus,
+    account: Account,
+    addr: SocketAddr,
+    created: DateTime<Utc>,
+    context: TaskContext
 }
 
 impl Session {
@@ -38,14 +56,10 @@ impl Session {
                 Ok(Session {
                     socket: r,
                     status: SessionStatus::Init,
-                    cur_task: None,
                     account: account.clone(),
                     addr: addr.clone(),
                     created: Utc::now(),
-                    data_send: 0,
-                    data_recv: 0,
-                    frame_send: 0,
-                    frame_recv: 0
+                    context: TaskContext::new()
                 })
             },
             Err(e) => Err(e)

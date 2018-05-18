@@ -19,5 +19,6 @@ pub extern crate lazy_static;
 pub extern crate mio;
 pub extern crate mio_extras;
 pub extern crate igd;
+pub extern crate rlp;
 pub extern crate slab;
 pub extern crate snap;

@@ -1,13 +1,18 @@
 use bytebuffer::ByteBuffer;
 use common::key::PublicKey;
+use rlp::RLPSerialize;
 use std::io::{Error, ErrorKind};
 use std::sync::Mutex;
+use std::rc::Rc;
+use std::ops::Deref;
 
 lazy_static! {
     pub static ref SHARED_FRAME_READER: Mutex<FrameReader> = {
         Mutex::new(FrameReader::new())
     };
 }
+
+pub type FrameRef = Rc<Frame>;
 
 /// Frame Struct
 /// 0                   1                   2                   3
@@ -45,11 +50,13 @@ pub enum FrameType {
 }
 
 pub enum Task {
+    Idle,
     SyncBlock,
     SyncChain,
     SyncTransaction,
     SyncAccount,
     SyncLog,
+    SyncPeerList
 }
 
 pub enum Role {
@@ -65,6 +72,10 @@ enum ReponseCode {
 }
 
 type SEQ = u32;
+
+pub trait FrameSerialize<T: RLPSerialize> {
+    fn serialize(obj: &T) -> Vec<Frame>;
+}
 
 pub struct Frame {
     frame_type: FrameType,
@@ -82,6 +93,10 @@ pub struct Frame {
 
 impl Frame {
     pub fn new(buff: &[u8]) -> Option<Self> {
+        Frame::buff2frame(buff)
+    }
+
+    pub fn buff2frame(buff: &[u8]) -> Option<Frame> {
         let mut buffer = ByteBuffer::from_bytes(buff);
 
         // check if reach the minimum size
@@ -116,11 +131,13 @@ impl Frame {
 
 
         let task = match buffer.read_bits(7) {
-            0u64 => Task::SyncBlock,
-            1u64 => Task::SyncChain,
-            2u64 => Task::SyncTransaction,
-            3u64 => Task::SyncAccount,
-            4u64 => Task::SyncLog,
+            0u64 => Task::Idle,
+            1u64 => Task::SyncBlock,
+            2u64 => Task::SyncChain,
+            3u64 => Task::SyncTransaction,
+            4u64 => Task::SyncAccount,
+            5u64 => Task::SyncLog,
+            6u64 => Task::SyncPeerList,
             _ => { return None; }
         };
 
@@ -176,7 +193,13 @@ impl Frame {
         }
     }
 
-    pub fn serialize_frame(&self) -> Vec<u8> {
+    pub fn frame2buff(&self) -> &[u8] {
+        unimplemented!()
+    }
+}
+
+impl<T: RLPSerialize> FrameSerialize<T> for Frame {
+    fn serialize(obj: &T) -> Vec<Frame> {
         unimplemented!()
     }
 }
@@ -221,7 +244,7 @@ impl FrameReader {
         }
     }
 
-    pub fn write_one_frame(&mut self, frame: &Frame) -> Result<usize, Error> {
+    /*pub fn write_one_frame(&mut self, frame: &Frame) -> Result<usize, Error> {
         let frame_buff = frame.serialize_frame();
         let frame_len = frame_buff.len();
         if frame_len + self.data_len() > WINDOW_SIZE {
@@ -232,7 +255,7 @@ impl FrameReader {
             self.write_cache(&frame_buff[0..frame_len]);
             Ok(frame_len)
         }
-    }
+    }*/
 
     pub fn append_data(&mut self, data: &Vec<u8>) -> Result<usize, Error> {
         if data.len() + self.data_len() > WINDOW_SIZE {
