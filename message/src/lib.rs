@@ -17,10 +17,12 @@ lazy_static! {
 }
 
 fn random_string(length: usize) -> String {
-    rand::thread_rng()
+    use rand::Rng;
+    let s = rand::thread_rng()
         .gen_ascii_chars()
         .take(length)
-        .collect::<String>()
+        .collect::<String>();
+    s
 }
 
 pub struct MessageQueue {

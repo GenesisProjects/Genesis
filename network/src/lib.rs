@@ -14,6 +14,7 @@ pub extern crate bytebuffer;
 pub extern crate common;
 #[macro_use]
 pub extern crate chrono;
+#[macro_use]
 pub extern crate lazy_static;
 pub extern crate mio;
 pub extern crate mio_extras;
