@@ -71,7 +71,7 @@ enum ReponseCode {
     Err,
 }
 
-type SEQ = u32;
+pub type SEQ = u32;
 
 pub trait FrameSerialize<T: RLPSerialize> {
     fn serialize(obj: &T) -> Vec<Frame>;
@@ -94,6 +94,14 @@ pub struct Frame {
 impl Frame {
     pub fn new(buff: &[u8]) -> Option<Self> {
         Frame::buff2frame(buff)
+    }
+
+    pub fn get_seq(&self) -> SEQ {
+        self.seq
+    }
+
+    pub fn get_trans_range(&self) -> (SEQ, SEQ) {
+        (self.ext1, self.ext2)
     }
 
     pub fn buff2frame(buff: &[u8]) -> Option<Frame> {

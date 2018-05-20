@@ -13,9 +13,61 @@ use socket::*;
 
 enum SessionStatus {
     Init,
+    Idle,
     Connected,
     Disconnected,
     Transmitting,
+}
+
+struct FrameManager {
+    start: SEQ,
+    end: SEQ,
+    frames: Vec<FrameRef>,
+    last_frame: Option<FrameRef>,
+}
+
+impl FrameManager {
+    pub fn new() -> Self {
+        FrameManager {
+            start: 0,
+            end: 0,
+            frames: vec![],
+            last_frame: None,
+        }
+    }
+
+    fn reset(&mut self) {
+        self.start = 0;
+        self.end = 0;
+        self.frames = vec![];
+        self.last_frame = None;
+    }
+
+    fn current_seq(&self) -> Option<SEQ> {
+        match self.last_frame {
+            Some(ref frame) => Some(frame.get_seq()),
+            None => None
+        }
+    }
+
+    pub fn push_frames(&mut self, frames: &mut Vec<FrameRef>) {
+        if self.last_frame.is_none() {
+           frames.first().and_then(|frame: &FrameRef| {
+               let (start, end) = frame.get_trans_range();
+               self.start = start;
+               self.end = end;
+               self.last_frame = Some(frame.clone());
+               Some(frame.clone())
+           });
+        }
+
+        self.frames.append(frames);
+        frames.last().and_then(|frame: &FrameRef| {
+            self.last_frame = Some(frame.clone());
+            Some(frame.clone())
+        });
+        unimplemented!()
+    }
 }
 
 pub struct TaskContext {
@@ -24,7 +76,7 @@ pub struct TaskContext {
     frame_send: usize,
     frame_recv: usize,
     cur_task: Task,
-    last_frame: Option<FrameRef>
+    frame_manager: FrameManager,
 }
 
 impl TaskContext {
@@ -35,8 +87,20 @@ impl TaskContext {
             frame_send: 0,
             frame_recv: 0,
             cur_task: Task::Idle,
-            last_frame: None
+            frame_manager: FrameManager::new()
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.data_send = 0;
+        self.data_recv = 0;
+        self.frame_send = 0;
+        self.frame_recv = 0;
+        self.frame_manager.reset();
+    }
+
+    pub fn push_frames(&mut self, frames: &mut Vec<FrameRef>) {
+        self.frame_manager.push_frames(frames)
     }
 }
 
@@ -66,9 +130,23 @@ impl Session {
         }
     }
 
+    pub fn transmit(&mut self) -> Result<Vec<FrameRef>> {
+        match self.status {
+            SessionStatus::Transmitting => self.socket.read_stream_to_cache().and_then(|n: usize|
+                Ok(self.socket.read_frames_from_cache())
+            ).and_then(|frames: Vec<FrameRef>| {
+                self.context.push_frames(&mut frames.to_owned());
+                Ok(frames)
+            }),
+            _ => Err(Error::new(ErrorKind::Other, "Session is not ready"))
+        }
+
+    }
+
     pub fn disconnect(addr: &SocketAddr) -> Self {
         unimplemented!()
     }
+
 
 }
 
