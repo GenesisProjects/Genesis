@@ -36,12 +36,17 @@ impl FrameManager {
         }
     }
 
-    fn flush(&mut self) {
-
+    fn flush(&mut self) -> Vec<u8> {
+        let frames = self.frames.to_owned();
         self.start = 0;
         self.end = 0;
         self.frames = vec![];
         self.last_frame = None;
+
+        let mut result: Vec<u8> = vec![];
+        for frame in frames {
+            result.append(&mut frame.get_payload())
+        }
 
         unimplemented!()
     }

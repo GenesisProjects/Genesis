@@ -104,6 +104,10 @@ impl Frame {
         (self.ext1, self.ext2)
     }
 
+    pub fn get_payload(&self) -> Vec<u8> {
+        self.payload.to_owned().unwrap_or(vec![])
+    }
+
     pub fn buff2frame(buff: &[u8]) -> Option<Frame> {
         let mut buffer = ByteBuffer::from_bytes(buff);
 
