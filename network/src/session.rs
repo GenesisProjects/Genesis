@@ -36,11 +36,14 @@ impl FrameManager {
         }
     }
 
-    fn reset(&mut self) {
+    fn flush(&mut self) {
+
         self.start = 0;
         self.end = 0;
         self.frames = vec![];
         self.last_frame = None;
+
+        unimplemented!()
     }
 
     fn current_seq(&self) -> Option<SEQ> {
@@ -50,7 +53,26 @@ impl FrameManager {
         }
     }
 
+    fn is_full(&self) -> bool {
+        match self.last_frame {
+            Some(ref frame) => frame.get_seq() == self.end,
+            None => false
+        }
+    }
+
     pub fn push_frames(&mut self, frames: &mut Vec<FrameRef>) {
+        loop {
+            let remain_frames = self._push_frames(frames);
+            if remain_frames.is_empty() { break; }
+            if self.is_full() { self.flush(); }
+        }
+    }
+
+    fn _push_frames(&mut self, frames: &mut Vec<FrameRef>) -> Vec<FrameRef> {
+        if frames.is_empty() {
+            return vec![];
+        }
+
         if self.last_frame.is_none() {
            frames.first().and_then(|frame: &FrameRef| {
                let (start, end) = frame.get_trans_range();
@@ -61,12 +83,24 @@ impl FrameManager {
            });
         }
 
-        self.frames.append(frames);
-        frames.last().and_then(|frame: &FrameRef| {
+        let mut frames_within_range: Vec<FrameRef> = self.frames.to_owned()
+            .into_iter()
+            .filter(|frame| frame.get_seq() <= self.end && frame.get_seq() >= self.start)
+            .collect();
+
+        let frames_out_range: Vec<FrameRef> = self.frames.to_owned()
+            .into_iter()
+            .filter(|frame| frame.get_seq() > self.end)
+            .collect();
+
+        frames_within_range.last().and_then(|frame: &FrameRef| {
             self.last_frame = Some(frame.clone());
             Some(frame.clone())
         });
-        unimplemented!()
+
+        self.frames.append(&mut frames_within_range);
+
+        frames_out_range
     }
 }
 
@@ -96,7 +130,7 @@ impl TaskContext {
         self.data_recv = 0;
         self.frame_send = 0;
         self.frame_recv = 0;
-        self.frame_manager.reset();
+        self.frame_manager.flush();
     }
 
     pub fn push_frames(&mut self, frames: &mut Vec<FrameRef>) {
