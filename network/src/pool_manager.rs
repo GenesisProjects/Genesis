@@ -46,14 +46,14 @@ impl PoolManager {
         match tag.as_ref() {
             "block" => {
                 Block::deserialize(rlp).and_then(|block| {
-                    self.block_pool.obtain().as_mut().unwrap().replace(block.clone());
-                    Ok(block)
+                    self.block_pool.obtain().as_mut().unwrap().replace(block);
+                    Ok("")
                 });
             },
             "transaction" => {
                 Transaction::deserialize(rlp).and_then(|tx| {
-                    self.transaction_pool.obtain().as_mut().unwrap().replace(tx.clone());
-                    Ok(tx)
+                    self.transaction_pool.obtain().as_mut().unwrap().replace(tx);
+                    Ok("")
                 });
             },
             _ => {}

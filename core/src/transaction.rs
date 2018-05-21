@@ -24,7 +24,7 @@ pub struct TransactionBody {
     recipient: Address,
     amount: BigInt,
     payload: Vec<u8>,
-    //sig: Option<Signature>
+    sig: Option<Signature>
 }
 
 ///
@@ -58,7 +58,7 @@ impl Transaction {
                     None => BigInt::zero()
                 },
                 payload: data.to_vec(),
-                //sig: None
+                sig: None
             },
         })
     }
