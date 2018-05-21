@@ -23,7 +23,7 @@ pub mod nounce {
 ///
 ///
 #[derive(Debug)]
-struct Block {
+pub struct Block {
     pub parent: Hash,
     pub uncle: Hash,
     pub coinbase: Address,

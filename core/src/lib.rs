@@ -7,5 +7,4 @@ pub mod receipt;
 #[macro_use]
 pub extern crate common;
 pub extern crate db;
-pub extern crate gen_network;
 pub extern crate rlp;

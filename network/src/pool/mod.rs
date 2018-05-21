@@ -1,5 +1,8 @@
 use std::cell::RefCell;
 
+use rlp::RLPSerialize;
+use rlp::types::RLP;
+
 pub trait Poolable {
     fn empty_obj() -> Self;
     fn unique_id(&self) -> &String;
