@@ -46,13 +46,18 @@ impl PoolManager {
         match tag.as_ref() {
             "block" => {
                 Block::deserialize(rlp).and_then(|block| {
-                    self.block_pool.obtain().as_mut() = Some(&mut block);
-                    unimplemented!()
-                })
+                    self.block_pool.obtain().as_mut().unwrap().replace(block.clone());
+                    Ok(block)
+                });
             },
-            "transaction" => println!("1"),
-            _ => println!("something else!"),
-        }
+            "transaction" => {
+                Transaction::deserialize(rlp).and_then(|tx| {
+                    self.transaction_pool.obtain().as_mut().unwrap().replace(tx.clone());
+                    Ok(tx)
+                });
+            },
+            _ => {}
+        };
     }
 
     fn get_rlp_tag(rlp: &RLP) -> String {

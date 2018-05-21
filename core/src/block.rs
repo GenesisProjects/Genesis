@@ -22,7 +22,7 @@ pub mod nounce {
 ///
 ///
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Block {
     pub parent: Hash,
     pub uncle: Hash,
@@ -30,7 +30,7 @@ pub struct Block {
     pub root: Hash,
     pub tx_root: Hash,
     pub receipt_root: Hash,
-    pub logs_bloom: Bloom<Log>,
+    //pub logs_bloom: Bloom<Log>,
     pub difficulty: BigInt,
     pub number: BigInt,
     pub gas_used: u64,

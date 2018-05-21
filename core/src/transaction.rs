@@ -15,6 +15,7 @@ use std::marker::PhantomData;
 ///
 ///
 ///
+#[derive(Clone, Debug)]
 pub struct TransactionBody {
     account_nounce: u64,
     gas_price: BigInt,
@@ -23,12 +24,13 @@ pub struct TransactionBody {
     recipient: Address,
     amount: BigInt,
     payload: Vec<u8>,
-    sig: Option<Signature>
+    //sig: Option<Signature>
 }
 
 ///
 ///
 ///
+#[derive(Clone, Debug)]
 pub struct Transaction {
     tx_body: TransactionBody
 }
@@ -56,7 +58,7 @@ impl Transaction {
                     None => BigInt::zero()
                 },
                 payload: data.to_vec(),
-                sig: None
+                //sig: None
             },
         })
     }
