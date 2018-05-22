@@ -9,6 +9,7 @@ use std::time::Instant;
 
 use common::address::Address as Account;
 use frame::*;
+use pool_manager::SHARED_POOL_MANAGER;
 use socket::*;
 
 enum SessionStatus {
@@ -47,8 +48,8 @@ impl FrameManager {
         for frame in frames {
             result.append(&mut frame.get_payload())
         }
-
-        unimplemented!()
+        SHARED_POOL_MANAGER.lock().unwrap().accept(&result);
+        result
     }
 
     fn current_seq(&self) -> Option<SEQ> {

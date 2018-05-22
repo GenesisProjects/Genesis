@@ -15,7 +15,6 @@ use std::marker::PhantomData;
 ///
 ///
 ///
-#[derive(Clone, Debug)]
 pub struct TransactionBody {
     account_nounce: u64,
     gas_price: BigInt,
@@ -30,7 +29,6 @@ pub struct TransactionBody {
 ///
 ///
 ///
-#[derive(Clone, Debug)]
 pub struct Transaction {
     tx_body: TransactionBody
 }

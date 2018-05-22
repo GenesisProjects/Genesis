@@ -99,17 +99,13 @@ impl PeerSocket {
                             if size < bytes_write {
                                 self.cur_write_queue_size -= size;
                                 index += size;
-                            } else {
-                                return Ok(bytes_write);
-                            }
+                            } else { return Ok(bytes_write); }
                         }
                         Err(e) =>  { return Err(From::from(e)); }
                     }
                 }
             }
-            Err(error) => {
-                Err(From::from(error))
-            }
+            Err(error) => Err(From::from(error))
         }
 
     }

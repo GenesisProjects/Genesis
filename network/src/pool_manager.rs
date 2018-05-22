@@ -5,7 +5,15 @@ use rlp::decoder::Decoder;
 use rlp::types::RLP;
 use rlp::RLPSerialize;
 
+use std::sync::Mutex;
+
 use super::pool::*;
+
+lazy_static! {
+    pub static ref SHARED_POOL_MANAGER: Mutex<PoolManager> = {
+        Mutex::new(PoolManager::new())
+    };
+}
 
 impl super::pool::Poolable for Block {
     fn empty_obj() -> Self {
@@ -33,12 +41,16 @@ pub struct PoolManager {
 }
 
 impl PoolManager {
+    pub fn new() -> Self {
+        unimplemented!()
+    }
+
     pub fn accept(&mut self, data: &Vec<u8>) {
         let rlp = Decoder::decode(data);
-        /*rlp.and_then(|rlp| {
-            None
-        });*/
-        unimplemented!()
+        rlp.and_then(|rlp| {
+            self.pooling(&rlp);
+            Some(rlp)
+        });
     }
 
     fn pooling(&mut self, rlp: &RLP) {
