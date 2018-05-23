@@ -10,9 +10,11 @@ use mio::net::{TcpListener, TcpStream};
 
 use common::address::Address;
 
+const SERVER_TOKEN: Token = Token(0);
+
 lazy_static! {
     pub static ref TOKEN_SEQ: Mutex<usize> = {
-        Mutex::new(0usize)
+        Mutex::new(1usize)
     };
 }
 
@@ -30,6 +32,7 @@ struct NetworkEventLoop {
 }
 
 impl NetworkEventLoop {
+
     pub fn new(events_size: usize) -> Self {
         // Event storage
         let mut events = Events::with_capacity(events_size);
@@ -43,9 +46,14 @@ impl NetworkEventLoop {
         }
     }
 
-    pub fn register(&self, peer: &Peer) -> Token {
+    pub fn register_server(&self, listener: &TcpListener) {
+        let new_token = SERVER_TOKEN;
+        self.poll.register(listener, new_token, Ready::readable(), PollOpt::edge());
+    }
+
+    pub fn register_peer(&self, peer: &Peer) -> Token {
         let new_token = token_generator();
-        self.poll.register(peer, new_token, Ready::readable(), PollOpt::level());
+        self.poll.register(peer, new_token, Ready::readable(), PollOpt::edge());
         new_token
     }
 
@@ -70,7 +78,7 @@ pub struct P2PController {
     peer_list: HashMap<Token, (PeerRef, usize)>,
     black_list: Vec<(Address, usize)>,
     eventloop: NetworkEventLoop,
-    listener: Option<TcpListener>,
+    listener: TcpListener,
 }
 
 impl P2PController {
@@ -116,6 +124,26 @@ impl P2PController {
         loop {
             match self.eventloop.process() {
                 Ok(events_size) => {
+                    for event in &(self.eventloop.events) {
+                        match event.token() {
+                            SERVER_TOKEN => {
+                                match self.listener.accept() {
+                                    Ok((socket, _)) => {
+
+                                    },
+                                    Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+                                        // EAGAIN
+                                    },
+                                    e => {
+
+                                    }
+                                }
+                            },
+                            peer_token => {
+
+                            }
+                        }
+                    }
                     unimplemented!()
                 },
                 Err(e) => {
