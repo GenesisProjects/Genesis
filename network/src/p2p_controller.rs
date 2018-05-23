@@ -23,19 +23,21 @@ fn token_generator() -> Token {
     token
 }
 
-struct EventLoop {
+struct NetworkEventLoop {
+    loop_count: usize,
     events: Events,
     poll: Poll
 }
 
-impl EventLoop {
+impl NetworkEventLoop {
     pub fn new(events_size: usize) -> Self {
         // Event storage
         let mut events = Events::with_capacity(events_size);
         // The `Poll` instance
         let poll = Poll::new().expect("Can not instantialize poll");
 
-        EventLoop {
+        NetworkEventLoop {
+            loop_count: 0usize,
             events: events,
             poll: poll
         }
@@ -56,6 +58,7 @@ impl EventLoop {
             for event in &self.events {
                 let token = event.token();
             }
+            self.loop_count += 1;
             Ok(events_size)
         });
 
@@ -64,10 +67,9 @@ impl EventLoop {
 }
 
 pub struct P2PController {
-    loop_count: usize,
     peer_list: HashMap<Token, (PeerRef, usize)>,
     black_list: Vec<(Address, usize)>,
-    eventloop: EventLoop,
+    eventloop: NetworkEventLoop,
     listener: Option<TcpListener>,
 }
 
