@@ -11,7 +11,7 @@ use std::io::{Error, ErrorKind};
 #[inline]
 fn malformed_err() -> (Result<RLP>, usize) { (Err(Error::new(ErrorKind::Other, "Malformed input")), 0) }
 
-pub struct Decoder {}
+pub struct Decoder;
 
 impl Decoder {
     #[inline]
@@ -51,9 +51,7 @@ impl Decoder {
                 1usize + l_total_byte as usize + l as usize
             },
             // default
-            _ => {
-                0
-            }
+            _ => 0
         }
     }
 

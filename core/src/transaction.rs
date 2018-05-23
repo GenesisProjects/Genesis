@@ -10,8 +10,6 @@ use self::num::Zero;
 use self::rlp::RLPSerialize;
 use self::rlp::types::*;
 
-use gen_network::pool::*;
-
 use std::marker::PhantomData;
 
 ///
@@ -70,16 +68,6 @@ impl RLPSerialize for Transaction {
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        unimplemented!()
-    }
-}
-
-impl Poolable for Transaction {
-    fn empty_obj() -> Self {
-        unimplemented!()
-    }
-
-    fn unique_id(&self) -> &String {
         unimplemented!()
     }
 }

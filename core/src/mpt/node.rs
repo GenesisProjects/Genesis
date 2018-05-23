@@ -218,9 +218,7 @@ impl<T: RLPSerialize + Clone> RLPSerialize for TrieNode<T> {
                                                key: from_slice_to_key(key)
                                            })
                                        },
-                                        _ => {
-                                            Err(RLPError::RLPErrorUnknown)
-                                        }
+                                        _ => { Err(RLPError::RLPErrorUnknown) }
                                    }
                                }
                            },

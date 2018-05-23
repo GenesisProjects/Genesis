@@ -5,6 +5,7 @@ authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
 bytebuffer = "0.2.1"
+chrono = "0.4.2"
 config = "0.8"
 igd = "0.7"
 lazy_static = "1.0.0"
@@ -14,4 +15,6 @@ slab = "0.2"
 snap = "0.2"
 
 common = { version = "0.1.0", path = "../common" }
+gen_core = { version = "0.1.0", path = "../core" }
+rlp = { version = "0.1.0", path = "../rlp" }
 role = { version = "0.1.0", path = "../role" }

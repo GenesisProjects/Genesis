@@ -1,19 +1,22 @@
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
+
+use bytebuffer::*;
+use frame::*;
+
 use std::io::*;
 use std::mem;
 use std::net::{Shutdown, SocketAddr};
 use std::time::Instant;
-use bytebuffer::*;
-use frame::*;
+use std::rc::Rc;
 
 const READ_BUF_LEN: usize = 1024 * 1024;
 const WRITE_BUF_LEN: usize = 1024 * 1024;
-
-static mut BUFFER: [u8; 64 * 1024] = [0; 64 * 1024];
+const BUFFER_WINDOW_SIZE: usize =  64 * 1024;
 
 pub struct PeerSocket {
     stream: TcpStream,
+    frame_reader: FrameReader,
     read_buffer: ByteBuffer,
     write_queue: ByteBuffer,
     cur_read_buffer_size: usize,
@@ -30,6 +33,7 @@ impl PeerSocket {
         match TcpStream::connect(addr) {
             Ok(r) => Ok(PeerSocket {
                 stream: r,
+                frame_reader: FrameReader::new(),
                 read_buffer: read_buf,
                 write_queue: write_buf,
                 cur_read_buffer_size: 0usize,
@@ -47,6 +51,7 @@ impl PeerSocket {
 
         PeerSocket {
             stream: stream,
+            frame_reader: FrameReader::new(),
             read_buffer: read_buf,
             write_queue: write_buf,
             cur_read_buffer_size: 0usize,
@@ -56,7 +61,7 @@ impl PeerSocket {
 
     pub fn read_stream_to_cache(&mut self) -> Result<usize> {
         // the mio reading window is max at 64k (64 * 1024)
-        let mut buffer = [0; 64 * 1024];
+        let mut buffer = [0; BUFFER_WINDOW_SIZE];
 
         match self.stream.read(&mut buffer) {
             Ok(bytes_read) => {
@@ -83,7 +88,7 @@ impl PeerSocket {
 
     pub fn write_stream_from_cache(&mut self) -> Result<usize> {
         // the genesis writing window is max at 64k (64 * 1024)
-        let mut buffer = [0; 64 * 1024];
+        let mut buffer = [0; BUFFER_WINDOW_SIZE];
 
         match self.write_queue.read(&mut buffer[ .. ]) {
             Ok(bytes_write) => {
@@ -94,31 +99,26 @@ impl PeerSocket {
                             if size < bytes_write {
                                 self.cur_write_queue_size -= size;
                                 index += size;
-                            } else {
-                                return Ok(bytes_write);
-                            }
+                            } else { return Ok(bytes_write); }
                         }
                         Err(e) =>  { return Err(From::from(e)); }
                     }
                 }
             }
-            Err(error) => {
-                Err(From::from(error))
-            }
+            Err(error) => Err(From::from(error))
         }
 
     }
 
-    pub fn read_frames_from_cache(&mut self) -> Vec<Frame> {
-        let mut result: Vec<Frame> = vec![];
+    pub fn read_frames_from_cache(&mut self) -> Vec<FrameRef> {
+        let mut result: Vec<FrameRef> = vec![];
 
         let temp = self.read_buffer.read_bytes(self.cur_read_buffer_size);
-        let mut reader = SHARED_FRAME_READER.lock().unwrap();
-        reader.append_data(&temp);
+        self.frame_reader.append_data(&temp);
 
         loop {
-            match reader.read_one_frame() {
-                Ok(f) => { result.push(f); },
+            match self.frame_reader.read_one_frame() {
+                Ok(f) => { result.push(Rc::new(f)); },
                 Err(e) => match e.kind() {
                     ErrorKind::WouldBlock => { break; },
                     _ => { continue; }
