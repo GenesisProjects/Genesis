@@ -13,13 +13,17 @@ use pool_manager::SHARED_POOL_MANAGER;
 use socket::*;
 
 enum SessionStatus {
+    Init,
+    RequestConnection,      // Client Only
+    EstablishConnection,    // Server Only
+    Rejected,               // Server Only
+
     Connected,
     Disconnected,
-    Init,
     Idle,
-    ReceivingPrepare,
+    WaitReceiving,
     Receiving,
-    TransmittingPrepare,
+    WaitTransmitting,
     Transmitting
 }
 
