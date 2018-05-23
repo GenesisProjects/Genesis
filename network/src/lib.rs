@@ -3,7 +3,6 @@ pub mod ip_addr;
 pub mod message;
 pub mod nat;
 pub mod peer;
-pub mod peer_manager;
 pub mod p2p_controller;
 pub mod socket;
 pub mod pool;

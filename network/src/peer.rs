@@ -1,20 +1,28 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::time::{Duration, SystemTime};
+use std::rc::Rc;
 
-use peer_manager::PeerManager;
 use session::Session;
 
 use common::address::Address;
+
+pub type PeerRef = Rc<Peer>;
 
 enum PeerType {
     Normal,
     Super,
 }
 
-enum PeerStatus {
-    Actived,
-    Disabled,
-    Disconnected,
+pub struct BlockInfo {
+    block_len: usize,
+    last_block_num: usize,
+
+    esitmated_cycle_num: usize
+}
+
+pub struct PeerTable {
+    table: Vec<Peer>,
+    limit: usize
 }
 
 pub struct Peer {
@@ -25,12 +33,14 @@ pub struct Peer {
     data_send: usize,
     data_received: usize,
     address: Address,
-    status: PeerStatus,
     session: Session,
+
+    block_info: BlockInfo,
+    peer_table: PeerTable
 }
 
 impl Peer {
-    pub fn is_on_black_list(manager: &PeerManager) -> bool {
+    pub fn update_peer_table(new_peer_ref: PeerRef) {
         unimplemented!()
     }
 }

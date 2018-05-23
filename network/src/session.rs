@@ -13,11 +13,14 @@ use pool_manager::SHARED_POOL_MANAGER;
 use socket::*;
 
 enum SessionStatus {
-    Init,
-    Idle,
     Connected,
     Disconnected,
-    Transmitting,
+    Init,
+    Idle,
+    ReceivingPrepare,
+    Receiving,
+    TransmittingPrepare,
+    Transmitting
 }
 
 struct FrameManager {
@@ -170,7 +173,7 @@ impl Session {
         }
     }
 
-    pub fn transmit(&mut self) -> Result<Vec<FrameRef>> {
+    pub fn recieve(&mut self) -> Result<Vec<FrameRef>> {
         match self.status {
             SessionStatus::Transmitting => self.socket.read_stream_to_cache().and_then(|n: usize|
                 Ok(self.socket.read_frames_from_cache())
