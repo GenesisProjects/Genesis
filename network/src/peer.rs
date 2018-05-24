@@ -1,20 +1,24 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::time::{Duration, SystemTime};
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::io::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 
 use session::Session;
-use common::address::Address;
+use common::address::Address as Account;
 
 pub type PeerRef = Rc<Peer>;
+pub type WeakPeerRef = Weak<Peer>;
 
+#[derive(Clone,Debug)]
 enum PeerType {
     Normal,
     Super,
+    Unknown
 }
 
+#[derive(Clone,Debug)]
 pub struct BlockInfo {
     block_len: usize,
     last_block_num: usize,
@@ -23,25 +27,58 @@ pub struct BlockInfo {
 }
 
 pub struct PeerTable {
-    table: Vec<Peer>,
+    table: Vec<(Account, SocketAddr)>,
     limit: usize
+}
+
+impl Clone for PeerTable {
+    fn clone(&self) -> Self {
+        PeerTable {
+            table: self.table.iter().map(|peer_ref| peer_ref.clone()).collect(),
+            limit: self.limit
+        }
+    }
+}
+
+impl PeerTable {
+    pub fn new() -> Self {
+        // TODO: make limit configuable
+        PeerTable {
+            table: vec![],
+            limit: 512
+        }
+    }
 }
 
 pub struct Peer {
     ip_addr: SocketAddr,
-    port: u16,
     peer_type: PeerType,
-    connected_at: SystemTime,
-    data_send: usize,
-    data_received: usize,
-    address: Address,
+    account: Option<Account>,
     session: Session,
 
-    block_info: BlockInfo,
+    block_info: Option<BlockInfo>,
     peer_table: PeerTable
 }
 
 impl Peer {
+    pub fn connect(addr: &SocketAddr) -> Result<Self> {
+        Session::connect(addr).and_then(|session| {
+            Ok(Peer {
+                ip_addr: addr.clone(),
+                peer_type: PeerType::Unknown,
+                account: None,
+                session: session,
+
+                block_info: None,
+                peer_table: PeerTable::new()
+            })
+        })
+    }
+
+    pub fn update(&mut self, block_info: &BlockInfo) {
+        self.block_info = Some(block_info.clone());
+    }
+
     pub fn update_peer_table(new_peer_ref: PeerRef) {
         unimplemented!()
     }

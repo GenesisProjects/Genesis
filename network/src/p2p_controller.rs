@@ -84,7 +84,18 @@ pub struct P2PController {
 impl P2PController {
 
     fn new() -> Self {
-        unimplemented!()
+        //TODO: load port from config
+        let addr = "127.0.0.1:39999".parse().unwrap();
+        let server = TcpListener::bind(&addr).unwrap();
+        //TODO: load events size from config
+        let event_loop = NetworkEventLoop::new(1024);
+        let mut peer_list = HashMap::<Token, (PeerRef, usize)>::new();
+        P2PController {
+            peer_list: peer_list,
+            black_list: vec![],
+            eventloop: event_loop,
+            listener: server,
+        }
     }
 
     fn init(&mut self, event_size: usize) {

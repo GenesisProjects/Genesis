@@ -154,20 +154,18 @@ impl TaskContext {
 pub struct Session {
     socket: PeerSocket,
     status: SessionStatus,
-    account: Account,
     addr: SocketAddr,
     created: DateTime<Utc>,
     context: TaskContext
 }
 
 impl Session {
-    pub fn connect(addr: &SocketAddr, account: Account) -> Result<Self> {
+    pub fn connect(addr: &SocketAddr) -> Result<Self> {
         match PeerSocket::connect(addr) {
             Ok(r) => {
                 Ok(Session {
                     socket: r,
                     status: SessionStatus::Init,
-                    account: account.clone(),
                     addr: addr.clone(),
                     created: Utc::now(),
                     context: TaskContext::new()
