@@ -5,7 +5,7 @@ use std::io::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 
-use session::Session;
+use session::*;
 use common::address::Address as Account;
 
 pub type PeerRef = Rc<Peer>;
@@ -48,6 +48,10 @@ impl PeerTable {
             limit: 512
         }
     }
+
+    pub fn table(&self) -> Vec<(Account, SocketAddr)> {
+        self.clone().table
+    }
 }
 
 pub struct Peer {
@@ -81,6 +85,18 @@ impl Peer {
 
     pub fn update_peer_table(new_peer_ref: PeerRef) {
         unimplemented!()
+    }
+
+    pub fn status(&self) -> SessionStatus {
+        self.session.status()
+    }
+
+    pub fn peer_table(&self) -> Vec<(Account, SocketAddr)> {
+        self.peer_table.clone().table
+    }
+
+    pub fn account(&self) -> Option<Account> {
+        self.account
     }
 }
 

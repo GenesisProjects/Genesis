@@ -7,8 +7,9 @@ use std::sync::Mutex;
 
 use mio::*;
 use mio::net::{TcpListener, TcpStream};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
-use common::address::Address;
+use common::address::Address as Account;
 
 const SERVER_TOKEN: Token = Token(0);
 
@@ -75,8 +76,8 @@ impl NetworkEventLoop {
 }
 
 pub struct P2PController {
-    peer_list: HashMap<Token, (PeerRef, usize)>,
-    black_list: Vec<(Address, usize)>,
+    peer_list: HashMap<Token, PeerRef>,
+    black_list: Vec<Account>,
     eventloop: NetworkEventLoop,
     listener: TcpListener,
 }
@@ -89,7 +90,7 @@ impl P2PController {
         let server = TcpListener::bind(&addr).unwrap();
         //TODO: load events size from config
         let event_loop = NetworkEventLoop::new(1024);
-        let mut peer_list = HashMap::<Token, (PeerRef, usize)>::new();
+        let mut peer_list = HashMap::<Token, PeerRef>::new();
         P2PController {
             peer_list: peer_list,
             black_list: vec![],
@@ -102,7 +103,11 @@ impl P2PController {
 
     }
 
-    fn search_peers(&self) -> Vec<PeerRef> {
+    fn search_peers(&self) -> Vec<SocketAddr> {
+        let peer_tables = self.peer_list.iter().map(|(token, peer_ref)| {
+            (token.clone(), peer_ref.peer_table())
+        }).collect();
+
         unimplemented!()
     }
 
@@ -122,7 +127,7 @@ impl P2PController {
         unimplemented!()
     }
 
-    fn ban_peer(addr: Address, loops: usize) {
+    fn ban_peer(addr: Account, loops: usize) {
         unimplemented!()
     }
 
