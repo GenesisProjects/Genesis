@@ -4,12 +4,13 @@ use session::*;
 use std::collections::HashMap;
 use std::io::*;
 use std::sync::Mutex;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use mio::*;
 use mio::net::{TcpListener, TcpStream};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use common::address::Address as Account;
+use nat::SocketInfo;
 
 const SERVER_TOKEN: Token = Token(0);
 
@@ -78,7 +79,9 @@ impl NetworkEventLoop {
 pub struct P2PController {
     account: Account,
     peer_list: HashMap<Token, PeerRef>,
-    black_list: Vec<Account>,
+    max_allowed_peers: usize,
+    block_list: Vec<SocketAddr>,
+    max_blocked_peers: usize,
     eventloop: NetworkEventLoop,
     listener: TcpListener,
 }
@@ -91,24 +94,31 @@ impl P2PController {
         let server = TcpListener::bind(&addr).unwrap();
         //TODO: load events size from config
         let event_loop = NetworkEventLoop::new(1024);
+        //TODO: max_allowed_peers configuable
+        let max_allowed_peers = 512;
+        //TODO: max_blocked_peers configuable
+        let max_blocked_peers = 1024;
+
         let mut peer_list = HashMap::<Token, PeerRef>::new();
         P2PController {
             account: account.clone(),
             peer_list: peer_list,
-            black_list: vec![],
+            max_allowed_peers: max_allowed_peers,
+            block_list: vec![],
+            max_blocked_peers: max_blocked_peers,
             eventloop: event_loop,
             listener: server,
         }
     }
 
-    fn init(&mut self, event_size: usize) {
+    fn bootstrap(&mut self) {
 
     }
 
-    fn search_peers(&self) -> Vec<(Account, SocketAddr)> {
+    fn research_peers(&self) -> Vec<(Account, SocketInfo)> {
         let mut raw_peers_table = self.peer_list.values().map(|peer_ref| {
             peer_ref.peer_table()
-        }).fold(Vec::<(Account, SocketAddr)>::new(), |mut init, ref mut table: Vec<(Account,SocketAddr)>| {
+        }).fold(Vec::<(Account, SocketInfo)>::new(), |mut init, ref mut table: Vec<(Account,SocketInfo)>| {
             init.append(table);
             init
         });
@@ -121,7 +131,10 @@ impl P2PController {
         raw_peers_table = raw_peers_table.into_iter().filter(|&(ref addr, _)| *addr != self.account).collect();
 
         // filter out in current peer list
-        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref addr, ref socket)| !self.socket_exist(socket)).collect();
+        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref account, (ref addr, ref port))| !self.socket_exist(addr)).collect();
+
+        // filter out in block list
+        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref account, (ref addr, ref port))| !self.socket_blocked(addr)).collect();
 
         raw_peers_table
     }
@@ -133,6 +146,20 @@ impl P2PController {
             Some(_) => true,
             _ => false
         }
+    }
+
+    fn socket_blocked(&self, addr: &SocketAddr) -> bool {
+        match self.block_list.iter().find(|&blocked_addr| {
+            *blocked_addr == *addr
+        }) {
+            Some(_) => true,
+            _ => false
+        }
+    }
+
+
+    fn peers_persist(&self) -> Result<usize> {
+        unimplemented!()
     }
 
     fn default_peers(&self) -> Vec<PeerRef> {

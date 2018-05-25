@@ -5,6 +5,8 @@ use std::io::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 
+use nat::SocketInfo;
+
 use session::*;
 use common::address::Address as Account;
 
@@ -27,7 +29,7 @@ pub struct BlockInfo {
 }
 
 pub struct PeerTable {
-    table: Vec<(Account, SocketAddr)>,
+    table: Vec<(Account, SocketInfo)>,
     limit: usize
 }
 
@@ -49,7 +51,7 @@ impl PeerTable {
         }
     }
 
-    pub fn table(&self) -> Vec<(Account, SocketAddr)> {
+    pub fn table(&self) -> Vec<(Account, SocketInfo)> {
         self.clone().table
     }
 }
@@ -91,7 +93,7 @@ impl Peer {
         self.session.status()
     }
 
-    pub fn peer_table(&self) -> Vec<(Account, SocketAddr)> {
+    pub fn peer_table(&self) -> Vec<(Account, SocketInfo)> {
         self.peer_table.clone().table
     }
 
