@@ -34,7 +34,7 @@ pub struct PeerTable {
 impl Clone for PeerTable {
     fn clone(&self) -> Self {
         PeerTable {
-            table: self.table.iter().map(|peer_ref| peer_ref.clone()).collect(),
+            table: self.table.iter().map(|peer_info| peer_info.clone()).collect(),
             limit: self.limit
         }
     }
@@ -96,7 +96,11 @@ impl Peer {
     }
 
     pub fn account(&self) -> Option<Account> {
-        self.account
+        self.account.clone()
+    }
+
+    pub fn addr(&self) -> SocketAddr {
+        self.ip_addr.clone()
     }
 }
 

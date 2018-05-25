@@ -7,7 +7,7 @@ use self::rust_base58::{ToBase58, FromBase58};
 use super::key::*;
 
 /// Common key operations
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd)]
 pub struct Address {
     pub text: String
 }

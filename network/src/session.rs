@@ -12,6 +12,7 @@ use frame::*;
 use pool_manager::SHARED_POOL_MANAGER;
 use socket::*;
 
+#[derive(Debug, Clone)]
 pub enum SessionStatus {
     Init,
     RequestConnection,      // Client Only
@@ -193,7 +194,7 @@ impl Session {
     }
 
     pub fn status(&self) -> SessionStatus {
-        self.status
+        self.status.clone()
     }
 
 }

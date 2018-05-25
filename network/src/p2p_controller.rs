@@ -76,6 +76,7 @@ impl NetworkEventLoop {
 }
 
 pub struct P2PController {
+    account: Account,
     peer_list: HashMap<Token, PeerRef>,
     black_list: Vec<Account>,
     eventloop: NetworkEventLoop,
@@ -84,7 +85,7 @@ pub struct P2PController {
 
 impl P2PController {
 
-    fn new() -> Self {
+    fn new(account: &Account) -> Self {
         //TODO: load port from config
         let addr = "127.0.0.1:39999".parse().unwrap();
         let server = TcpListener::bind(&addr).unwrap();
@@ -92,6 +93,7 @@ impl P2PController {
         let event_loop = NetworkEventLoop::new(1024);
         let mut peer_list = HashMap::<Token, PeerRef>::new();
         P2PController {
+            account: account.clone(),
             peer_list: peer_list,
             black_list: vec![],
             eventloop: event_loop,
@@ -103,12 +105,34 @@ impl P2PController {
 
     }
 
-    fn search_peers(&self) -> Vec<SocketAddr> {
-        let peer_tables = self.peer_list.iter().map(|(token, peer_ref)| {
-            (token.clone(), peer_ref.peer_table())
-        }).collect();
+    fn search_peers(&self) -> Vec<(Account, SocketAddr)> {
+        let mut raw_peers_table = self.peer_list.values().map(|peer_ref| {
+            peer_ref.peer_table()
+        }).fold(Vec::<(Account, SocketAddr)>::new(), |mut init, ref mut table: Vec<(Account,SocketAddr)>| {
+            init.append(table);
+            init
+        });
 
-        unimplemented!()
+        // filter out identical elements
+        raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
+        raw_peers_table.dedup_by(|&mut (ref addr_a, _), &mut (ref addr_b, _)| *addr_a == *addr_b);
+
+        // filter out self
+        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref addr, _)| *addr != self.account).collect();
+
+        // filter out in current peer list
+        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref addr, ref socket)| !self.socket_exist(socket)).collect();
+
+        raw_peers_table
+    }
+
+    fn socket_exist(&self, addr: &SocketAddr) -> bool {
+        match self.peer_list.iter().find(|&(token, peer_ref)| {
+            peer_ref.addr() == *addr
+        }) {
+            Some(_) => true,
+            _ => false
+        }
     }
 
     fn default_peers(&self) -> Vec<PeerRef> {
