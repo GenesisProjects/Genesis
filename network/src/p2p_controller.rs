@@ -101,7 +101,7 @@ impl P2PController {
         //TODO: max_blocked_peers configuable
         let max_blocked_peers = 1024;
         //TODO: max_waiting_list configuable
-        let max_blocked_peers = 1024;
+        let max_waiting_list = 1024;
 
         let mut peer_list = HashMap::<Token, PeerRef>::new();
         P2PController {
