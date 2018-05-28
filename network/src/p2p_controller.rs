@@ -80,6 +80,8 @@ pub struct P2PController {
     account: Account,
     peer_list: HashMap<Token, PeerRef>,
     max_allowed_peers: usize,
+    waitting_list: Vec<SocketAddr>,
+    max_waiting_list: usize,
     block_list: Vec<SocketAddr>,
     max_blocked_peers: usize,
     eventloop: NetworkEventLoop,
@@ -98,12 +100,16 @@ impl P2PController {
         let max_allowed_peers = 512;
         //TODO: max_blocked_peers configuable
         let max_blocked_peers = 1024;
+        //TODO: max_waiting_list configuable
+        let max_blocked_peers = 1024;
 
         let mut peer_list = HashMap::<Token, PeerRef>::new();
         P2PController {
             account: account.clone(),
             peer_list: peer_list,
             max_allowed_peers: max_allowed_peers,
+            waitting_list: vec![],
+            max_waiting_list: max_waiting_list,
             block_list: vec![],
             max_blocked_peers: max_blocked_peers,
             eventloop: event_loop,
@@ -111,11 +117,11 @@ impl P2PController {
         }
     }
 
-    fn bootstrap(&mut self) {
+    fn broadcast(&mut self) {
 
     }
 
-    fn research_peers(&self) -> Vec<(Account, SocketInfo)> {
+    fn search_peers(&self) -> Vec<(Account, SocketInfo)> {
         let mut raw_peers_table = self.peer_list.values().map(|peer_ref| {
             peer_ref.peer_table()
         }).fold(Vec::<(Account, SocketInfo)>::new(), |mut init, ref mut table: Vec<(Account,SocketInfo)>| {
@@ -182,7 +188,7 @@ impl P2PController {
         unimplemented!()
     }
 
-    fn connect_peer<'a>(peer_ref: PeerRef, local_block_info: &'a BlockInfo) -> Result<BlockInfo> {
+    fn register<'a>(&self, peer_ref: PeerRef, local_block_info: &'a BlockInfo) -> Result<BlockInfo> {
         unimplemented!()
     }
 

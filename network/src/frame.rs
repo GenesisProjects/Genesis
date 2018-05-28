@@ -51,6 +51,8 @@ pub enum FrameType {
 
 pub enum Task {
     Idle,
+    Bootstrap,
+    Register,
     SyncBlock,
     SyncChain,
     SyncTransaction,
@@ -150,6 +152,8 @@ impl Frame {
             4u64 => Task::SyncAccount,
             5u64 => Task::SyncLog,
             6u64 => Task::SyncPeerList,
+            7u64 => Task::Bootstrap,
+            8u64 => Task::Register,
             _ => { return None; }
         };
 
