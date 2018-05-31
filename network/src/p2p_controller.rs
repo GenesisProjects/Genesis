@@ -10,7 +10,7 @@ use mio::*;
 use mio::net::{TcpListener, TcpStream};
 
 use common::address::Address as Account;
-use nat::SocketInfo;
+use nat::*;
 
 const SERVER_TOKEN: Token = Token(0);
 
@@ -115,6 +115,10 @@ impl P2PController {
             eventloop: event_loop,
             listener: server,
         }
+    }
+
+    fn bootstrap(&mut self) {
+        //get_public_ip_addr(Protocol::UPNP, )
     }
 
     fn broadcast(&mut self) {

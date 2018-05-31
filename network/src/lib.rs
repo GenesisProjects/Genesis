@@ -8,6 +8,7 @@ pub mod socket;
 pub mod pool;
 pub mod pool_manager;
 pub mod session;
+pub mod utils;
 
 pub extern crate bytebuffer;
 #[macro_use]
@@ -23,3 +24,4 @@ pub extern crate igd;
 pub extern crate rlp;
 pub extern crate slab;
 pub extern crate snap;
+pub extern crate regex;
