@@ -6,11 +6,11 @@ use std::io::*;
 use std::sync::Mutex;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
-use mio::*;
-use mio::net::{TcpListener, TcpStream};
-
 use common::address::Address as Account;
 use nat::*;
+
+use mio::*;
+use mio::net::{TcpListener, TcpStream};
 
 const SERVER_TOKEN: Token = Token(0);
 
@@ -172,7 +172,7 @@ impl P2PController {
         unimplemented!()
     }
 
-    fn default_peers(&self) -> Vec<PeerRef> {
+    fn bootstrap_peers(&self) -> Vec<PeerRef> {
         unimplemented!()
     }
 

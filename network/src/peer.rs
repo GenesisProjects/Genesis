@@ -2,13 +2,14 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV
 use std::time::{Duration, SystemTime};
 use std::rc::{Rc, Weak};
 use std::io::*;
+use std::result::Result as SerdeResult;
 
-use mio::{Evented, Poll, PollOpt, Ready, Token};
-
+use common::address::Address as Account;
+use session::*;
 use nat::SocketInfo;
 
-use session::*;
-use common::address::Address as Account;
+use mio::{Evented, Poll, PollOpt, Ready, Token};
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
 pub type PeerRef = Rc<Peer>;
 pub type WeakPeerRef = Weak<Peer>;
@@ -103,6 +104,18 @@ impl Peer {
 
     pub fn addr(&self) -> SocketAddr {
         self.ip_addr.clone()
+    }
+}
+
+impl Serialize for Peer {
+    fn serialize<S>(&self, serializer: S) -> SerdeResult<<S as Serializer>::Ok, <S as Serializer>::Error> where S: Serializer {
+        unimplemented!()
+    }
+}
+
+impl Deserialize for Peer {
+    fn deserialize<D>(deserializer: D) -> SerdeResult<Self, <D as Deserializer>::Error> where D: Deserializer {
+        unimplemented!()
     }
 }
 

@@ -22,6 +22,8 @@ pub extern crate mio;
 pub extern crate mio_extras;
 pub extern crate igd;
 pub extern crate rlp;
+pub extern crate serde;
+pub extern crate serde_json;
 pub extern crate slab;
 pub extern crate snap;
 pub extern crate regex;
