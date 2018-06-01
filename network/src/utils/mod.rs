@@ -2,7 +2,8 @@ use std::process::Command;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use regex::{Regex, Captures};
 
-pub fn get_gateway_ip() -> Option<IpAddr> { get() }
+pub fn get_local_ip() -> Option<IpAddr> { get() }
+
 
 #[cfg(target_os = "linux")]
 fn get() -> Option<IpAddr> {
@@ -35,7 +36,7 @@ fn get() -> Option<IpAddr> {
 
     let stdout = String::from_utf8(output.stdout).unwrap();
 
-    let re = Regex::new(r#"(?m)^.*Default Gateway.*?(([0-9]*\.){3}[0-9]*).*$"#).unwrap();
+    let re = Regex::new(r#"(?m)^.*IPv4 Address.*?(([0-9]*\.){3}[0-9]*).*$"#).unwrap();
     for cap in re.captures_iter(&stdout) {
         let host = &cap[1];
         if host != "127.0.0.1" {
