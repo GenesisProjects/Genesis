@@ -1,5 +1,6 @@
 use peer::*;
 use session::*;
+use utils::*;
 
 use std::collections::HashMap;
 use std::io::*;
@@ -90,7 +91,7 @@ pub struct P2PController {
 
 impl P2PController {
 
-    fn new(account: &Account) -> Self {
+    pub fn new(account: &Account) -> Self {
         //TODO: load port from config
         let addr = "127.0.0.1:39999".parse().unwrap();
         let server = TcpListener::bind(&addr).unwrap();
@@ -117,12 +118,20 @@ impl P2PController {
         }
     }
 
-    fn bootstrap(&mut self) {
-        //get_public_ip_addr(Protocol::UPNP, )
+    pub fn bootstrap(&mut self) {
+        //TODO: port configuable
+        let socket_info = match get_local_ip() {
+            Some(socket_info) => get_public_ip_addr(Protocol::UPNP, &(SocketAddr::new(socket_info, 19999), 19999)),
+            None => None
+        };
+
+        self.init_peers_table();
+
+        unimplemented!()
     }
 
-    fn broadcast(&mut self) {
-
+    fn init_peers_table(&mut self) {
+        unimplemented!()
     }
 
     fn search_peers(&self) -> Vec<(Account, SocketInfo)> {
@@ -167,12 +176,7 @@ impl P2PController {
         }
     }
 
-
     fn peers_persist(&self) -> Result<usize> {
-        unimplemented!()
-    }
-
-    fn bootstrap_peers(&self) -> Vec<PeerRef> {
         unimplemented!()
     }
 

@@ -21,7 +21,7 @@ enum PeerType {
     Unknown
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct BlockInfo {
     block_len: usize,
     last_block_num: usize,
@@ -29,6 +29,7 @@ pub struct BlockInfo {
     esitmated_cycle_num: usize
 }
 
+#[derive(Debug)]
 pub struct PeerTable {
     table: Vec<(Account, SocketInfo)>,
     limit: usize
