@@ -78,7 +78,7 @@ impl RLPSerialize for P2PMessage {
 
 impl FrameSerialize for P2PMessage {
     fn serialize(&self) -> Vec<Frame> {
-        unimplemented!()
+       unimplemented!()
     }
 }
 

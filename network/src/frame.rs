@@ -1,6 +1,9 @@
 use bytebuffer::ByteBuffer;
 use common::key::PublicKey;
 use rlp::RLPSerialize;
+use rlp::types::*;
+use rlp::encoder::SHARED_ENCODER;
+
 use std::io::{Error, ErrorKind};
 use std::sync::Mutex;
 use std::rc::Rc;
@@ -43,12 +46,14 @@ const WINDOW_SIZE: usize = 1024 * 1024 * 16;
 const FRAME_MAX_SIZE: usize = 1024 * 16;
 const FRAME_MIN_SIZE: usize = 388;
 
+#[derive(Debug, Copy, Clone)]
 pub enum FrameType {
     Request,
     Response,
     Transmit,
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum Task {
     Idle,
     Message,
@@ -60,6 +65,7 @@ pub enum Task {
     SyncPeerList
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum Role {
     Producer,
     Normal,
@@ -67,9 +73,11 @@ pub enum Role {
 
 
 //TODO: Add more code
-enum ReponseCode {
+#[derive(Debug, Copy, Clone)]
+pub enum ReponseCode {
     Ok,
     Err,
+    Unknown
 }
 
 pub type SEQ = u32;
@@ -93,6 +101,53 @@ pub struct Frame {
 }
 
 impl Frame {
+    pub fn new_with_rlp(rlp: &RLP,
+                        frame_type: FrameType,
+                        task: Task,
+                        code: ReponseCode,
+                        pub_key: PublicKey,
+                        role: Role,
+                        init_seq: SEQ) -> (Vec<Frame>, SEQ) {
+        let payload = SHARED_ENCODER.lock().unwrap().encode(rlp);
+        let total_size = payload.len();
+        let total_frames = total_size / FRAME_MAX_SIZE + 1;
+        let mut buff_pos = 0usize;
+        let mut seq_offset = 0usize;
+        let mut result: Vec<Frame> = vec![];
+        loop {
+            // break when we finish
+            if buff_pos >= total_size {
+                break;
+            }
+            // the current part's length
+            let cur_len = if total_size - buff_pos >= FRAME_MAX_SIZE {
+                FRAME_MAX_SIZE
+            } else {
+                total_size - buff_pos
+            };
+            // calculate the sub-payload for this part
+            let sub_payload = &payload[buff_pos .. buff_pos + cur_len];
+            // push the new frame into result list
+            result.push(Frame {
+                frame_type: frame_type,
+                task: task,
+                has_rlp_payload: true,
+                code: code,
+                payload_size: Some(total_size as u64),
+                pub_key: pub_key,
+                role: role,
+                seq: init_seq + (seq_offset as SEQ),
+                ext1: init_seq,
+                ext2: init_seq + (total_frames as SEQ) - 1u32,
+                payload: Some(sub_payload.to_vec()),
+            });
+            // move the iterator
+            buff_pos += FRAME_MAX_SIZE;
+            seq_offset += 1usize;
+        }
+        (result, init_seq + (seq_offset as SEQ))
+    }
+
     pub fn new(buff: &[u8]) -> Option<Self> {
         Frame::buff2frame(buff)
     }
@@ -158,6 +213,7 @@ impl Frame {
         let code = match buffer.read_bits(9) {
             0u64 => ReponseCode::Ok,
             1u64 => ReponseCode::Err,
+            2u64 => ReponseCode::Unknown,
             _ => { return None; }
         };
 
