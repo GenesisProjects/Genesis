@@ -2,8 +2,11 @@ extern crate ring;
 extern crate rust_base58;
 
 use std::string::String;
-use self::rust_base58::{ToBase58, FromBase58};
 
+use rlp::RLPSerialize;
+use rlp::types::*;
+
+use self::rust_base58::{ToBase58, FromBase58};
 use super::key::*;
 
 /// Common key operations
@@ -31,6 +34,24 @@ impl Address {
                 }
             },
             Err(_) => None
+        }
+    }
+}
+
+impl RLPSerialize for Address {
+    fn serialize(&self) -> Result<RLP, RLPError> {
+        Ok(RLP::RLPItem { value: self.text.to_owned().into() })
+    }
+
+    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
+        use std::str;
+        match rlp {
+            &RLP::RLPItem { ref value } => {
+                Ok(Address { text: str::from_utf8(value).unwrap().into() })
+            },
+            _ => {
+                Err(RLPError::RLPErrorType)
+            }
         }
     }
 }

@@ -1,6 +1,8 @@
 pub enum RLPError {
     RLPErrorUnknown,
 
+    RLPErrorType,
+
     RLPErrorUTF8,
 
     RLPEncodingErrorUnencodable,
@@ -12,6 +14,7 @@ pub enum RLPError {
 pub enum RLP {
     RLPList { list: Vec<RLP> },
     RLPItem { value: Vec<u8> },
+    RLPEmpty
 }
 
 pub type EncodedRLP = Vec<u8>;

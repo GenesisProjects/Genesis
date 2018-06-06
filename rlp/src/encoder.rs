@@ -145,12 +145,16 @@ impl Encoder {
                         ret
                     }
                 },
+                &RLP::RLPEmpty => 0usize
             }
         }
     }
 
     fn encode_list(&mut self, path: String, input: &RLP) {
         match input {
+            &RLP::RLPEmpty => {
+
+            },
             &RLP::RLPItem { ref value } => {
                 self.encode_item(value);
             },

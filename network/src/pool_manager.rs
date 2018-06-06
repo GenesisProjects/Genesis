@@ -82,7 +82,7 @@ impl PoolManager {
                 });
                 tag.unwrap_or("Error".to_string())
             },
-            RLP::RLPItem { ref value } => { "Error".to_string() }
+            _ => { "Error".to_string() }
         }
     }
 }

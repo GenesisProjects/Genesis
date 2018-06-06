@@ -75,8 +75,8 @@ enum ReponseCode {
 
 pub type SEQ = u32;
 
-pub trait FrameSerialize<T: RLPSerialize> {
-    fn serialize(obj: &T) -> Vec<Frame>;
+pub trait FrameSerialize where Self: RLPSerialize {
+    fn serialize(&self) -> Vec<Frame>;
 }
 
 pub struct Frame {
@@ -210,12 +210,6 @@ impl Frame {
     }
 
     pub fn frame2buff(&self) -> &[u8] {
-        unimplemented!()
-    }
-}
-
-impl<T: RLPSerialize> FrameSerialize<T> for Frame {
-    fn serialize(obj: &T) -> Vec<Frame> {
         unimplemented!()
     }
 }

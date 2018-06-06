@@ -2,10 +2,14 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV
 
 use common::address::Address as Account;
 use common::hash::Hash;
+use rlp::RLPSerialize;
+use rlp::types::*;
 
 use peer::*;
+use frame::*;
 
-enum RejectReason {
+#[derive(Debug, Clone)]
+pub enum RejectReason {
 
 }
 
@@ -13,10 +17,31 @@ enum RejectReason {
 pub enum P2PMessage {
     /// Invoked when bootstrap to peers
     Bootstrap(SocketAddr, Account),
-    /// Invoked when peers bootstrap to us
-    Register(SocketAddr, Account, BlockInfo, PeerTable),
-    /// Invoked when peers bootstrap to us
-    Reject(SocketAddr, Account, ),
+    /// Invoked when peers bootstrap to us if we accept
+    Accept(SocketAddr, Account, BlockInfo, PeerTable),
+    /// Invoked when peers bootstrap to us if we reject
+    Reject(SocketAddr, Account, RejectReason),
+}
+
+impl RLPSerialize for P2PMessage {
+    fn serialize(&self) -> Result<RLP, RLPError> {
+        match self {
+            &P2PMessage::Bootstrap(ref addr, ref account) => {
+                Ok(RLP::RLPList { list: vec![account.serialize().unwrap_or(RLP::RLPItem { value: "".into() })] })
+            },
+            _ => Err(RLPError::RLPErrorUnknown)
+        }
+    }
+
+    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
+        unimplemented!()
+    }
+}
+
+impl FrameSerialize for P2PMessage {
+    fn serialize(&self) -> Vec<Frame> {
+        unimplemented!()
+    }
 }
 
 #[derive(Debug, Clone)]
