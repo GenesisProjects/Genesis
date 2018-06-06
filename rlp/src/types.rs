@@ -3,6 +3,12 @@ pub enum RLPError {
 
     RLPErrorType,
 
+    RLPErrorTagType,
+
+    RLPErrorTagMissing,
+
+    RLPErrorWrongNumParams,
+
     RLPErrorUTF8,
 
     RLPEncodingErrorUnencodable,

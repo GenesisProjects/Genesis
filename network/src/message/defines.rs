@@ -27,14 +27,52 @@ impl RLPSerialize for P2PMessage {
     fn serialize(&self) -> Result<RLP, RLPError> {
         match self {
             &P2PMessage::Bootstrap(ref addr, ref account) => {
-                Ok(RLP::RLPList { list: vec![account.serialize().unwrap_or(RLP::RLPItem { value: "".into() })] })
+                Ok(RLP::RLPList { list: vec!["Bootstrap".to_string().serialize().unwrap_or(RLP::RLPEmpty),
+                                             addr.serialize().unwrap_or(RLP::RLPEmpty),
+                                             account.serialize().unwrap_or(RLP::RLPEmpty)] })
+            },
+            &P2PMessage::Accept(ref addr, ref account, ref blcok_info, ref peer_table) => {
+               unimplemented!()
+            },
+            &P2PMessage::Reject(ref addr, ref account, ref reason) => {
+                unimplemented!()
             },
             _ => Err(RLPError::RLPErrorUnknown)
         }
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        unimplemented!()
+        match rlp {
+            &RLP::RLPList { ref list } => {
+                let tag = list[0].to_owned();
+                match tag {
+                    RLP::RLPItem { value } => {
+                        match String::from_utf8(value).unwrap().as_str() {
+                            "Bootstrap" => {
+                                if list.len() == 2 {
+                                    Ok(P2PMessage::Bootstrap(
+                                        RLPSerialize::deserialize(&list[1]).ok().unwrap(),
+
+                                        RLPSerialize::deserialize(&list[2]).ok().unwrap()
+                                    ))
+                                } else {
+                                    Err(RLPError::RLPErrorWrongNumParams)
+                                }
+                            },
+                            "Accept" => {
+                                unimplemented!()
+                            },
+                            "Reject" => {
+                                unimplemented!()
+                            },
+                            _ => Err(RLPError::RLPErrorTagType)
+                        }
+                    },
+                    _ => Err(RLPError::RLPErrorTagMissing)
+                }
+            },
+            _ => Err(RLPError::RLPErrorUnknown)
+        }
     }
 }
 
