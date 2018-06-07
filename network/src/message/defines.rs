@@ -77,8 +77,22 @@ impl RLPSerialize for P2PMessage {
 }
 
 impl FrameSerialize for P2PMessage {
-    fn serialize(&self) -> Vec<Frame> {
-       unimplemented!()
+    fn into_frames(self,
+                   frame_type: FrameType,
+                   task: Task,
+                   code: ReponseCode,
+                   pub_key: [u8; 32],
+                   role: Role,
+                   init_seq: u32) -> (Vec<Frame>, SEQ) {
+        Frame::new_with_rlp(
+            &self.serialize().ok().unwrap(),
+            frame_type,
+            task,
+            code,
+            pub_key,
+            role,
+            init_seq
+        )
     }
 }
 

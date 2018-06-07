@@ -83,7 +83,13 @@ pub enum ReponseCode {
 pub type SEQ = u32;
 
 pub trait FrameSerialize where Self: RLPSerialize {
-    fn serialize(&self) -> Vec<Frame>;
+    fn into_frames(self,
+                   frame_type: FrameType,
+                   task: Task,
+                   code: ReponseCode,
+                   pub_key: PublicKey,
+                   role: Role,
+                   init_seq: SEQ) -> (Vec<Frame>, SEQ);
 }
 
 pub struct Frame {
