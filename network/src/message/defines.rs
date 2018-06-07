@@ -31,7 +31,7 @@ impl RLPSerialize for P2PMessage {
                                              addr.serialize().unwrap_or(RLP::RLPEmpty),
                                              account.serialize().unwrap_or(RLP::RLPEmpty)] })
             },
-            &P2PMessage::Accept(ref addr, ref account, ref blcok_info, ref peer_table) => {
+            &P2PMessage::Accept(ref addr, ref account, ref block_info, ref peer_table) => {
                unimplemented!()
             },
             &P2PMessage::Reject(ref addr, ref account, ref reason) => {

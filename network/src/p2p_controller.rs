@@ -127,6 +127,12 @@ impl P2PController {
 
         self.init_peers_table();
 
+        for token in self.peer_list.keys() {
+            let peer_ref = self.peer_list.get(token);
+            let addr = peer_ref.unwrap().clone().addr();
+            let _ = TcpStream::connect(&addr);
+        }
+
         unimplemented!()
     }
 
