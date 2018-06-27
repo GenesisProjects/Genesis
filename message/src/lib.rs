@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate lazy_static;
-extern crate gen_utils;
 extern crate rand;
 
 use std::sync::{Arc, Mutex, Condvar};
@@ -73,6 +72,12 @@ impl MessageQueue {
 pub struct MessageChannel {
     pub uid: String,
     pub cond_var_pair: Arc<(Mutex<RefCell<MessageQueue>>, Condvar)>
+}
+
+impl PartialEq for MessageChannel {
+    fn eq(&self, other: &MessageChannel) -> bool {
+        self.uid == other.uid
+    }
 }
 
 unsafe impl std::marker::Send for MessageChannel {}
@@ -169,6 +174,20 @@ impl MessageCenter {
             self.channel_map.insert(name.to_owned(), vec![new_channel]);
             let chs = self.channel_map.get_mut(name).unwrap();
             chs.last_mut().unwrap()
+        }
+    }
+
+    pub fn unsubscribe(&mut self, name: &String, ch: &MessageChannel) {
+        let existed = self.channels_exist_by_name(name);
+        if existed {
+            let chs = self.channel_map.get_mut(name).unwrap();
+            let pos = chs.iter().position(|x| *x == *ch);
+            pos.and_then(|r| { chs.remove(r); Some(r) });
+        }
+
+        let chs = self.channel_map.get_mut(name).unwrap();
+        if chs.len() == 0 {
+            //self.channel_map.remove(name);
         }
     }
 

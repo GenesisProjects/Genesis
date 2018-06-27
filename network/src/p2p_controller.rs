@@ -8,6 +8,7 @@ use std::sync::Mutex;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use common::address::Address as Account;
+use common::thread::{Thread, ThreadStatus};
 use nat::*;
 
 use mio::*;
@@ -31,7 +32,8 @@ fn token_generator() -> Token {
 struct NetworkEventLoop {
     loop_count: usize,
     events: Events,
-    poll: Poll
+    poll: Poll,
+    status: ThreadStatus
 }
 
 impl NetworkEventLoop {
@@ -45,7 +47,8 @@ impl NetworkEventLoop {
         NetworkEventLoop {
             loop_count: 0usize,
             events: events,
-            poll: poll
+            poll: poll,
+            status: ThreadStatus::Stop
         }
     }
 
@@ -64,19 +67,34 @@ impl NetworkEventLoop {
         self.poll.deregister(peer);
     }
 
-    pub fn process(&mut self) -> Result<usize> {
+
+}
+
+impl Thread for NetworkEventLoop {
+    fn process(&mut self) -> Result<()> {
         self.poll.poll(&mut self.events, None).and_then(|events_size| {
             for event in &self.events {
                 let token = event.token();
             }
             self.loop_count += 1;
-            Ok(events_size)
+            Ok(())
         });
 
         unimplemented!()
     }
+
+    fn status(&self) -> ThreadStatus {
+        self.status
+    }
+
+    fn update_status(&mut self, status: ThreadStatus) {
+        self.status = status;
+    }
+
 }
 
+///
+///
 pub struct P2PController {
     account: Account,
     peer_list: HashMap<Token, PeerRef>,
