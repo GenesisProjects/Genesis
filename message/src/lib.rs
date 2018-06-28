@@ -17,27 +17,35 @@ lazy_static! {
 
 fn random_string(length: usize) -> String {
     use rand::Rng;
-    let s = rand::thread_rng()
+    let result = rand::thread_rng()
         .gen_ascii_chars()
         .take(length)
         .collect::<String>();
-    s
+    result
 }
 
+///
+#[derive(Debug, Clone)]
+pub struct Message {
+    op: u16,
+    msg: String
+}
+
+///
 pub struct MessageQueue {
-    queue: LinkedList<u16>,
+    queue: LinkedList<Message>,
     limit: usize
 }
 
 impl MessageQueue {
     pub fn new(limit: usize) -> Self {
         MessageQueue {
-            queue: LinkedList::<u16>::new(),
+            queue: LinkedList::<Message>::new(),
             limit: limit
         }
     }
 
-    pub fn enqueue_msg(&mut self, msg: u16) -> Result<usize, &'static str> {
+    pub fn enqueue_msg(&mut self, msg: Message) -> Result<usize, &'static str> {
         let cur_size = self.queue.len();
         if cur_size >= self.limit {
             Err("The message queue is full.")
@@ -47,12 +55,12 @@ impl MessageQueue {
         }
     }
 
-    pub fn dequeue_msg(&mut self) -> Option<u16> {
+    pub fn dequeue_msg(&mut self) -> Option<Message> {
         self.queue.pop_front()
     }
 
-    pub fn flush(&mut self) -> LinkedList<u16> {
-        let mut result = LinkedList::<u16>::new();
+    pub fn flush(&mut self) -> LinkedList<Message> {
+        let mut result = LinkedList::<Message>::new();
         loop {
             if self.queue.is_empty() { break; }
             result.push_front(self.queue.pop_back().unwrap());
@@ -109,20 +117,20 @@ impl MessageChannel {
         }
     }
 
-    pub fn send_msg(&mut self, msg: u16) -> Result<usize, &'static str> {
+    pub fn send_msg(&mut self, msg: Message) -> Result<usize, &'static str> {
         let (ref mutex_lock, ref cond_var) = *self.cond_var_pair;
         let queue_ref = mutex_lock.lock().unwrap();
         let result = queue_ref.borrow_mut().enqueue_msg(msg);
-        cond_var.notify_one();
+        cond_var.notify_all();
         result
     }
 
-    pub fn send_msg_without_cache(&mut self, msg: u16) -> Result<usize, &'static str> {
+    pub fn send_msg_without_cache(&mut self, msg: Message) -> Result<usize, &'static str> {
         self.flush();
         self.send_msg(msg)
     }
 
-    pub fn accept_msg(&mut self) -> u16 {
+    pub fn accept_msg(&mut self) -> Message {
         let (ref mutex_lock, ref cond_var) = *(self.cond_var_pair);
         let mut queue = mutex_lock.lock().unwrap();
         // if the queue is not empty
@@ -130,23 +138,30 @@ impl MessageChannel {
             return queue.borrow_mut().dequeue_msg().unwrap();
         }
         // else wait for new msg
-        let result: u16;
+        let result: Message;
         // loop to avoid spurious wakeup
         loop {
-            queue = cond_var.wait(queue).unwrap();
-            if !queue.borrow().is_empty() {
-                result = queue.borrow_mut().dequeue_msg().unwrap();
+            let unlocked_queue = cond_var.wait(queue).unwrap();
+            if !unlocked_queue.borrow().is_empty() {
+                result = unlocked_queue.borrow_mut().dequeue_msg().unwrap();
                 break;
             }
         }
         result
     }
 
-    pub fn flush(&mut self) -> LinkedList<u16> {
-        let (ref mutex_lock, ref cond_var) = *(self.cond_var_pair);
+    pub fn accept_msg_async(&mut self) -> Option<Message> {
+        let (ref mutex_lock, _) = *(self.cond_var_pair);
+        let queue = mutex_lock.lock().unwrap();
+        queue.borrow_mut().dequeue_msg().to_owned()
+    }
+
+    pub fn flush(&mut self) -> LinkedList<Message> {
+        let (ref mutex_lock, _) = *(self.cond_var_pair);
         let queue_lock = mutex_lock.lock().unwrap();
         let mut queue_ref = queue_lock.borrow_mut();
-        queue_ref.flush()
+        let result = queue_ref.flush();
+        result
     }
 }
 
@@ -191,7 +206,7 @@ impl MessageCenter {
         }
     }
 
-    pub fn send(&mut self, name: &String, msg: u16) {
+    pub fn send(&mut self, name: &String, msg: Message) {
         let existed = self.channels_exist_by_name(name);
         if !existed {
             return;
@@ -199,7 +214,7 @@ impl MessageCenter {
             let channels = self.channel_map.get_mut(name).unwrap();
             for i in 0 .. channels.len() {
                 let mut ch = &mut channels[i];
-                ch.send_msg(msg);
+                ch.send_msg(msg.to_owned());
             }
         }
     }

@@ -13,7 +13,7 @@ pub enum ThreadStatus {
 }
 
 pub trait Thread {
-    fn start(&'static mut self, name: String) -> thread::JoinHandle<()>
+    fn launch(name: String) -> thread::JoinHandle<(Self)>
     where Self: Send {
         let s_self = Arc::new(Mutex::new(self));
 
@@ -42,14 +42,16 @@ pub trait Thread {
         }).unwrap()
     }
 
-    fn stop(&mut self) {
+    /// start runloop
+    fn start(&mut self);
 
-    }
+    /// pause runloop
+    fn pause(&mut self);
 
-    fn update(msg: String);
+    /// stop runloop
+    fn stop(&mut self);
 
-    fn status(&self) -> ThreadStatus;
 
+    fn run(&self);
 
-    fn process(&mut self) -> Result<()>;
 }

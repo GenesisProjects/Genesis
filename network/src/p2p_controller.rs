@@ -5,6 +5,7 @@ use utils::*;
 use std::collections::HashMap;
 use std::io::*;
 use std::sync::{Mutex, Arc};
+use std::thread::*;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use common::address::Address as Account;
@@ -67,30 +68,14 @@ impl NetworkEventLoop {
         self.poll.deregister(peer);
     }
 
-
-}
-
-impl Thread for NetworkEventLoop {
-    fn process(&mut self) -> Result<()> {
+    fn next_tick(&mut self) -> Result<(usize)> {
         self.poll.poll(&mut self.events, None).and_then(|events_size| {
-            for event in &self.events {
-                let token = event.token();
-            }
             self.loop_count += 1;
-            Ok(())
-        });
-
-        unimplemented!()
-    }
-
-    fn update(_: String) {
-        unimplemented!()
-    }
-
-    fn status(&self) -> ThreadStatus {
-        self.status.clone()
+            Ok(events_size)
+        })
     }
 }
+
 
 ///
 ///
@@ -107,7 +92,6 @@ pub struct P2PController {
 }
 
 impl P2PController {
-
     pub fn new(account: &Account) -> Self {
         //TODO: load port from config
         let addr = "127.0.0.1:39999".parse().unwrap();
@@ -223,38 +207,69 @@ impl P2PController {
         unimplemented!()
     }
 
+    fn process_events(&mut self) {
+        match result {
+            Ok(events_size) => {
+                for event in &(self.eventloop.events) {
+                    match event.token() {
+                        SERVER_TOKEN => {
+                            match self.listener.accept() {
+                                Ok((socket, _)) => {
 
-    fn start_run_loop(&mut self) {
-        loop {
-            match self.eventloop.process() {
-                Ok(events_size) => {
-                    for event in &(self.eventloop.events) {
-                        match event.token() {
-                            SERVER_TOKEN => {
-                                match self.listener.accept() {
-                                    Ok((socket, _)) => {
+                                },
+                                Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+                                    // EAGAIN
+                                },
+                                e => {
 
-                                    },
-                                    Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
-                                        // EAGAIN
-                                    },
-                                    e => {
-
-                                    }
                                 }
-                            },
-                            peer_token => {
-
                             }
+                        },
+                        PEER_TOKEN => {
+
                         }
                     }
-                    unimplemented!()
-                },
-                Err(e) => {
-                    break;
-                    unimplemented!()
                 }
+                unimplemented!()
+            },
+            Err(e) => {
+                break;
+                unimplemented!()
             }
         }
     }
+
+}
+
+
+impl Thread for P2PController {
+    fn run(&mut self) {
+        loop {
+            // fetch the next tick
+            let result = self.eventloop.next_tick();
+            match self.eventloop.status {
+                ThreadStatus::Running => self.process_events(),
+                ThreadStatus::Stop => { break; },
+                ThreadStatus::Pause => ()
+            }
+
+
+        }
+    }
+
+    /// start runloop
+    fn start(&mut self) {
+
+    }
+
+    /// pause runloop
+    fn pause(&mut self) {
+
+    }
+
+    /// stop runloop
+    fn stop(&mut self) {
+
+    }
+
 }

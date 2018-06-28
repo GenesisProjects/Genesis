@@ -22,7 +22,7 @@ pub enum P2PMessage {
     /// Invoked when peers bootstrap to us if we reject
     Reject(SocketAddr, Account, RejectReason),
 }
-
+`
 impl RLPSerialize for P2PMessage {
     fn serialize(&self) -> Result<RLP, RLPError> {
         match self {
