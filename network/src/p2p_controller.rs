@@ -67,31 +67,14 @@ impl NetworkEventLoop {
         self.poll.deregister(peer);
     }
 
-
-}
-
-impl Thread for NetworkEventLoop {
-    fn process(&mut self) -> Result<()> {
+    fn update(&mut self) -> Result<(usize)> {
         self.poll.poll(&mut self.events, None).and_then(|events_size| {
-            for event in &self.events {
-                let token = event.token();
-            }
             self.loop_count += 1;
-            Ok(())
-        });
-
-        unimplemented!()
+            Ok(events_size)
+        })
     }
-
-    fn status(&self) -> ThreadStatus {
-        self.status
-    }
-
-    fn update_status(&mut self, status: ThreadStatus) {
-        self.status = status;
-    }
-
 }
+
 
 ///
 ///
@@ -227,7 +210,7 @@ impl P2PController {
 
     fn start_run_loop(&mut self) {
         loop {
-            match self.eventloop.process() {
+            match self.eventloop.update() {
                 Ok(events_size) => {
                     for event in &(self.eventloop.events) {
                         match event.token() {
@@ -244,7 +227,7 @@ impl P2PController {
                                     }
                                 }
                             },
-                            peer_token => {
+                            PEER_TOKEN => {
 
                             }
                         }
@@ -257,5 +240,28 @@ impl P2PController {
                 }
             }
         }
+    }
+}
+
+
+impl Thread for P2PController {
+
+    fn status(&self) -> ThreadStatus {
+        self.status
+    }
+
+    fn update_status(&mut self, status: ThreadStatus) {
+        self.status = status;
+    }
+    fn start(&mut self, name: String) -> thread::JoinHandle<()> {
+        unimplemented!()
+    }
+
+    fn stop(&mut self) {
+        unimplemented!()
+    }
+
+    fn process(&mut self) -> Result<()> {
+        unimplemented!()
     }
 }
