@@ -153,7 +153,8 @@ impl MessageChannel {
     pub fn accept_msg_async(&mut self) -> Option<Message> {
         let (ref mutex_lock, _) = *(self.cond_var_pair);
         let queue = mutex_lock.lock().unwrap();
-        queue.borrow_mut().dequeue_msg().to_owned()
+        let mut queue_ref = queue.borrow_mut();
+        queue_ref.dequeue_msg().to_owned()
     }
 
     pub fn flush(&mut self) -> LinkedList<Message> {

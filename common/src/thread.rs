@@ -13,20 +13,16 @@ pub enum ThreadStatus {
 }
 
 pub trait Thread {
-    fn launch(name: String) -> thread::JoinHandle<(Self)>
-    where Self: Send {
-        let s_self = Arc::new(Mutex::new(self));
-
+    fn launch(name: String) {
         // TODO: make stack size configuable
         thread::Builder::new().stack_size(4 * 1024 * 1024).name(name.to_owned()).spawn(move || {
             let mut center = MESSAGE_CENTER.lock().unwrap();
             let ch = center.subscribe(&name);
             loop {
-                let mut guard = s_self.lock().unwrap();
-                let status = guard.status();
+                let status = ThreadStatus::Stop;
                 match status {
                     Running => {
-                        guard.process();
+
                         let msg = ch.accept_msg();
                     },
                     Stop => {
@@ -39,7 +35,7 @@ pub trait Thread {
                 thread::sleep(time::Duration::from_millis(10));
             }
             center.unsubscribe(&name, ch);
-        }).unwrap()
+        }).unwrap();
     }
 
     /// start runloop
