@@ -5,11 +5,13 @@ use utils::*;
 use std::collections::HashMap;
 use std::io::*;
 use std::sync::{Mutex, Arc};
-use std::thread::*;
+
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use common::address::Address as Account;
 use common::thread::{Thread, ThreadStatus};
+use common::observe::Observe;
+
 use nat::*;
 
 use mio::*;
@@ -208,52 +210,64 @@ impl P2PController {
     }
 
     fn process_events(&mut self) {
-        match result {
-            Ok(events_size) => {
-                for event in &(self.eventloop.events) {
-                    match event.token() {
-                        SERVER_TOKEN => {
-                            match self.listener.accept() {
-                                Ok((socket, _)) => {
+        for event in &(self.eventloop.events) {
+            match event.token() {
+                SERVER_TOKEN => {
+                    match self.listener.accept() {
+                        Ok((socket, _)) => {
 
-                                },
-                                Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
-                                    // EAGAIN
-                                },
-                                e => {
-
-                                }
-                            }
                         },
-                        PEER_TOKEN => {
+                        Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+                            // EAGAIN
+                        },
+                        e => {
 
                         }
                     }
+                },
+                PEER_TOKEN => {
+
                 }
-                unimplemented!()
-            },
-            Err(e) => {
-                break;
-                unimplemented!()
             }
         }
     }
 
 }
 
+impl Observe for P2PController {
+    fn subscribe(&mut self) {
+        unimplemented!()
+    }
+
+    fn unsubscribe(&mut self) {
+        unimplemented!()
+    }
+
+    fn send(&mut self) {
+        unimplemented!()
+    }
+
+    fn receive(&mut self) {
+        unimplemented!()
+    }
+}
 
 impl Thread for P2PController {
     fn run(&mut self) {
         loop {
             // fetch the next tick
             let result = self.eventloop.next_tick();
-            match self.eventloop.status {
-                ThreadStatus::Running => self.process_events(),
+            match *self.eventloop.status {
+                ThreadStatus::Running => {
+                    match result {
+                        Ok(_) => { self.process_events(); },
+                        Err(_) => ()
+                    }
+
+                },
                 ThreadStatus::Stop => { break; },
                 ThreadStatus::Pause => ()
             }
-
-
         }
     }
 

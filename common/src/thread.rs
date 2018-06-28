@@ -2,8 +2,8 @@ use std::io::*;
 use std::thread;
 use std::time;
 use std::sync::{Arc, Mutex};
-use gen_message::*;
 
+use observe::*;
 
 #[derive(Copy, Clone)]
 pub enum ThreadStatus {
@@ -16,25 +16,20 @@ pub trait Thread {
     fn launch(name: String) {
         // TODO: make stack size configuable
         thread::Builder::new().stack_size(4 * 1024 * 1024).name(name.to_owned()).spawn(move || {
-            let mut center = MESSAGE_CENTER.lock().unwrap();
-            let ch = center.subscribe(&name);
             loop {
                 let status = ThreadStatus::Stop;
                 match status {
                     Running => {
 
-                        let msg = ch.accept_msg();
+                        //let msg = ch.accept_msg();
                     },
                     Stop => {
 
                     },
-                    Pause => {
-                        break;
-                    }
+                    Pause => { break; }
                 }
                 thread::sleep(time::Duration::from_millis(10));
             }
-            center.unsubscribe(&name, ch);
         }).unwrap();
     }
 
@@ -48,6 +43,5 @@ pub trait Thread {
     fn stop(&mut self);
 
 
-    fn run(&self);
-
+    fn run(&mut self);
 }

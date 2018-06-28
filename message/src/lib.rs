@@ -4,7 +4,6 @@ extern crate rand;
 
 use std::sync::{Arc, Mutex, Condvar};
 use std::cell::RefCell;
-use std::rc::Rc;
 use std::collections::{LinkedList, HashMap};
 
 const DEFAULT_MSG_QUEUE_SIZE: usize = 1024;
@@ -167,43 +166,44 @@ impl MessageChannel {
 }
 
 pub struct MessageCenter {
-    channel_map: HashMap<String, Vec<MessageChannel>>
+    channel_map: HashMap<String, Vec<Arc<Mutex<MessageChannel>>>>
 }
 
 
 impl MessageCenter {
     pub fn new() -> Self {
         MessageCenter {
-            channel_map: HashMap::<String, Vec<MessageChannel>>::new()
+            channel_map: HashMap::<String, Vec<Arc<Mutex<MessageChannel>>>>::new()
         }
     }
 
-    pub fn subscribe(&mut self, name: &String) -> &mut MessageChannel {
+    pub fn subscribe(&mut self, name: &String) -> Arc<Mutex<MessageChannel>> {
         let existed = self.channels_exist_by_name(name);
         if existed {
             let new_channel = MessageChannel::new();
             let chs = self.channel_map.get_mut(name).unwrap();
-            chs.push(new_channel);
-            chs.last_mut().unwrap()
+            chs.push(Arc::new(Mutex::new(new_channel)));
+            chs.last_mut().unwrap().clone()
         } else {
             let new_channel = MessageChannel::new();
-            self.channel_map.insert(name.to_owned(), vec![new_channel]);
+            self.channel_map.insert(name.to_owned(), vec![Arc::new(Mutex::new(new_channel))]);
             let chs = self.channel_map.get_mut(name).unwrap();
-            chs.last_mut().unwrap()
+            chs.last_mut().unwrap().clone()
         }
     }
 
-    pub fn unsubscribe(&mut self, name: &String, ch: &MessageChannel) {
+    pub fn unsubscribe(&mut self, name: &String, ch: Arc<Mutex<MessageChannel>>) {
         let existed = self.channels_exist_by_name(name);
         if existed {
             let chs = self.channel_map.get_mut(name).unwrap();
-            let pos = chs.iter().position(|x| *x == *ch);
+            let uid = ch.lock().unwrap().uid.clone();
+            let pos = chs.iter().position(|x| x.lock().unwrap().uid == uid);
             pos.and_then(|r| { chs.remove(r); Some(r) });
         }
 
-        let chs = self.channel_map.get_mut(name).unwrap();
-        if chs.len() == 0 {
-            //self.channel_map.remove(name);
+        let chs_len = self.channel_map.get_mut(name).unwrap().len();
+        if chs_len == 0 {
+            self.channel_map.remove(name);
         }
     }
 
@@ -214,23 +214,18 @@ impl MessageCenter {
         } else {
             let channels = self.channel_map.get_mut(name).unwrap();
             for i in 0 .. channels.len() {
-                let mut ch = &mut channels[i];
-                ch.send_msg(msg.to_owned());
+                let mut ch = channels[i].clone();
+                ch.lock().unwrap().send_msg(msg.to_owned());
             }
         }
     }
 
-    pub fn channels_by_name(&mut self, name: &String) -> Vec<&mut MessageChannel> {
+    pub fn channels_by_name(&mut self, name: &String) -> Vec<Arc<Mutex<MessageChannel>>> {
         let existed = self.channels_exist_by_name(name);
         if !existed {
             vec![]
         } else {
-            let channels = self.channel_map.get_mut(name).unwrap();
-            let mut result = vec![];
-            for e in channels {
-                result.push(e)
-            }
-            result
+            self.channel_map.get_mut(name).unwrap().clone()
         }
     }
 
