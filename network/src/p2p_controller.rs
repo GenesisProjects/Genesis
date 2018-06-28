@@ -4,7 +4,7 @@ use utils::*;
 
 use std::collections::HashMap;
 use std::io::*;
-use std::sync::Mutex;
+use std::sync::{Mutex, Arc};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use common::address::Address as Account;
@@ -33,7 +33,7 @@ struct NetworkEventLoop {
     loop_count: usize,
     events: Events,
     poll: Poll,
-    status: ThreadStatus
+    status: Arc<ThreadStatus>
 }
 
 impl NetworkEventLoop {
@@ -48,7 +48,7 @@ impl NetworkEventLoop {
             loop_count: 0usize,
             events: events,
             poll: poll,
-            status: ThreadStatus::Stop
+            status: Arc::new(ThreadStatus::Stop)
         }
     }
 
@@ -83,14 +83,13 @@ impl Thread for NetworkEventLoop {
         unimplemented!()
     }
 
+    fn update(_: String) {
+        unimplemented!()
+    }
+
     fn status(&self) -> ThreadStatus {
-        self.status
+        self.status.clone()
     }
-
-    fn update_status(&mut self, status: ThreadStatus) {
-        self.status = status;
-    }
-
 }
 
 ///

@@ -1,8 +1,9 @@
 use std::io::*;
 use std::thread;
-use std::sync::Arc;
-
+use std::time;
+use std::sync::{Arc, Mutex};
 use gen_message::*;
+
 
 #[derive(Copy, Clone)]
 pub enum ThreadStatus {
@@ -12,14 +13,30 @@ pub enum ThreadStatus {
 }
 
 pub trait Thread {
-    fn start(&mut self, name: String) -> thread::JoinHandle<()> {
-        // TODO: make staack size configuable
+    fn start(&'static mut self, name: String) -> thread::JoinHandle<()>
+    where Self: Send {
+        let s_self = Arc::new(Mutex::new(self));
+
+        // TODO: make stack size configuable
         thread::Builder::new().stack_size(4 * 1024 * 1024).name(name.to_owned()).spawn(move || {
             let mut center = MESSAGE_CENTER.lock().unwrap();
             let ch = center.subscribe(&name);
             loop {
-                //shared_self.status();
+                let mut guard = s_self.lock().unwrap();
+                let status = guard.status();
+                match status {
+                    Running => {
+                        guard.process();
+                        let msg = ch.accept_msg();
+                    },
+                    Stop => {
 
+                    },
+                    Pause => {
+                        break;
+                    }
+                }
+                thread::sleep(time::Duration::from_millis(10));
             }
             center.unsubscribe(&name, ch);
         }).unwrap()
@@ -29,9 +46,10 @@ pub trait Thread {
 
     }
 
+    fn update(msg: String);
+
     fn status(&self) -> ThreadStatus;
 
-    fn update_status(&mut self, status: ThreadStatus);
 
     fn process(&mut self) -> Result<()>;
 }
