@@ -141,9 +141,9 @@ impl MessageChannel {
         let result: Message;
         // loop to avoid spurious wakeup
         loop {
-            let unlocked_queue = cond_var.wait(queue).unwrap();
-            if !unlocked_queue.borrow().is_empty() {
-                result = unlocked_queue.borrow_mut().dequeue_msg().unwrap();
+            queue = cond_var.wait(queue).unwrap();
+            if !queue.borrow().is_empty() {
+                result = queue.borrow_mut().dequeue_msg().unwrap();
                 break;
             }
         }
