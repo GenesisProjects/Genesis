@@ -36,6 +36,11 @@ impl Address {
             Err(_) => None
         }
     }
+
+    /// load account
+    pub fn load() -> Option<Self> {
+        unimplemented!()
+    }
 }
 
 impl RLPSerialize for Address {

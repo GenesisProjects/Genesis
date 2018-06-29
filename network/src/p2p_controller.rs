@@ -9,6 +9,7 @@ use std::sync::{Mutex, Arc};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use common::address::Address as Account;
+use common::gen_message::*;
 use common::thread::{Thread, ThreadStatus};
 use common::observe::Observe;
 
@@ -40,7 +41,6 @@ struct NetworkEventLoop {
 }
 
 impl NetworkEventLoop {
-
     pub fn new(events_size: usize) -> Self {
         // Event storage
         let mut events = Events::with_capacity(events_size);
@@ -94,30 +94,42 @@ pub struct P2PController {
 }
 
 impl P2PController {
-    pub fn new(account: &Account) -> Self {
+    pub fn new() -> Result<Self> {
         //TODO: load port from config
         let addr = "127.0.0.1:39999".parse().unwrap();
-        let server = TcpListener::bind(&addr).unwrap();
-        //TODO: load events size from config
-        let event_loop = NetworkEventLoop::new(1024);
-        //TODO: max_allowed_peers configuable
-        let max_allowed_peers = 512;
-        //TODO: max_blocked_peers configuable
-        let max_blocked_peers = 1024;
-        //TODO: max_waiting_list configuable
-        let max_waiting_list = 1024;
+        let server = TcpListener::bind(&addr);
+        let account = Account::load();
 
-        let mut peer_list = HashMap::<Token, PeerRef>::new();
-        P2PController {
-            account: account.clone(),
-            peer_list: peer_list,
-            max_allowed_peers: max_allowed_peers,
-            waitting_list: vec![],
-            max_waiting_list: max_waiting_list,
-            block_list: vec![],
-            max_blocked_peers: max_blocked_peers,
-            eventloop: event_loop,
-            listener: server,
+        match (server, account) {
+            (Ok(server), Some(account)) => {
+                //TODO: load events size from config
+                let event_loop = NetworkEventLoop::new(1024);
+                //TODO: max_allowed_peers configuable
+                let max_allowed_peers = 512;
+                //TODO: max_blocked_peers configuable
+                let max_blocked_peers = 1024;
+                //TODO: max_waiting_list configuable
+                let max_waiting_list = 1024;
+
+                let mut peer_list = HashMap::<Token, PeerRef>::new();
+                Ok(P2PController {
+                    account: account.clone(),
+                    peer_list: peer_list,
+                    max_allowed_peers: max_allowed_peers,
+                    waitting_list: vec![],
+                    max_waiting_list: max_waiting_list,
+                    block_list: vec![],
+                    max_blocked_peers: max_blocked_peers,
+                    eventloop: event_loop,
+                    listener: server,
+                })
+            },
+            (Ok(_), None) => {
+                Err(Error::from(ErrorKind::ConnectionRefused))
+            },
+            (Err(e), _) => {
+                Err(e)
+            }
         }
     }
 
@@ -235,19 +247,23 @@ impl P2PController {
 }
 
 impl Observe for P2PController {
-    fn subscribe(&mut self) {
+    fn subscribe(&mut self, name: String) {
         unimplemented!()
     }
 
-    fn unsubscribe(&mut self) {
+    fn unsubscribe(&mut self, ch: Arc<Mutex<MessageChannel>>) {
         unimplemented!()
     }
 
-    fn send(&mut self) {
+    fn send(&mut self, msg: Message) {
         unimplemented!()
     }
 
-    fn receive(&mut self) {
+    fn receive_async(&mut self) -> Option<Message> {
+        unimplemented!()
+    }
+
+    fn receive_sync(&mut self) -> Message {
         unimplemented!()
     }
 }
@@ -285,5 +301,6 @@ impl Thread for P2PController {
     fn stop(&mut self) {
 
     }
+
 
 }

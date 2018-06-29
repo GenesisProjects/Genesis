@@ -3,11 +3,13 @@ use std::sync::{Arc, Mutex};
 use gen_message::*;
 
 pub trait Observe {
-    fn subscribe(&mut self);
+    fn subscribe(&mut self, name: String);
 
-    fn unsubscribe(&mut self);
+    fn unsubscribe(&mut self, ch: Arc<Mutex<MessageChannel>>);
 
-    fn send(&mut self);
+    fn send(&mut self, msg: Message);
 
-    fn receive(&mut self);
+    fn receive_async(&mut self) -> Option<Message>;
+
+    fn receive_sync(&mut self) -> Message;
 }

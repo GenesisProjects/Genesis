@@ -1,7 +1,6 @@
 use std::io::*;
 use std::thread;
 use std::time;
-use std::sync::{Arc, Mutex};
 
 use observe::*;
 
@@ -13,9 +12,10 @@ pub enum ThreadStatus {
 }
 
 pub trait Thread {
-    fn launch(name: String) {
+    fn launch<T>(name: String) where T: Observe + Thread {
         // TODO: make stack size configuable
         thread::Builder::new().stack_size(4 * 1024 * 1024).name(name.to_owned()).spawn(move || {
+
             loop {
                 let status = ThreadStatus::Stop;
                 match status {
