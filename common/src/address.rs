@@ -39,7 +39,7 @@ impl Address {
 
     /// load account
     pub fn load() -> Option<Self> {
-        unimplemented!()
+        Some(Address {text: "test".to_string()})
     }
 }
 

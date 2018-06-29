@@ -95,6 +95,10 @@ pub struct P2PController {
 }
 
 impl P2PController {
+    pub fn launch_controller(name: String) {
+        P2PController::launch::<P2PController>(name);
+    }
+
     pub fn bootstrap(&mut self) {
         //TODO: port configuable
         let socket_info = match get_local_ip() {
@@ -306,6 +310,8 @@ impl Thread for P2PController {
     }
 
     fn run(&mut self) -> bool {
+        println!("test");
+
         // fetch the next tick
         let result = self.eventloop.next_tick();
         match self.eventloop.status {
