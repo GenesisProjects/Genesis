@@ -154,12 +154,10 @@ impl MessageCenter {
         }
     }
 
-    pub fn unsubscribe(&mut self, name: &String, pair: Arc<(Mutex<MessageChannel>, Condvar)>) {
+    pub fn unsubscribe(&mut self, name: &String, uid: String) {
         let existed = self.channels_exist_by_name(name);
         if existed {
             let chs = self.channel_map.get_mut(name).unwrap();
-            let ch = &pair.0;
-            let uid = ch.lock().unwrap().uid.clone();
             let pos = chs.iter().position(|x| (&((*x).0)).lock().unwrap().uid == uid);
             pos.and_then(|r| { chs.remove(r); Some(r) });
         }

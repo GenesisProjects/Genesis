@@ -4,7 +4,7 @@ use utils::*;
 
 use std::collections::HashMap;
 use std::io::*;
-use std::sync::{Mutex, Arc};
+use std::sync::{Mutex, Arc, Condvar};
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
@@ -91,6 +91,7 @@ pub struct P2PController {
     max_blocked_peers: usize,
     eventloop: NetworkEventLoop,
     listener: TcpListener,
+    ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>
 }
 
 impl P2PController {
@@ -122,6 +123,7 @@ impl P2PController {
                     max_blocked_peers: max_blocked_peers,
                     eventloop: event_loop,
                     listener: server,
+                    ch_pair: None
                 })
             },
             (Ok(_), None) => {
@@ -248,11 +250,25 @@ impl P2PController {
 
 impl Observe for P2PController {
     fn subscribe(&mut self, name: String) {
-        unimplemented!()
+        self.ch_pair = Some(
+            MESSAGE_CENTER
+            .lock()
+            .unwrap()
+            .subscribe(&"P2P_CONTROLLER".to_string())
+            .clone()
+        );
     }
 
-    fn unsubscribe(&mut self, ch: Arc<Mutex<MessageChannel>>) {
-        unimplemented!()
+    fn unsubscribe(&mut self, uid: String) {
+        if let Some(ch_pair) = self.ch_pair.clone() {
+            let uid = (*ch_pair).0.lock().unwrap().uid.clone();
+            self.ch_pair = None;
+            MESSAGE_CENTER
+                .lock()
+                .unwrap()
+                .unsubscribe(&"P2P_CONTROLLER".to_string(), uid);
+        }
+
     }
 
     fn send(&mut self, msg: Message) {
@@ -301,6 +317,4 @@ impl Thread for P2PController {
     fn stop(&mut self) {
 
     }
-
-
 }

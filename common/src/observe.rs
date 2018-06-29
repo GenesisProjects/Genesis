@@ -5,7 +5,7 @@ use gen_message::*;
 pub trait Observe {
     fn subscribe(&mut self, name: String);
 
-    fn unsubscribe(&mut self, ch: Arc<Mutex<MessageChannel>>);
+    fn unsubscribe(&mut self, uid: String);
 
     fn send(&mut self, msg: Message);
 
