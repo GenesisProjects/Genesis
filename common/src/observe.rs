@@ -7,7 +7,7 @@ pub trait Observe {
 
     fn unsubscribe(&mut self, uid: String);
 
-    fn send(&mut self, msg: Message);
+    fn send(&mut self, name: String, msg: Message);
 
     fn receive_async(&mut self) -> Option<Message>;
 

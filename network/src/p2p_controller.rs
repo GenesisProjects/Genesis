@@ -271,16 +271,43 @@ impl Observe for P2PController {
 
     }
 
-    fn send(&mut self, msg: Message) {
-        unimplemented!()
+    fn send(&mut self, name: String, msg: Message) {
+        MESSAGE_CENTER
+            .lock()
+            .unwrap()
+            .send(&name, msg);
     }
 
     fn receive_async(&mut self) -> Option<Message> {
-        unimplemented!()
+        if let Some(ch_pair) = self.ch_pair.clone() {
+            (*ch_pair).0.lock().unwrap().accept_msg_async()
+        } else {
+            None
+        }
     }
 
     fn receive_sync(&mut self) -> Message {
-        unimplemented!()
+        if let Some(ch_pair) = self.ch_pair.clone() {
+            let condvar_ref = &((*ch_pair).1);
+            let lock_ref = &((*ch_pair).0);
+            if let Some(msg) = lock_ref.lock().unwrap().accept_msg_async().clone() {
+                msg
+            } else {
+                loop {
+                    let msg = condvar_ref
+                        .wait(lock_ref.lock().unwrap())
+                        .unwrap()
+                        .accept_msg_async();
+
+                    match msg {
+                        Some(msg) => { return msg; }
+                        None => { continue; }
+                    }
+                }
+            }
+        } else {
+            panic!("No channel subscribed")
+        }
     }
 }
 

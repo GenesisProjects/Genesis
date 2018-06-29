@@ -177,6 +177,7 @@ impl MessageCenter {
             for i in 0 .. channels.len() {
                 let mut ch = channels[i].clone();
                 ch.0.lock().unwrap().send_msg(msg.to_owned());
+                ch.1.notify_all();
             }
         }
     }
