@@ -37,7 +37,7 @@ struct NetworkEventLoop {
     loop_count: usize,
     events: Events,
     poll: Poll,
-    status: Arc<ThreadStatus>
+    status: ThreadStatus
 }
 
 impl NetworkEventLoop {
@@ -51,7 +51,7 @@ impl NetworkEventLoop {
             loop_count: 0usize,
             events: events,
             poll: poll,
-            status: Arc::new(ThreadStatus::Stop)
+            status: ThreadStatus::Stop
         }
     }
 
@@ -95,46 +95,6 @@ pub struct P2PController {
 }
 
 impl P2PController {
-    pub fn new() -> Result<Self> {
-        //TODO: load port from config
-        let addr = "127.0.0.1:39999".parse().unwrap();
-        let server = TcpListener::bind(&addr);
-        let account = Account::load();
-
-        match (server, account) {
-            (Ok(server), Some(account)) => {
-                //TODO: load events size from config
-                let event_loop = NetworkEventLoop::new(1024);
-                //TODO: max_allowed_peers configuable
-                let max_allowed_peers = 512;
-                //TODO: max_blocked_peers configuable
-                let max_blocked_peers = 1024;
-                //TODO: max_waiting_list configuable
-                let max_waiting_list = 1024;
-
-                let mut peer_list = HashMap::<Token, PeerRef>::new();
-                Ok(P2PController {
-                    account: account.clone(),
-                    peer_list: peer_list,
-                    max_allowed_peers: max_allowed_peers,
-                    waitting_list: vec![],
-                    max_waiting_list: max_waiting_list,
-                    block_list: vec![],
-                    max_blocked_peers: max_blocked_peers,
-                    eventloop: event_loop,
-                    listener: server,
-                    ch_pair: None
-                })
-            },
-            (Ok(_), None) => {
-                Err(Error::from(ErrorKind::ConnectionRefused))
-            },
-            (Err(e), _) => {
-                Err(e)
-            }
-        }
-    }
-
     pub fn bootstrap(&mut self) {
         //TODO: port configuable
         let socket_info = match get_local_ip() {
@@ -254,12 +214,12 @@ impl Observe for P2PController {
             MESSAGE_CENTER
             .lock()
             .unwrap()
-            .subscribe(&"P2P_CONTROLLER".to_string())
+            .subscribe(&name)
             .clone()
         );
     }
 
-    fn unsubscribe(&mut self, uid: String) {
+    fn unsubscribe(&mut self) {
         if let Some(ch_pair) = self.ch_pair.clone() {
             let uid = (*ch_pair).0.lock().unwrap().uid.clone();
             self.ch_pair = None;
@@ -269,13 +229,6 @@ impl Observe for P2PController {
                 .unsubscribe(&"P2P_CONTROLLER".to_string(), uid);
         }
 
-    }
-
-    fn send(&mut self, name: String, msg: Message) {
-        MESSAGE_CENTER
-            .lock()
-            .unwrap()
-            .send(&name, msg);
     }
 
     fn receive_async(&mut self) -> Option<Message> {
@@ -312,36 +265,66 @@ impl Observe for P2PController {
 }
 
 impl Thread for P2PController {
-    fn run(&mut self) {
-        loop {
-            // fetch the next tick
-            let result = self.eventloop.next_tick();
-            match *self.eventloop.status {
-                ThreadStatus::Running => {
-                    match result {
-                        Ok(_) => { self.process_events(); },
-                        Err(_) => ()
-                    }
+    fn new() -> Result<Self> {
+        //TODO: load port from config
+        let addr = "127.0.0.1:39999".parse().unwrap();
+        let server = TcpListener::bind(&addr);
+        let account = Account::load();
 
-                },
-                ThreadStatus::Stop => { break; },
-                ThreadStatus::Pause => ()
+        match (server, account) {
+            (Ok(server), Some(account)) => {
+                //TODO: load events size from config
+                let event_loop = NetworkEventLoop::new(1024);
+                //TODO: max_allowed_peers configuable
+                let max_allowed_peers = 512;
+                //TODO: max_blocked_peers configuable
+                let max_blocked_peers = 1024;
+                //TODO: max_waiting_list configuable
+                let max_waiting_list = 1024;
+
+                let mut peer_list = HashMap::<Token, PeerRef>::new();
+                Ok(P2PController {
+                    account: account.clone(),
+                    peer_list: peer_list,
+                    max_allowed_peers: max_allowed_peers,
+                    waitting_list: vec![],
+                    max_waiting_list: max_waiting_list,
+                    block_list: vec![],
+                    max_blocked_peers: max_blocked_peers,
+                    eventloop: event_loop,
+                    listener: server,
+                    ch_pair: None
+                })
+            },
+            (Ok(_), None) => {
+                Err(Error::from(ErrorKind::ConnectionRefused))
+            },
+            (Err(e), _) => {
+                Err(e)
             }
         }
     }
 
-    /// start runloop
-    fn start(&mut self) {
-
+    fn run(&mut self) -> bool {
+        // fetch the next tick
+        let result = self.eventloop.next_tick();
+        match self.eventloop.status {
+            ThreadStatus::Running => {
+                match result {
+                    Ok(_) => { self.process_events(); true },
+                    Err(_) => false
+                }
+            },
+            ThreadStatus::Stop => false,
+            ThreadStatus::Pause => true
+        }
     }
 
-    /// pause runloop
-    fn pause(&mut self) {
-
+    /// update with new msg
+    fn update(&mut self, msg: Message) {
+        unimplemented!()
     }
-
-    /// stop runloop
-    fn stop(&mut self) {
-
+    fn set_status(&mut self, status: ThreadStatus) {
+        self.eventloop.status = status;
     }
 }

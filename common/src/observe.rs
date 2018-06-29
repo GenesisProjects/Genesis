@@ -1,13 +1,9 @@
-use std::sync::{Arc, Mutex};
-
 use gen_message::*;
 
 pub trait Observe {
     fn subscribe(&mut self, name: String);
 
-    fn unsubscribe(&mut self, uid: String);
-
-    fn send(&mut self, name: String, msg: Message);
+    fn unsubscribe(&mut self);
 
     fn receive_async(&mut self) -> Option<Message>;
 

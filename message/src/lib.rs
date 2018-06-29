@@ -26,8 +26,8 @@ fn random_string(length: usize) -> String {
 ///
 #[derive(Debug, Clone)]
 pub struct Message {
-    op: u16,
-    msg: String
+    pub op: u16,
+    pub msg: String
 }
 
 ///
