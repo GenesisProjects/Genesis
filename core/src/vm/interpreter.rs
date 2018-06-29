@@ -1,10 +1,11 @@
-extern crate common;
-extern crate num;
-extern crate rlp;
-extern crate gen_utils;
+use std::mem;
+use std::ops;
+use std::{u32, usize};
+use std::fmt;
+use std::iter::repeat;
+use std::collections::{HashMap, VecDeque};
+use parity_wasm::elements::{Opcode, BlockType, Local};
 
-use std::env::args;
-use std::fs::File;
 
 /// Function interpreter.
 pub struct Interpreter {
@@ -30,6 +31,24 @@ pub struct FunctionContext {
 	pub position: usize,
 }
 
+impl FunctionContext {
+	pub fn new(function: FuncRef, value_stack_limit: usize, frame_stack_limit: usize, signature: &Signature, args: Vec<RuntimeValue>) -> Self {
+		let module = match *function.as_internal() {
+			FuncInstanceInternal::Internal { ref module, .. } => module.upgrade().expect("module deallocated"),
+			FuncInstanceInternal::Host { .. } => panic!("Host functions can't be called as internally defined functions; Thus FunctionContext can be created only with internally defined functions; qed"),
+		};
+		FunctionContext {
+			is_initialized: false,
+			function: function,
+			module: ModuleRef(module),
+			return_type: signature.return_type().map(|vt| BlockType::Value(vt.into_elements())).unwrap_or(BlockType::NoResult),
+			value_stack: ValueStack::with_limit(value_stack_limit),
+			frame_stack: StackWithLimit::with_limit(frame_stack_limit),
+			locals: args,
+			position: 0,
+		}
+	}
+}
 
 /// Function run result.
 enum RunResult {
@@ -40,8 +59,14 @@ enum RunResult {
 }
 
 impl<'a, E: Externals> Interpreter<'a, E> {
-	pub fn start_execution(&mut self, ) -> Result< , > {
-
+	pub fn start_execution(&mut self, func: &FuncRef, args: &[RuntimeValue]) -> Result<Option<RuntimeValue>, Trap> {
+		let function_context = FunctionContext::new(
+			func.clone(),
+				
+		);
+		
+		let mut function_stack = VecDeque::new();
+		function_stack.push_back(function_context);
 
 		self.run_interpreter_loop(&mut function_stack)
 	}
