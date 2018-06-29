@@ -75,10 +75,10 @@ impl MessageQueue {
         self.queue.is_empty()
     }
 }
-/// Message channel is thread safe.
+
 pub struct MessageChannel {
     pub uid: String,
-    pub cond_var_pair: Arc<(Mutex<RefCell<MessageQueue>>, Condvar)>
+    pub queue: RefCell<MessageQueue>
 }
 
 impl PartialEq for MessageChannel {
@@ -93,34 +93,22 @@ unsafe impl std::marker::Sync for MessageChannel {}
 impl MessageChannel {
     pub fn new() -> Self {
         let msg_queue = MessageQueue::new(DEFAULT_MSG_QUEUE_SIZE);
-        let cond_var_pair = Arc::new((Mutex::new(RefCell::new(msg_queue)), Condvar::new()));
         MessageChannel {
             uid: random_string(32),
-            cond_var_pair: cond_var_pair
-        }
-    }
-
-    pub fn new_with_pair(name: &String, cond_var_pair: Arc<(Mutex<RefCell<MessageQueue>>, Condvar)>) -> Self {
-        MessageChannel {
-            uid: name.to_owned(),
-            cond_var_pair: cond_var_pair.clone()
+            queue: RefCell::new(msg_queue)
         }
     }
 
     pub fn new_with_size(size: usize) -> Self {
         let msg_queue = MessageQueue::new(size);
-        let cond_var_pair = Arc::new((Mutex::new(RefCell::new(msg_queue)), Condvar::new()));
         MessageChannel {
             uid: random_string(32),
-            cond_var_pair: cond_var_pair
+            queue: RefCell::new(msg_queue)
         }
     }
 
     pub fn send_msg(&mut self, msg: Message) -> Result<usize, &'static str> {
-        let (ref mutex_lock, ref cond_var) = *self.cond_var_pair;
-        let queue_ref = mutex_lock.lock().unwrap();
-        let result = queue_ref.borrow_mut().enqueue_msg(msg);
-        cond_var.notify_all();
+        let result = self.queue.get_mut().enqueue_msg(msg);
         result
     }
 
@@ -129,75 +117,50 @@ impl MessageChannel {
         self.send_msg(msg)
     }
 
-    pub fn accept_msg(&mut self) -> Message {
-        let (ref mutex_lock, ref cond_var) = *(self.cond_var_pair);
-        let mut queue = mutex_lock.lock().unwrap();
-        // if the queue is not empty
-        if !queue.borrow().is_empty() {
-            return queue.borrow_mut().dequeue_msg().unwrap();
-        }
-        // else wait for new msg
-        let result: Message;
-        // loop to avoid spurious wakeup
-        loop {
-            queue = cond_var.wait(queue).unwrap();
-            if !queue.borrow().is_empty() {
-                result = queue.borrow_mut().dequeue_msg().unwrap();
-                break;
-            }
-        }
-        result
-    }
-
     pub fn accept_msg_async(&mut self) -> Option<Message> {
-        let (ref mutex_lock, _) = *(self.cond_var_pair);
-        let queue = mutex_lock.lock().unwrap();
-        let mut queue_ref = queue.borrow_mut();
-        queue_ref.dequeue_msg().to_owned()
+        self.queue.get_mut().dequeue_msg().to_owned()
     }
 
     pub fn flush(&mut self) -> LinkedList<Message> {
-        let (ref mutex_lock, _) = *(self.cond_var_pair);
-        let queue_lock = mutex_lock.lock().unwrap();
-        let mut queue_ref = queue_lock.borrow_mut();
-        let result = queue_ref.flush();
+        let result = self.queue.get_mut().flush();
         result
     }
 }
 
 pub struct MessageCenter {
-    channel_map: HashMap<String, Vec<Arc<Mutex<MessageChannel>>>>
+    channel_map: HashMap<String, Vec<Arc<(Mutex<MessageChannel>, Condvar)>>>
 }
 
 
 impl MessageCenter {
     pub fn new() -> Self {
         MessageCenter {
-            channel_map: HashMap::<String, Vec<Arc<Mutex<MessageChannel>>>>::new()
+            channel_map: HashMap::<String, Vec<Arc<(Mutex<MessageChannel>, Condvar)>>>::new()
         }
     }
 
-    pub fn subscribe(&mut self, name: &String) -> Arc<Mutex<MessageChannel>> {
+    pub fn subscribe(&mut self, name: &String) -> Arc<(Mutex<MessageChannel>, Condvar)> {
         let existed = self.channels_exist_by_name(name);
         if existed {
             let new_channel = MessageChannel::new();
             let chs = self.channel_map.get_mut(name).unwrap();
-            chs.push(Arc::new(Mutex::new(new_channel)));
+            chs.push(Arc::new((Mutex::new(new_channel), Condvar::new() )));
             chs.last_mut().unwrap().clone()
         } else {
             let new_channel = MessageChannel::new();
-            self.channel_map.insert(name.to_owned(), vec![Arc::new(Mutex::new(new_channel))]);
+            self.channel_map.insert(name.to_owned(), vec![Arc::new((Mutex::new(new_channel), Condvar::new()))]);
             let chs = self.channel_map.get_mut(name).unwrap();
             chs.last_mut().unwrap().clone()
         }
     }
 
-    pub fn unsubscribe(&mut self, name: &String, ch: Arc<Mutex<MessageChannel>>) {
+    pub fn unsubscribe(&mut self, name: &String, pair: Arc<(Mutex<MessageChannel>, Condvar)>) {
         let existed = self.channels_exist_by_name(name);
         if existed {
             let chs = self.channel_map.get_mut(name).unwrap();
+            let ch = &pair.0;
             let uid = ch.lock().unwrap().uid.clone();
-            let pos = chs.iter().position(|x| x.lock().unwrap().uid == uid);
+            let pos = chs.iter().position(|x| (&((*x).0)).lock().unwrap().uid == uid);
             pos.and_then(|r| { chs.remove(r); Some(r) });
         }
 
@@ -215,12 +178,12 @@ impl MessageCenter {
             let channels = self.channel_map.get_mut(name).unwrap();
             for i in 0 .. channels.len() {
                 let mut ch = channels[i].clone();
-                ch.lock().unwrap().send_msg(msg.to_owned());
+                ch.0.lock().unwrap().send_msg(msg.to_owned());
             }
         }
     }
 
-    pub fn channels_by_name(&mut self, name: &String) -> Vec<Arc<Mutex<MessageChannel>>> {
+    pub fn channels_by_name(&mut self, name: &String) -> Vec<Arc<(Mutex<MessageChannel>, Condvar)>> {
         let existed = self.channels_exist_by_name(name);
         if !existed {
             vec![]
@@ -232,8 +195,8 @@ impl MessageCenter {
     pub fn channels_exist_by_name(&self, name: &String) -> bool {
         let channels = self.channel_map.get(name);
         match channels {
-            Some(_) => { true },
-            None => { false }
+            Some(_) => true,
+            None => false
         }
     }
 }
