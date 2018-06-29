@@ -44,8 +44,6 @@ pub trait Thread {
                         if !ret {
                             break;
                         }
-
-                        thread::sleep_ms(20);
                     }
                 },
                 &mut Err(ref e) => {

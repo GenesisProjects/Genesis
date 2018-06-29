@@ -5,6 +5,7 @@ use utils::*;
 use std::collections::HashMap;
 use std::io::*;
 use std::sync::{Mutex, Arc, Condvar};
+use std::time::Duration;
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
@@ -70,8 +71,9 @@ impl NetworkEventLoop {
         self.poll.deregister(peer);
     }
 
-    fn next_tick(&mut self) -> Result<(usize)> {
-        self.poll.poll(&mut self.events, None).and_then(|events_size| {
+    fn next_tick(&mut self) -> Result<usize> {
+        //TODO: make loop span configurable
+        self.poll.poll(&mut self.events, Some(Duration::from_millis(10))).and_then(|events_size| {
             self.loop_count += 1;
             Ok(events_size)
         })
@@ -310,14 +312,16 @@ impl Thread for P2PController {
     }
 
     fn run(&mut self) -> bool {
-        println!("test");
-
         // fetch the next tick
         let result = self.eventloop.next_tick();
         match self.eventloop.status {
             ThreadStatus::Running => {
                 match result {
-                    Ok(_) => { self.process_events(); true },
+                    Ok(size) => {
+                        println!("{} events are ready", size);
+                        self.process_events();
+                        true
+                    },
                     Err(_) => false
                 }
             },
