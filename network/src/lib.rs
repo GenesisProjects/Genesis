@@ -2,6 +2,7 @@ pub mod frame;
 pub mod ip_addr;
 pub mod message;
 pub mod nat;
+pub mod network_eventloop;
 pub mod peer;
 pub mod p2p_controller;
 pub mod socket;
