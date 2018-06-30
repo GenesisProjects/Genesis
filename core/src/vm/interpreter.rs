@@ -7,6 +7,9 @@ use std::collections::{HashMap, VecDeque};
 use function::{FuncRef, FuncInstance, FuncInstanceInternal};
 use parity_wasm::elements::{Opcode, BlockType, Local};
 use {Error, Trap, TrapKind, Signature};
+use common::{DEFAULT_MEMORY_INDEX, DEFAULT_TABLE_INDEX, BlockFrame, BlockFrameType};
+use common::stack::StackWithLimit;
+
 /// Maximum number of entries in value stack.
 pub const DEFAULT_VALUE_STACK_LIMIT: usize = 16384;
 /// Maximum number of entries in frame stack.
@@ -53,6 +56,38 @@ impl FunctionContext {
 			position: 0,
 		}
 	}
+
+	pub fn push_frame(&mut self, labels: &HashMap<usize, usize>, frame_type: BlockFrameType, block_type: BlockType) -> Result<(), TrapKind> {
+		let begin_position = self.position;
+		let branch_position = match frame_type {
+			BlockFrameType::Function => usize::MAX,
+			BlockFrameType::Loop => begin_position,
+			BlockFrameType::IfTrue => {
+				let else_pos = labels[&begin_position];
+				1usize + match labels.get(&else_pos) {
+					Some(end_pos) => *end_pos,
+					None => else_pos,
+				}
+			},
+			_ => labels[&begin_position] + 1,
+		};
+		let end_position = match frame_type {
+			BlockFrameType::Function => usize::MAX,
+			_ => labels[&begin_position] + 1,
+		};
+
+		self.frame_stack.push(BlockFrame {
+			frame_type: frame_type,
+			block_type: block_type,
+			begin_position: begin_position,
+			branch_position: branch_position,
+			end_position: end_position,
+			value_stack_len: self.value_stack.len(),
+			polymorphic_stack: false,
+		}).map_err(|_| TrapKind::StackOverflow)?;
+
+		Ok(())
+	}
 }
 
 /// Function run result.
@@ -95,16 +130,82 @@ impl<'a, E: Externals> Interpreter<'a, E> {
 			
 			match func_return {
 				RunResult::Return(return_value) => {
-
+					match function_stack.back_mut() {
+						Some(caller_context) => if let Some(return_value) = return_value {
+							caller_context.value_stack_mut().push(return_value).map_err(Trap::new)?;
+						},
+						None => return Ok(return_value),
+					}
 				},
 				FuncInstanceInternal::Host { ref signature, .. } => {
+					match *nested_func.as_internal() {
+						FuncInstanceInternal::Internal { .. } => {
+							let nested_context = function_context.nested(nested_func.clone()).map_err(Trap::new)?;
+							function_stack.push_back(function_context);
+							function_stack.push_back(nested_context);
+						},
+						FuncInstanceInternal::Host { ref signature, .. } => {
+							let args = prepare_function_args(signature, &mut function_context.value_stack);
+							let return_val = FuncInstance::invoke(&nested_func, &args, self.externals)?;
 
+							// Check if `return_val` matches the signature.
+							let value_ty = return_val.clone().map(|val| val.value_type());
+							let expected_ty = nested_func.signature().return_type();
+							if value_ty != expected_ty {
+								return Err(TrapKind::UnexpectedSignature.into());
+							}
+
+							if let Some(return_val) = return_val {
+								function_context.value_stack_mut().push(return_val).map_err(Trap::new)?;
+							}
+							function_stack.push_back(function_context);
+						}
+					}
 				}
 			}
 		}
 	}
 
 	fn do_run_function(&mut self, ) -> Result< , > {
-		//TBA
+		loop {
+			let instruction = &function_body[function_context.position];
+
+			match self.run_instruction(function_context, function_labels, instruction)? {
+				InstructionOutcome::RunNextInstruction => function_context.position += 1,
+				InstructionOutcome::Branch(mut index) => {
+					// discard index - 1 blocks
+					while index >= 1 {
+						function_context.discard_frame();
+						index -= 1;
+					}
+
+					function_context.pop_frame(true)?;
+					if function_context.frame_stack().is_empty() {
+						break;
+					}
+				},
+				InstructionOutcome::ExecuteCall(func_ref) => {
+					function_context.position += 1;
+					return Ok(RunResult::NestedCall(func_ref));
+				},
+				InstructionOutcome::End => {
+					if function_context.frame_stack().is_empty() {
+						break;
+					}
+				},
+				InstructionOutcome::Return => break,
+			}
+		}
+
+		Ok(RunResult::Return(match function_context.return_type {
+			BlockType::Value(_) => {
+				let result = function_context
+					.value_stack_mut()
+					.pop();
+				Some(result)
+			},
+			BlockType::NoResult => None,
+		}))
 	}
+
 }
