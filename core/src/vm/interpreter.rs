@@ -78,6 +78,18 @@ impl FunctionContext {
 		})
 	}
 
+	pub fn initialize(&mut self, locals: &[Local]) {
+		debug_assert!(!self.is_initialized);
+		self.is_initialized = true;
+
+		let locals = locals.iter()
+			.flat_map(|l| repeat(l.value_type()).take(l.count() as usize))
+			.map(::types::ValueType::from_elements)
+			.map(RuntimeValue::default)
+			.collect::<Vec<_>>();
+		self.locals.extend(locals);
+	}
+
 	pub fn push_frame(&mut self, labels: &HashMap<usize, usize>, frame_type: BlockFrameType, block_type: BlockType) -> Result<(), TrapKind> {
 		let begin_position = self.position;
 		let branch_position = match frame_type {
