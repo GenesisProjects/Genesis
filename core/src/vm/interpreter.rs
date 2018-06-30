@@ -92,7 +92,15 @@ impl<'a, E: Externals> Interpreter<'a, E> {
 			}
 
 			let func_return = self.do_run_function(&mut func_context, func_body.instructions.elements(), &func_body.labels).map_err(Trap::new)?;
-			self.do_run_function(&mut func_context, func_body.opcodes.elements(), &func_body.labels)
+			
+			match func_return {
+				RunResult::Return(return_value) => {
+
+				},
+				FuncInstanceInternal::Host { ref signature, .. } => {
+
+				}
+			}
 		}
 	}
 
