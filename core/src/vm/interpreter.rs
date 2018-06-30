@@ -57,6 +57,27 @@ impl FunctionContext {
 		}
 	}
 
+	pub fn nested(&mut self, function: FuncRef) -> Result<Self, TrapKind> {
+		let module = match *function.as_internal() {
+			FuncInstanceInternal::Internal { ref module, .. } => module.upgrade().expect("module deallocated"),
+			FuncInstanceInternal::Host { .. } => panic!("host func cannot be executed"),
+		};
+		let func_type = function.signature();
+		let func_return_type = func_type.return_type().map(|vt| BlockType::Value(vt.into_elements())).unwrap_or(BlockType::NoResult);
+		let func_locals = prepare_func_args(func_type, &mut self.value_stack);
+
+		Ok(FunctionContext {
+			is_initialized: false,
+			function: function,
+			module: ModuleRef(module),
+			return_type: func_return_type,
+			value_stack: ValueStack::with_limit(self.value_stack.limit() - self.value_stack.len()),
+			frame_stack: StackWithLimit::with_limit(self.frame_stack.limit() - self.frame_stack.len()),
+			locals: func_locals,
+			position: 0,
+		})
+	}
+
 	pub fn push_frame(&mut self, labels: &HashMap<usize, usize>, frame_type: BlockFrameType, block_type: BlockType) -> Result<(), TrapKind> {
 		let begin_position = self.position;
 		let branch_position = match frame_type {
@@ -111,7 +132,7 @@ impl<'a, E: Externals> Interpreter<'a, E> {
 		let mut func_stack = VecDeque::new();
 		func_stack.push_back(func_context);
 
-		self.run_interpreter_loop(&mut function_stack)
+		self.run_interpreter_loop(&mut func_stack)
 	}
 
 	fn run_interpreter_loop(&mut self, func_stack: &mut VecDeque<FunctionContext>) -> Result<Option<RuntimeValue>, Trap> {
@@ -130,7 +151,7 @@ impl<'a, E: Externals> Interpreter<'a, E> {
 			
 			match func_return {
 				RunResult::Return(return_value) => {
-					match function_stack.back_mut() {
+					match func_stack.back_mut() {
 						Some(caller_context) => if let Some(return_value) = return_value {
 							caller_context.value_stack_mut().push(return_value).map_err(Trap::new)?;
 						},
@@ -140,12 +161,12 @@ impl<'a, E: Externals> Interpreter<'a, E> {
 				FuncInstanceInternal::Host { ref signature, .. } => {
 					match *nested_func.as_internal() {
 						FuncInstanceInternal::Internal { .. } => {
-							let nested_context = function_context.nested(nested_func.clone()).map_err(Trap::new)?;
-							function_stack.push_back(function_context);
-							function_stack.push_back(nested_context);
+							let nested_context = func_context.nested(nested_func.clone()).map_err(Trap::new)?;
+							func_stack.push_back(func_context);
+							func_stack.push_back(nested_context);
 						},
 						FuncInstanceInternal::Host { ref signature, .. } => {
-							let args = prepare_function_args(signature, &mut function_context.value_stack);
+							let args = prepare_func_args(signature, &mut func_context.value_stack);
 							let return_val = FuncInstance::invoke(&nested_func, &args, self.externals)?;
 
 							// Check if `return_val` matches the signature.
@@ -156,9 +177,9 @@ impl<'a, E: Externals> Interpreter<'a, E> {
 							}
 
 							if let Some(return_val) = return_val {
-								function_context.value_stack_mut().push(return_val).map_err(Trap::new)?;
+								func_context.value_stack_mut().push(return_val).map_err(Trap::new)?;
 							}
-							function_stack.push_back(function_context);
+							func_stack.push_back(func_context);
 						}
 					}
 				}
@@ -168,28 +189,28 @@ impl<'a, E: Externals> Interpreter<'a, E> {
 
 	fn do_run_function(&mut self, ) -> Result< , > {
 		loop {
-			let instruction = &function_body[function_context.position];
+			let instruction = &func_body[func_context.position];
 
-			match self.run_instruction(function_context, function_labels, instruction)? {
-				InstructionOutcome::RunNextInstruction => function_context.position += 1,
+			match self.run_instruction(func_context, func_labels, instruction)? {
+				InstructionOutcome::RunNextInstruction => func_context.position += 1,
 				InstructionOutcome::Branch(mut index) => {
 					// discard index - 1 blocks
 					while index >= 1 {
-						function_context.discard_frame();
+						func_context.discard_frame();
 						index -= 1;
 					}
 
-					function_context.pop_frame(true)?;
-					if function_context.frame_stack().is_empty() {
+					func_context.pop_frame(true)?;
+					if func_context.frame_stack().is_empty() {
 						break;
 					}
 				},
 				InstructionOutcome::ExecuteCall(func_ref) => {
-					function_context.position += 1;
+					func_context.position += 1;
 					return Ok(RunResult::NestedCall(func_ref));
 				},
 				InstructionOutcome::End => {
-					if function_context.frame_stack().is_empty() {
+					if func_context.frame_stack().is_empty() {
 						break;
 					}
 				},
@@ -197,9 +218,9 @@ impl<'a, E: Externals> Interpreter<'a, E> {
 			}
 		}
 
-		Ok(RunResult::Return(match function_context.return_type {
+		Ok(RunResult::Return(match func_context.return_type {
 			BlockType::Value(_) => {
-				let result = function_context
+				let result = func_context
 					.value_stack_mut()
 					.pop();
 				Some(result)
