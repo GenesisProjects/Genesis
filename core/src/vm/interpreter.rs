@@ -4,8 +4,13 @@ use std::{u32, usize};
 use std::fmt;
 use std::iter::repeat;
 use std::collections::{HashMap, VecDeque};
+use function::{FuncRef, FuncInstance, FuncInstanceInternal};
 use parity_wasm::elements::{Opcode, BlockType, Local};
-
+use {Error, Trap, TrapKind, Signature};
+/// Maximum number of entries in value stack.
+pub const DEFAULT_VALUE_STACK_LIMIT: usize = 16384;
+/// Maximum number of entries in frame stack.
+pub const DEFAULT_FRAME_STACK_LIMIT: usize = 16384;
 
 /// Function interpreter.
 pub struct Interpreter {
@@ -60,20 +65,34 @@ enum RunResult {
 
 impl<'a, E: Externals> Interpreter<'a, E> {
 	pub fn start_execution(&mut self, func: &FuncRef, args: &[RuntimeValue]) -> Result<Option<RuntimeValue>, Trap> {
-		let function_context = FunctionContext::new(
+		let func_context = FunctionContext::new(
 			func.clone(),
-				
+			DEFAULT_VALUE_STACK_LIMIT,
+			DEFAULT_FRAME_STACK_LIMIT,
+			func.signature(),
+			args.into_iter().cloned().collect(),
 		);
-		
-		let mut function_stack = VecDeque::new();
-		function_stack.push_back(function_context);
+
+		let mut func_stack = VecDeque::new();
+		func_stack.push_back(func_context);
 
 		self.run_interpreter_loop(&mut function_stack)
 	}
 
-	fn run_interpreter_loop(&mut self, ) -> Result< , > {
+	fn run_interpreter_loop(&mut self, func_stack: &mut VecDeque<FunctionContext>) -> Result<Option<RuntimeValue>, Trap> {
 		loop {
-			self.do_run_function(&mut function_context, function_body.opcodes.elements(), &function_body.labels)
+			let mut func_context = func_stack.pop_back().expect("no func context");
+			let func_ref = func_context.function;
+			let func_body = func_ref.body().expect("no body function");
+
+			if !func_context.is_initialized() {
+				let return_type = func_context.return_type;
+				func_context.initialize(&func_body.locals);
+				func_context.push_frame(&func_body.labels, BlockFrameType::Function, return_type).map_err(Trap::new)?;
+			}
+
+			let func_return = self.do_run_function(&mut func_context, func_body.instructions.elements(), &func_body.labels).map_err(Trap::new)?;
+			self.do_run_function(&mut func_context, func_body.opcodes.elements(), &func_body.labels)
 		}
 	}
 
