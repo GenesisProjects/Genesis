@@ -63,7 +63,6 @@ pub struct Peer {
     peer_type: PeerType,
     account: Option<Account>,
     session: Session,
-
     block_info: Option<BlockInfo>,
     peer_table: PeerTable
 }

@@ -135,7 +135,7 @@ impl P2PController {
                 SERVER_TOKEN => {
                     match self.listener.accept() {
                         Ok((socket, _)) => {
-
+                            // store the incoming socket
                         },
                         Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
                             // EAGAIN
@@ -214,6 +214,7 @@ impl Thread for P2PController {
     fn new() -> Result<Self> {
         //TODO: load port from config
         let addr = "127.0.0.1:39999".parse().unwrap();
+        //TODO: make socket resuseable
         let server = TcpListener::bind(&addr);
         let account = Account::load();
 
@@ -276,5 +277,11 @@ impl Thread for P2PController {
     }
     fn set_status(&mut self, status: ThreadStatus) {
         self.eventloop.status = status;
+    }
+}
+
+impl Drop for P2PController {
+    fn drop(&mut self) {
+        unimplemented!()
     }
 }

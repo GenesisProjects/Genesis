@@ -6,7 +6,6 @@ use rlp::RLPSerialize;
 use rlp::types::*;
 
 use peer::*;
-use frame::*;
 
 #[derive(Debug, Clone)]
 pub enum RejectReason {
@@ -21,80 +20,10 @@ pub enum P2PMessage {
     Accept(SocketAddr, Account, BlockInfo, PeerTable),
     /// Invoked when peers bootstrap to us if we reject
     Reject(SocketAddr, Account, RejectReason),
+    /// Ping
+    PING()
 }
 
-impl RLPSerialize for P2PMessage {
-    fn serialize(&self) -> Result<RLP, RLPError> {
-        match self {
-            &P2PMessage::Bootstrap(ref addr, ref account) => {
-                Ok(RLP::RLPList { list: vec!["Bootstrap".to_string().serialize().unwrap_or(RLP::RLPEmpty),
-                                             addr.serialize().unwrap_or(RLP::RLPEmpty),
-                                             account.serialize().unwrap_or(RLP::RLPEmpty)] })
-            },
-            &P2PMessage::Accept(ref addr, ref account, ref block_info, ref peer_table) => {
-               unimplemented!()
-            },
-            &P2PMessage::Reject(ref addr, ref account, ref reason) => {
-                unimplemented!()
-            },
-            _ => Err(RLPError::RLPErrorUnknown)
-        }
-    }
-
-    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        match rlp {
-            &RLP::RLPList { ref list } => {
-                let tag = list[0].to_owned();
-                match tag {
-                    RLP::RLPItem { value } => {
-                        match String::from_utf8(value).unwrap().as_str() {
-                            "Bootstrap" => {
-                                if list.len() == 2 {
-                                    Ok(P2PMessage::Bootstrap(
-                                        RLPSerialize::deserialize(&list[1]).ok().unwrap(),
-
-                                        RLPSerialize::deserialize(&list[2]).ok().unwrap()
-                                    ))
-                                } else {
-                                    Err(RLPError::RLPErrorWrongNumParams)
-                                }
-                            },
-                            "Accept" => {
-                                unimplemented!()
-                            },
-                            "Reject" => {
-                                unimplemented!()
-                            },
-                            _ => Err(RLPError::RLPErrorTagType)
-                        }
-                    },
-                    _ => Err(RLPError::RLPErrorTagMissing)
-                }
-            },
-            _ => Err(RLPError::RLPErrorUnknown)
-        }
-    }
-}
-
-impl FrameSerialize for P2PMessage {
-    fn into_frames(self,
-                   frame_type: FrameType,
-                   task: Task,
-                   code: ReponseCode,
-                   pub_key: [u8; 32],
-                   role: Role,
-                   init_seq: u32) -> (Vec<Frame>, SEQ) {
-        Frame::new_with_rlp(
-            &self.serialize().ok().unwrap(),
-            frame_type,
-            task,
-            code,
-            pub_key,
-            role,
-            init_seq
-        )
-    }
-}
 
 #[derive(Debug, Clone)]
 pub enum ChainMessage {
@@ -108,4 +37,29 @@ pub enum ChainMessage {
     ChainSyncReady(Account, Hash, u64, usize, u32),
     /// blockchain downloaded - peer_id, fork point, increased chain length, file size, checksum
     ChainSyncReceived(Account, Hash, u64, usize, u32),
+}
+
+pub trait MessageCodec {
+    fn encoder(&self, output: &mut [u8]);
+    fn decoder(input: &[u8]) -> Self;
+}
+
+impl MessageCodec for P2PMessage {
+    fn encoder(&self, output: &mut [u8]) {
+        unimplemented!()
+    }
+
+    fn decoder(input: &[u8]) -> Self {
+        unimplemented!()
+    }
+}
+
+impl MessageCodec for ChainMessage {
+    fn encoder(&self, output: &mut [u8]) {
+        unimplemented!()
+    }
+
+    fn decoder(input: &[u8]) -> Self {
+        unimplemented!()
+    }
 }
