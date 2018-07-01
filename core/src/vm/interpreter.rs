@@ -90,6 +90,22 @@ impl FunctionContext {
 		self.locals.extend(locals);
 	}
 
+	pub fn is_initialized(&self) -> bool {
+		self.is_initialized
+	}
+
+	pub fn value_stack(&self) -> &ValueStack {
+		&self.value_stack
+	}
+
+	pub fn value_stack_mut(&mut self) -> &mut ValueStack {
+		&mut self.value_stack
+	}
+
+	pub fn frame_stack(&self) -> &StackWithLimit<BlockFrame> {
+		&self.frame_stack
+	}
+
 	pub fn push_frame(&mut self, labels: &HashMap<usize, usize>, frame_type: BlockFrameType, block_type: BlockType) -> Result<(), TrapKind> {
 		let begin_position = self.position;
 		let branch_position = match frame_type {
@@ -121,6 +137,30 @@ impl FunctionContext {
 
 		Ok(())
 	}
+
+	pub fn pop_frame(&mut self, is_branch: bool) -> Result<(), TrapKind> {
+		let frame = self.frame_stack
+			.pop()
+			.expect("Due to validation frame stack shouldn't be empty");
+		assert!(frame.value_stack_len <= self.value_stack.len(), "invalid stack len");
+
+		let frame_value = match frame.block_type {
+			BlockType::Value(_) if frame.frame_type != BlockFrameType::Loop || !is_branch =>
+				Some(self.value_stack.pop()),
+			_ => None,
+		};
+		self.value_stack.resize(frame.value_stack_len);
+		self.position = if is_branch { frame.branch_position } else { frame.end_position };
+		if let Some(frame_value) = frame_value {
+			self.value_stack.push(frame_value)?;
+		}
+
+		Ok(())
+	}
+
+	pub fn discard_frame(&mut self) {
+		let _ = self.frame_stack.pop().expect("Due to validation frame stack shouldn't be empty");
+	}
 }
 
 /// Function run result.
@@ -129,6 +169,69 @@ enum RunResult {
 	Return(Option<RuntimeValue>),
 	/// Function is calling other function.
 	NestedCall(FuncRef),
+}
+
+struct ValueStack {
+	stack_with_limit: StackWithLimit<RuntimeValue>,
+}
+
+impl ValueStack {
+	fn with_limit(limit: usize) -> ValueStack {
+		ValueStack {
+			stack_with_limit: StackWithLimit::with_limit(limit),
+		}
+	}
+
+	fn pop_as<T>(&mut self) -> T
+	where
+		T: FromRuntimeValue,
+	{
+		let value = self.stack_with_limit
+			.pop()
+			.expect("Due to validation stack shouldn't be empty");
+		value.try_into().expect("Due to validation stack top's type should match")
+	}
+
+	fn pop_pair_as<T>(&mut self) -> Result<(T, T), Error>
+	where
+		T: FromRuntimeValue,
+	{
+		let right = self.pop_as();
+		let left = self.pop_as();
+		Ok((left, right))
+	}
+
+	fn pop_triple(&mut self) -> (RuntimeValue, RuntimeValue, RuntimeValue) {
+		let right = self.stack_with_limit.pop().expect("Due to validation stack shouldn't be empty");
+		let mid = self.stack_with_limit.pop().expect("Due to validation stack shouldn't be empty");
+		let left = self.stack_with_limit.pop().expect("Due to validation stack shouldn't be empty");
+		(left, mid, right)
+	}
+
+	fn pop(&mut self) -> RuntimeValue {
+		self.stack_with_limit.pop().expect("Due to validation stack shouldn't be empty")
+	}
+
+	fn push(&mut self, value: RuntimeValue) -> Result<(), TrapKind> {
+		self.stack_with_limit.push(value)
+			.map_err(|_| TrapKind::StackOverflow)
+	}
+
+	fn resize(&mut self, new_len: usize) {
+		self.stack_with_limit.resize(new_len, RuntimeValue::I32(0));
+	}
+
+	fn len(&self) -> usize {
+		self.stack_with_limit.len()
+	}
+
+	fn limit(&self) -> usize {
+		self.stack_with_limit.limit()
+	}
+
+	fn top(&self) -> &RuntimeValue {
+		self.stack_with_limit.top().expect("Due to validation stack shouldn't be empty")
+	}
 }
 
 impl<'a, E: Externals> Interpreter<'a, E> {
@@ -536,13 +639,13 @@ impl<'a, E: Externals> Interpreter<'a, E> {
 			.ok_or_else(|| TrapKind::ElemUninitialized)?;
 
 		{
-			let actual_function_type = func_ref.signature();
-			let required_function_type = context
+			let actual_func_type = func_ref.signature();
+			let required_func_type = context
 				.module()
 				.signature_by_index(signature_idx)
 				.expect("Due to validation type should exists");
 
-			if &*required_function_type != actual_function_type {
+			if &*required_func_type != actual_func_type {
 				return Err(TrapKind::UnexpectedSignature);
 			}
 		}
