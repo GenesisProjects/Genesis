@@ -94,13 +94,24 @@ impl Session {
         });
     }
 
-    fn process_single_event(&mut self, msg: &SocketMessage) {
+    fn process_single_event(&mut self, msg: &SocketMessage) -> bool {
         let event = msg.get_event();
         let event = event.as_str();
-        let args = msg.get_args();
+        let args = &msg.get_args();
         match event {
             //TODO: process logic
-            _ => {}
+            "BOOTSTRAP" => {
+                if args.len() == 2 {
+                    match args[0] {
+                        &SocketMessageArg::Vesion { ref value } => {
+                            unimplemented!()
+                        }
+                    }
+                } else {
+                    false
+                }
+            },
+            _ => false
         }
         unimplemented!()
     }
