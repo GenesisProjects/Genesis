@@ -94,6 +94,14 @@ impl SocketMessage {
         }
     }
 
+    pub fn get_event(&self) -> String {
+        self.event.to_owned()
+    }
+
+    pub fn get_args(&self) -> Vec<SocketMessageArg> {
+        self.arg.to_owned()
+    }
+
     pub fn init_ping() -> Self {
         SocketMessage { event: "PING".to_string(), arg: vec![] }
     }

@@ -37,8 +37,8 @@ impl PeerSocket {
         }
     }
 
-    pub fn send<T>(&mut self, msg: SocketMessage) {
-        unimplemented!()
+    pub fn send(&mut self, msg: SocketMessage) -> STDResult<()> {
+        self.stream.write_all(&msg.encoder()[..])
     }
 
     pub fn receive(&mut self) -> Result<Vec<SocketMessage>, SocketErr> {

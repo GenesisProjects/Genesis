@@ -10,6 +10,7 @@ use std::time::Instant;
 use common::address::Address as Account;
 use pool_manager::SHARED_POOL_MANAGER;
 use socket::*;
+use message::defines::*;
 
 #[derive(Debug, Clone)]
 pub enum SessionStatus {
@@ -82,6 +83,26 @@ impl Session {
 
     pub fn status(&self) -> SessionStatus {
         self.status.clone()
+    }
+
+    fn process_events(&mut self) {
+        self.socket.receive().and_then(|msgs| {
+            for msg_ref in &msgs {
+                self.process_single_event(msg_ref);
+            }
+            Ok(msgs)
+        });
+    }
+
+    fn process_single_event(&mut self, msg: &SocketMessage) {
+        let event = msg.get_event();
+        let event = event.as_str();
+        let args = msg.get_args();
+        match event {
+            //TODO: process logic
+            _ => {}
+        }
+        unimplemented!()
     }
 
 }
