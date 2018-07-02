@@ -102,6 +102,10 @@ impl FunctionContext {
 		&mut self.value_stack
 	}
 
+	pub fn get_module(&self) -> ModuleRef {
+		self.module.clone()
+	}
+
 	pub fn frame_stack(&self) -> &StackWithLimit<BlockFrame> {
 		&self.frame_stack
 	}
