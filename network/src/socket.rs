@@ -16,14 +16,12 @@ pub const MAXT_LINE_CAHCE_LEN: usize = 1024 * 4;
 
 pub enum SocketErr {
     IO_FAILED,
-    LINE_CAHCE_OVERFLOW,
-    UTF_8_ERR
+    LINE_CAHCE_OVERFLOW
 }
 
 pub struct PeerSocket {
     stream: TcpStream,
     buffer: ByteBuffer,
-
     line_cache: Vec<u8>
 }
 

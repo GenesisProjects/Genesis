@@ -7,39 +7,6 @@ use rlp::RLPSerialize;
 use rlp::types::*;
 use rust_base58::{ToBase58, FromBase58};
 use peer::*;
-/*
-
-#[derive(Debug, Clone)]
-pub enum RejectReason {
-
-}
-
-#[derive(Debug, Clone)]
-pub enum P2PMessage {
-    /// Invoked when bootstrap to peers
-    Bootstrap(SocketAddr, Account),
-    /// Invoked when peers bootstrap to us if we accept
-    Accept(SocketAddr, Account, BlockInfo, PeerTable),
-    /// Invoked when peers bootstrap to us if we reject
-    Reject(SocketAddr, Account, RejectReason),
-}
-
-
-#[derive(Debug, Clone)]
-pub enum ChainMessage {
-    /// pre-request for a peer to provide a new chain - start position, current chain length
-    ChainSyncInit(Account, Hash, u64),
-    /// answer for the pre-request - peer_id, fork point, increased chain length
-    ChainSyncInitAnswer(Account, Option<Hash>, u64),
-    /// request for download a chain - peer_id, fork point, increased chain length
-    ChainSyncRequest(Account, Hash, u64),
-    /// resource ready - peer_id, fork point, increased chain length, file size, checksum
-    ChainSyncReady(Account, Hash, u64, usize, u32),
-    /// blockchain downloaded - peer_id, fork point, increased chain length, file size, checksum
-    ChainSyncReceived(Account, Hash, u64, usize, u32),
-}
-
-*/
 
 pub trait MessageCodec {
     fn encoder(&self) -> Vec<u8>;
@@ -52,6 +19,7 @@ pub enum SocketMessageArg {
     String { value: String },
     Account { value: Account },
     Hash { value: Hash },
+    Vesion { value: String },
     Unknown
 }
 
@@ -89,7 +57,10 @@ impl SocketMessageArg {
                         },
                         _ => SocketMessageArg::Unknown
                     }
-                }
+                },
+                "Vesion" => {
+                    SocketMessageArg::Vesion { value: vec[1].to_string() }
+                },
                 _ => {
                     SocketMessageArg::Unknown
                 }
@@ -105,6 +76,13 @@ pub struct SocketMessage {
 }
 
 impl SocketMessage {
+    pub fn new(event: String, arg: Vec<SocketMessageArg>) -> Self {
+        SocketMessage {
+            event: event,
+            arg: arg
+        }
+    }
+
     pub fn init_ping() -> Self {
         SocketMessage { event: "PING".to_string(), arg: vec![] }
     }
@@ -116,7 +94,45 @@ impl SocketMessage {
 
 impl MessageCodec for SocketMessage {
     fn encoder(&self) -> Vec<u8>  {
-        vec![]
+        let mut result: Vec<u8> = vec![];
+        let mut vec = self.event.clone().into_bytes();
+        result.append(&mut vec);
+        for elem in self.arg.clone() {
+            match elem {
+                SocketMessageArg::Int { value } => {
+                    let mut header = " Int@".to_string().into_bytes();
+                    let mut vec = value.to_string().into_bytes();
+                    result.append(&mut header);
+                    result.append(&mut vec);
+                },
+                SocketMessageArg::String { ref value } => {
+                    let mut header = " String@".to_string().into_bytes();
+                    let mut vec = value.clone().into_bytes();
+                    result.append(&mut header);
+                    result.append(&mut vec);
+                },
+                SocketMessageArg::Account { ref value } => {
+                    let mut header = " Account@".to_string().into_bytes();
+                    let mut vec = value.text.clone().into_bytes();
+                    result.append(&mut header);
+                    result.append(&mut vec);
+                },
+                SocketMessageArg::Hash { ref value } => {
+                    let mut header = " Hash@".to_string().into_bytes();
+                    let mut vec = value.to_base58().into_bytes();
+                    result.append(&mut header);
+                    result.append(&mut vec);
+                },
+                SocketMessageArg::Vesion { ref value } => {
+                    let mut header = " Vesion@".to_string().into_bytes();
+                    let mut vec = value.clone().into_bytes();
+                    result.append(&mut header);
+                    result.append(&mut vec);
+                },
+                _ => ()
+            }
+        }
+        result
     }
 
     fn decoder(input: &str) -> Self {

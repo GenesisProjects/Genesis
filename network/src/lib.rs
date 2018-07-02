@@ -7,6 +7,7 @@ pub mod p2p_controller;
 pub mod socket;
 pub mod pool;
 pub mod pool_manager;
+pub mod protocol;
 pub mod session;
 pub mod utils;
 
