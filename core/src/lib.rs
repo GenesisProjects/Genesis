@@ -8,3 +8,4 @@ pub mod receipt;
 pub extern crate common;
 pub extern crate db;
 pub extern crate rlp;
+pub extern crate num;

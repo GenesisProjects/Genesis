@@ -1,13 +1,9 @@
-extern crate common;
-extern crate num;
-extern crate rlp;
-
-use self::common::hash::*;
-use self::common::address::*;
-use self::common::bloom::*;
-use self::num::bigint::BigInt;
-use self::rlp::RLPSerialize;
-use self::rlp::types::*;
+use common::hash::*;
+use common::address::*;
+use common::bloom::*;
+use num::bigint::BigInt;
+use rlp::RLPSerialize;
+use rlp::types::*;
 use log::Log;
 
 #[derive(Debug)]

@@ -1,14 +1,10 @@
-extern crate common;
-extern crate num;
-extern crate rlp;
-
-use self::common::address::Address;
-use self::common::key::Signature;
-use self::common::hash::{ Hash, SerializableAndSHA256Hashable };
-use self::num::bigint::BigInt;
-use self::num::Zero;
-use self::rlp::RLPSerialize;
-use self::rlp::types::*;
+use common::address::Address;
+use common::key::Signature;
+use common::hash::{ Hash, SerializableAndSHA256Hashable };
+use num::bigint::BigInt;
+use num::Zero;
+use rlp::RLPSerialize;
+use rlp::types::*;
 
 use std::marker::PhantomData;
 

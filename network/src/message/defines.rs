@@ -3,6 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV
 use common::address::Address as Account;
 use common::hash::{Hash, HASH_LEN};
 use common::key::Signature;
+use chrono::*;
 use rlp::RLPSerialize;
 use rlp::types::*;
 use rust_base58::{ToBase58, FromBase58};
@@ -20,6 +21,7 @@ pub enum SocketMessageArg {
     Account { value: Account },
     Hash { value: Hash },
     Vesion { value: String },
+    Timestamp { value: DateTime<Utc> },
     Unknown
 }
 
@@ -60,6 +62,15 @@ impl SocketMessageArg {
                 },
                 "Vesion" => {
                     SocketMessageArg::Vesion { value: vec[1].to_string() }
+                },
+                "Timestamp" => {
+                    match Utc.datetime_from_str(
+                        vec[1].to_string().as_str(),
+                        "%Y-%m-%d-%H-%M-%S-%f"
+                    ) {
+                        Ok(r) => SocketMessageArg::Timestamp { value: r },
+                        _ => SocketMessageArg::Unknown
+                    }
                 },
                 _ => {
                     SocketMessageArg::Unknown
@@ -126,6 +137,12 @@ impl MessageCodec for SocketMessage {
                 SocketMessageArg::Vesion { ref value } => {
                     let mut header = " Vesion@".to_string().into_bytes();
                     let mut vec = value.clone().into_bytes();
+                    result.append(&mut header);
+                    result.append(&mut vec);
+                },
+                SocketMessageArg::Timestamp { ref value } => {
+                    let mut header = " Timestamp@".to_string().into_bytes();
+                    let mut vec = value.format("%Y-%m-%d-%H-%M-%S-%f").to_string().into_bytes();
                     result.append(&mut header);
                     result.append(&mut vec);
                 },
