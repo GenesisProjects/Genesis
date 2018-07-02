@@ -2,10 +2,12 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV
 
 use common::address::Address as Account;
 use common::hash::Hash;
+use common::key::Signature;
 use rlp::RLPSerialize;
 use rlp::types::*;
 
 use peer::*;
+/*
 
 #[derive(Debug, Clone)]
 pub enum RejectReason {
@@ -20,8 +22,6 @@ pub enum P2PMessage {
     Accept(SocketAddr, Account, BlockInfo, PeerTable),
     /// Invoked when peers bootstrap to us if we reject
     Reject(SocketAddr, Account, RejectReason),
-    /// Ping
-    PING()
 }
 
 
@@ -39,22 +39,37 @@ pub enum ChainMessage {
     ChainSyncReceived(Account, Hash, u64, usize, u32),
 }
 
+*/
+
 pub trait MessageCodec {
     fn encoder(&self, output: &mut [u8]);
+
     fn decoder(input: &[u8]) -> Self;
 }
 
-impl MessageCodec for P2PMessage {
-    fn encoder(&self, output: &mut [u8]) {
-        unimplemented!()
-    }
+#[derive(Debug, Clone)]
+pub enum SocketMessageArg {
+    Int { value: u32 },
+    String { value: String },
+    Account { value: Account },
+    Hash { value: Hash }
+}
 
-    fn decoder(input: &[u8]) -> Self {
-        unimplemented!()
+
+#[derive(Debug, Clone)]
+pub struct SocketMessage {
+    event: String,
+    arg: Vec<SocketMessageArg>
+}
+
+impl SocketMessage {
+    pub fn init_ping() -> Self {
+        SocketMessage { event: "PING".to_string(), arg: vec![] }
     }
 }
 
-impl MessageCodec for ChainMessage {
+
+impl MessageCodec for SocketMessage {
     fn encoder(&self, output: &mut [u8]) {
         unimplemented!()
     }

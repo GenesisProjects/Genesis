@@ -1,12 +1,12 @@
 extern crate ring;
 extern crate untrusted;
 
+use address::*;
 use self::ring::{rand, signature};
+use self::ring::signature::ED25519_PKCS8_V2_LEN as PKCS_LEN;
 use self::untrusted::Input as Input;
 
-use self::ring::signature::ED25519_PKCS8_V2_LEN as PKCS_LEN;
-
-use address::*;
+use std::clone::Clone;
 
 pub const PUBLIC_KEY_LEN: usize = 32;
 
