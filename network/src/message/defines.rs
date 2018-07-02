@@ -1,11 +1,11 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use common::address::Address as Account;
-use common::hash::Hash;
+use common::hash::{Hash, HASH_LEN};
 use common::key::Signature;
 use rlp::RLPSerialize;
 use rlp::types::*;
-
+use rust_base58::{ToBase58, FromBase58};
 use peer::*;
 /*
 
@@ -42,19 +42,61 @@ pub enum ChainMessage {
 */
 
 pub trait MessageCodec {
-    fn encoder(&self, output: &mut [u8]);
-
-    fn decoder(input: &[u8]) -> Self;
+    fn encoder(&self) -> Vec<u8>;
+    fn decoder(input: &str) -> Self;
 }
 
 #[derive(Debug, Clone)]
 pub enum SocketMessageArg {
-    Int { value: u32 },
+    Int { value: i32 },
     String { value: String },
     Account { value: Account },
-    Hash { value: Hash }
+    Hash { value: Hash },
+    Unknown
 }
 
+impl SocketMessageArg {
+    pub fn new(input: &str) -> Self {
+        let splits = input.trim().split("@");
+        let vec: Vec<&str> = splits.collect();
+        if vec.len() != 2 {
+            SocketMessageArg::Unknown
+        } else {
+            match vec[0] {
+                "Int" => {
+                    match vec[1].to_string().parse::<i32>() {
+                        Ok(r) => SocketMessageArg::Int { value: r },
+                        _ => SocketMessageArg::Unknown
+                    }
+                },
+                "String" => {
+                    SocketMessageArg::String { value: vec[1].to_string() }
+                },
+                "Account" => {
+                    SocketMessageArg::Account { value: Account { text: vec[1].to_string() } }
+                },
+                "Hash" => {
+                    match vec[1].to_string().from_base58() {
+                        Ok(r) => {
+                            if r.len() == HASH_LEN {
+                                let mut temp: [u8; 32] = [0u8; HASH_LEN];
+                                let r = &r[..HASH_LEN]; // panics if not enough data
+                                temp.copy_from_slice(r);
+                                SocketMessageArg::Hash { value: temp }
+                            } else {
+                                SocketMessageArg::Unknown
+                            }
+                        },
+                        _ => SocketMessageArg::Unknown
+                    }
+                }
+                _ => {
+                    SocketMessageArg::Unknown
+                }
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct SocketMessage {
@@ -68,13 +110,18 @@ impl SocketMessage {
     }
 }
 
-
 impl MessageCodec for SocketMessage {
-    fn encoder(&self, output: &mut [u8]) {
-        unimplemented!()
+    fn encoder(&self) -> Vec<u8>  {
+        vec![]
     }
 
-    fn decoder(input: &[u8]) -> Self {
-        unimplemented!()
+    fn decoder(input: &str) -> Self {
+        let splits = input.trim().split(" ");
+        let vec: Vec<&str> = splits.collect();
+        let args: Vec<SocketMessageArg> = vec.clone().into_iter().map(|el| { SocketMessageArg::new(el) }).collect();
+        SocketMessage {
+            event: vec[0].to_string(),
+            arg: args
+        }
     }
 }
