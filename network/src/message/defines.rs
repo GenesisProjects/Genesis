@@ -108,6 +108,10 @@ impl SocketMessage {
     pub fn init_ping() -> Self {
         SocketMessage { event: "PING".to_string(), arg: vec![] }
     }
+
+    pub fn init_exception(reason: &str) -> Self {
+        SocketMessage { event: "EXCEPTION".to_string(), arg: vec![SocketMessageArg::String { value: reason.to_string() }] }
+    }
 }
 
 impl MessageCodec for SocketMessage {
@@ -119,9 +123,21 @@ impl MessageCodec for SocketMessage {
         let splits = input.trim().split(" ");
         let vec: Vec<&str> = splits.collect();
         let args: Vec<SocketMessageArg> = vec.clone().into_iter().map(|el| { SocketMessageArg::new(el) }).collect();
-        SocketMessage {
-            event: vec[0].to_string(),
-            arg: args
+
+        let total_unknown = args.clone().into_iter().fold(0usize, |cur, elem| {
+            match elem {
+                SocketMessageArg::Unknown => cur + 1,
+                _ => cur
+            }
+        });
+
+        if total_unknown > 0 {
+            Self::init_exception("contain unknown args")
+        } else {
+            SocketMessage {
+                event: vec[0].to_string(),
+                arg: args
+            }
         }
     }
 }
