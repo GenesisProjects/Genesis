@@ -66,18 +66,18 @@ impl TaskContext {
 /// **usage**
 /// - enum of the session status
 /// **enum**
-/// - 1. ***Init***:
-/// - 2. ***Idle***:
-/// - 3. ***Transmission***:
-/// - 4. ***ConnectionReject***:
-/// - 5. ***WaitGosship***:
-/// - 6. ***WaitBlockInfo***:
-/// - 7. ***WaitSyncInfo***:
-/// - 8. ***WaitTransmission***:
-/// - 1. ***WaitingBlockInfoRequest***:
-/// - 2. ***WaitTransmissionRequest***:
-/// - 3. ***WaitSyncInfoRequest***:
-/// - 5. ***WaitTransmissionAccept***:
+/// - 1.    ***Init***:
+/// - 2.    ***Idle***:
+/// - 3.    ***Transmission***:
+/// - 4.    ***ConnectionReject***:
+/// - 5.    ***WaitGosship***:
+/// - 6.    ***WaitBlockInfo***:
+/// - 7.    ***WaitSyncInfo***:
+/// - 8.    ***WaitTransmission***:
+/// - 9.    ***WaitingBlockInfoRequest***:
+/// - 10.   ***WaitTransmissionRequest***:
+/// - 11.   ***WaitSyncInfoRequest***:
+/// - 12.   ***WaitTransmissionAccept***:
 /// ## Examples
 /// ```
 /// ```
