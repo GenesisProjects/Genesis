@@ -12,6 +12,28 @@ use pool_manager::SHARED_POOL_MANAGER;
 use socket::*;
 use message::defines::*;
 
+pub struct TaskContext {
+    data_send: usize,
+    data_recv: usize,
+    size_expected: usize
+}
+
+impl TaskContext {
+    pub fn new() -> Self {
+        TaskContext {
+            data_send: 0,
+            data_recv: 0,
+            size_expected: 0,
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.data_send = 0;
+        self.data_recv = 0;
+        self.size_expected = 0;
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum SessionStatus {
     Init,
@@ -32,34 +54,10 @@ pub enum SessionStatus {
     WaitTransmissionAccept
 }
 
+#[derive(Debug, Clone)]
 pub enum SessionMode {
     Transmission,
     Command
-}
-
-pub struct TaskContext {
-    data_send: usize,
-    data_recv: usize,
-    request_count: usize,
-    response_count: usize
-}
-
-impl TaskContext {
-    pub fn new() -> Self {
-        TaskContext {
-            data_send: 0,
-            data_recv: 0,
-            request_count: 0,
-            response_count: 0,
-        }
-    }
-
-    pub fn reset(&mut self) {
-        self.data_send = 0;
-        self.data_recv = 0;
-        self.request_count = 0;
-        self.response_count = 0;
-    }
 }
 
 pub struct Session {
@@ -137,17 +135,9 @@ impl Session {
         match event {
             //TODO: process logic
             "BOOTSTRAP" => {
-                if args.len() == 2 {
-                    match args[0] {
-                        &SocketMessageArg::Vesion { ref value } => {
-                            unimplemented!()
-                        }
-                    }
-                } else {
-                    false
-                }
+                unimplemented!()
             },
-            _ => false
+            _ => unimplemented!()
         }
         unimplemented!()
     }
