@@ -18,7 +18,7 @@
 
 **4-1. block_info (Server Connected)**
 - BLOCK_INFO Version Account Timestamp Int(block length) Hash(last block hash)
-- WaitingRequestBlockInfo -> ConnectionEstablished
+- WaitingRequestBlockInfo -> Idle
 
 **4-2. reject (Server Unconnected)**
 - P2P_REJECT Version Account Timestamp String(reason)

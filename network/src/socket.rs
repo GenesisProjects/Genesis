@@ -15,8 +15,8 @@ use std::str;
 pub const MAXT_LINE_CAHCE_LEN: usize = 1024 * 4;
 
 pub enum SocketErr {
-    IO_FAILED,
-    LINE_CAHCE_OVERFLOW
+    IOFailed,
+    LineCacheOverflow
 }
 
 pub struct PeerSocket {
@@ -49,7 +49,7 @@ impl PeerSocket {
                 self.fetch_messages_from_buffer(size)
             },
             Err(e) => {
-                Err(SocketErr::IO_FAILED)
+                Err(SocketErr::IOFailed)
             }
         }
     }
@@ -69,7 +69,7 @@ impl PeerSocket {
                 self.line_cache.push(ch as u8);
                 if self.line_cache.len() > MAXT_LINE_CAHCE_LEN {
                     self.clean_line_cache();
-                    return Err(SocketErr::LINE_CAHCE_OVERFLOW)
+                    return Err(SocketErr::LineCacheOverflow)
                 }
             }
             cur_size -= 1;

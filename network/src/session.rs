@@ -15,17 +15,26 @@ use message::defines::*;
 #[derive(Debug, Clone)]
 pub enum SessionStatus {
     Init,
-    RequestConnection,      // Client Only
-    EstablishConnection,    // Server Only
-    Rejected,               // Server Only
-
-    Connected,
-    Disconnected,
     Idle,
-    WaitReceiving,
-    Receiving,
-    WaitTransmitting,
-    Transmitting
+    Transmission,
+    ConnectionReject,
+
+    // client reserved
+    WaitGosship,
+    WaitBlockInfo,
+    WaitSyncInfo,
+    WaitTransmission,
+
+    // server reserved
+    WaitingBlockInfoRequest,
+    WaitTransmissionRequest,
+    WaitSyncInfoRequest,
+    WaitTransmissionAccept
+}
+
+pub enum SessionMode {
+    Transmission,
+    Command
 }
 
 pub struct TaskContext {
@@ -58,7 +67,9 @@ pub struct Session {
     status: SessionStatus,
     addr: SocketAddr,
     created: DateTime<Utc>,
-    context: TaskContext
+    context: TaskContext,
+    connected: bool,
+    mode: SessionMode
 }
 
 impl Session {
@@ -70,7 +81,9 @@ impl Session {
                     status: SessionStatus::Init,
                     addr: addr.clone(),
                     created: Utc::now(),
-                    context: TaskContext::new()
+                    context: TaskContext::new(),
+                    connected: false,
+                    mode: SessionMode::Command
                 })
             },
             Err(e) => Err(e)
@@ -81,8 +94,31 @@ impl Session {
         unimplemented!()
     }
 
+    #[inline]
     pub fn status(&self) -> SessionStatus {
         self.status.clone()
+    }
+
+    #[inline]
+    pub fn process(&mut self) {
+        match self.mode {
+            SessionMode::Command => self.process_events(),
+            SessionMode::Transmission => self.process_data()
+        }
+    }
+
+    #[inline]
+    fn toggle_mode(&mut self, mode: SessionMode) {
+        self.mode = mode;
+    }
+
+    #[inline]
+    fn set_connect(&mut self, connected: bool) {
+        self.connected = true;
+    }
+
+    fn process_data(&mut self) {
+        unimplemented!()
     }
 
     fn process_events(&mut self) {
