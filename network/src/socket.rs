@@ -14,9 +14,13 @@ use std::str;
 
 pub const MAXT_LINE_CAHCE_LEN: usize = 1024 * 4;
 
-pub enum SocketErr {
+pub enum SocketMessageErr {
     IOFailed,
     LineCacheOverflow
+}
+
+pub enum SocketDataErr {
+    IOFailed,
 }
 
 pub struct PeerSocket {
@@ -37,11 +41,45 @@ impl PeerSocket {
         }
     }
 
-    pub fn send(&mut self, msg: SocketMessage) -> STDResult<()> {
+    pub fn send_data(&mut self, data: &[u8]) -> STDResult<()> {
+        self.stream.write_all(data)
+    }
+
+    pub fn receive_data(&mut self, remain_size: usize) -> Result<Vec<u8>, SocketDataErr> {
+        let mut temp_buf: Vec<u8> = vec![];
+        match self.stream.read_to_end(&mut temp_buf) {
+            Ok(size) => {
+                // if the read size is larger than remain_size, read the overflow bytes
+                // into the line cache
+                if size > remain_size {
+                    self.buffer.write(&temp_buf[.. remain_size]);
+                    let vec = temp_buf[remain_size .. size].to_vec();
+                    self.line_cache = vec;
+                    temp_buf = vec![];
+                    match self.buffer.read_to_end(&mut temp_buf) {
+                        Ok(r) => Ok(temp_buf),
+                        Err(_) => Err(SocketDataErr::IOFailed)
+                    }
+                } else {
+                    self.buffer.write(&temp_buf[..]);
+                    temp_buf = vec![];
+                    match self.buffer.read_to_end(&mut temp_buf) {
+                        Ok(r) => Ok(temp_buf),
+                        Err(_) => Err(SocketDataErr::IOFailed)
+                    }
+                }
+            },
+            Err(e) => {
+                Err(SocketDataErr::IOFailed)
+            }
+        }
+    }
+
+    pub fn send_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
         self.stream.write_all(&msg.encoder()[..])
     }
 
-    pub fn receive(&mut self) -> Result<Vec<SocketMessage>, SocketErr> {
+    pub fn receive_msgs(&mut self) -> Result<Vec<SocketMessage>, SocketMessageErr> {
         let mut temp_buf: Vec<u8> = vec![];
         match self.stream.read_to_end(&mut temp_buf) {
             Ok(size) => {
@@ -49,12 +87,12 @@ impl PeerSocket {
                 self.fetch_messages_from_buffer(size)
             },
             Err(e) => {
-                Err(SocketErr::IOFailed)
+                Err(SocketMessageErr::IOFailed)
             }
         }
     }
 
-    fn fetch_messages_from_buffer(&mut self, size: usize) -> Result<Vec<SocketMessage>, SocketErr> {
+    fn fetch_messages_from_buffer(&mut self, size: usize) -> Result<Vec<SocketMessage>, SocketMessageErr> {
         let mut cur_size = size;
         let mut lines: Vec<Vec<u8>> = vec![];
         loop {
@@ -69,11 +107,15 @@ impl PeerSocket {
                 self.line_cache.push(ch as u8);
                 if self.line_cache.len() > MAXT_LINE_CAHCE_LEN {
                     self.clean_line_cache();
-                    return Err(SocketErr::LineCacheOverflow)
+                    return Err(SocketMessageErr::LineCacheOverflow)
                 }
             }
             cur_size -= 1;
         }
+
+        // flush the line cache back into data buffer
+        self.flush_line_cache();
+
         Ok(lines.into_iter().map(|line| {
             let line_str = str::from_utf8(&line);
             match line_str {
@@ -83,9 +125,15 @@ impl PeerSocket {
         }).collect::<Vec<SocketMessage>>())
     }
 
+    fn flush_line_cache(&mut self) {
+        self.buffer.write_all(&self.line_cache[..]);
+        self.line_cache = vec![];
+    }
+
     fn clean_line_cache(&mut self) {
         self.line_cache = vec![];
     }
+
 }
 
 impl Evented for PeerSocket {

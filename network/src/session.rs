@@ -120,7 +120,7 @@ impl Session {
     }
 
     fn process_events(&mut self) {
-        self.socket.receive().and_then(|msgs| {
+        self.socket.receive_msgs().and_then(|msgs| {
             for msg_ref in &msgs {
                 self.process_single_event(msg_ref);
             }
