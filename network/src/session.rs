@@ -12,6 +12,16 @@ use pool_manager::SHARED_POOL_MANAGER;
 use socket::*;
 use message::defines::*;
 
+/// # TaskContext
+/// **usage**
+/// - record the current transmission task infos
+/// **Member**
+/// - 1. ***data_send***:        data send to the peer session
+/// - 2. ***data_recv***:        data receive from the peer session
+/// - 3. ***size_expected***:    only using in the transmission mode, total data size expected
+/// ## Examples
+/// ```
+/// ```
 pub struct TaskContext {
     data_send: usize,
     data_recv: usize,
@@ -19,7 +29,17 @@ pub struct TaskContext {
 }
 
 impl TaskContext {
-    pub fn new() -> Self {
+    /// # new(1)
+    /// **usage**
+    /// - init a new task context with expected size
+    /// **Parameters**
+    /// - 1. ***usize(expected)***:  the current task size
+    /// **return**
+    /// - ***Self***: new object
+    /// ## Examples
+    /// ```
+    /// ```
+    pub fn new(expected: usize) -> Self {
         TaskContext {
             data_send: 0,
             data_recv: 0,
@@ -27,13 +47,40 @@ impl TaskContext {
         }
     }
 
-    pub fn reset(&mut self) {
+    /// # reset(self, 1)
+    /// **usage**
+    /// - reset the current context with expected size
+    /// **Parameters**
+    /// - 1. ***usize(expected)***:  the current task size
+    /// ## Examples
+    /// ```
+    /// ```
+    pub fn reset(&mut self, expected: usize) {
         self.data_send = 0;
         self.data_recv = 0;
         self.size_expected = 0;
     }
 }
 
+/// # SessionStatus: Debug + Clone
+/// **usage**
+/// - enum of the session status
+/// **enum**
+/// - 1. ***Init***:
+/// - 2. ***Idle***:
+/// - 3. ***Transmission***:
+/// - 4. ***ConnectionReject***:
+/// - 5. ***WaitGosship***:
+/// - 6. ***WaitBlockInfo***:
+/// - 7. ***WaitSyncInfo***:
+/// - 8. ***WaitTransmission***:
+/// - 1. ***WaitingBlockInfoRequest***:
+/// - 2. ***WaitTransmissionRequest***:
+/// - 3. ***WaitSyncInfoRequest***:
+/// - 5. ***WaitTransmissionAccept***:
+/// ## Examples
+/// ```
+/// ```
 #[derive(Debug, Clone)]
 pub enum SessionStatus {
     Init,
@@ -79,7 +126,7 @@ impl Session {
                     status: SessionStatus::Init,
                     addr: addr.clone(),
                     created: Utc::now(),
-                    context: TaskContext::new(),
+                    context: TaskContext::new(0usize),
                     connected: false,
                     mode: SessionMode::Command
                 })
@@ -156,4 +203,10 @@ impl Evented for Session {
     fn deregister(&self, poll: &Poll) -> Result<()> {
         self.socket.deregister(poll)
     }
+}
+
+# [cfg(test)]
+mod tests {
+    # [test]
+    fn test_session() {}
 }
