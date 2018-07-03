@@ -80,7 +80,7 @@ impl WasmInterpreter {
 		let initial_memory = instantiation_resolver.memory_size().map_err(Error::Interpreter)?;
 		trace!(target: "wasm", "Contract requested {:?} pages of initial memory", initial_memory);
 
-		let (gas_left, result) = {
+		let result = {
 			let mut runtime = Runtime::with_params(
 				ext,
 				instantiation_resolver.memory_ref(),
