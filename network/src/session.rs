@@ -13,7 +13,7 @@ use socket::*;
 use message::defines::*;
 
 /// # TaskContext
-/// **usage**
+/// **Usage**
 /// - record the current transmission task infos
 /// **Member**
 /// - 1. ***data_send***:        data send to the peer session
@@ -30,11 +30,11 @@ pub struct TaskContext {
 
 impl TaskContext {
     /// # new(1)
-    /// **usage**
+    /// **Usage**
     /// - init a new task context with expected size
     /// **Parameters**
     /// - 1. ***usize(expected)***:  the current task size
-    /// **return**
+    /// **Return**
     /// - ***Self***: new object
     /// ## Examples
     /// ```
@@ -48,7 +48,7 @@ impl TaskContext {
     }
 
     /// # reset(self, 1)
-    /// **usage**
+    /// **Usage**
     /// - reset the current context with expected size
     /// **Parameters**
     /// - 1. ***usize(expected)***:  the current task size
@@ -63,9 +63,9 @@ impl TaskContext {
 }
 
 /// # SessionStatus: Debug + Clone
-/// **usage**
+/// **Usage**
 /// - enum of the session status
-/// **enum**
+/// **Enum**
 /// - 1.    ***Init***:
 /// - 2.    ***Idle***:
 /// - 3.    ***Transmission***:
@@ -101,12 +101,32 @@ pub enum SessionStatus {
     WaitTransmissionAccept
 }
 
+/// # SessionMode：Debug + Clone
+/// **Usage**
+/// - record the current transmission task infos
+/// **Enum**
+/// - 1. ***Transmission***:    session will only accept binary data
+/// - 2. ***Command***:         session will only accept control signals
+/// ## Examples
+/// ```
+/// ```
 #[derive(Debug, Clone)]
 pub enum SessionMode {
     Transmission,
     Command
 }
 
+/// # Session
+/// **Usage**
+/// - wrapper of socket, manage p2p protocol state machine
+/// **Member**
+/// - 1. ***socket***:      instance of [PeerSocket]
+/// - 2. ***status***:      instance of [SessionStatus]
+/// - 3. ***addr***:        copy of socket
+/// - 4. ***created***:     created date in utc timezone
+/// - 5. ***context***:     instance of [TaskContext]
+/// - 6. ***connected***:   true if communication session has been established
+/// - 6. ***mode***:        instance of [SessionMode]
 pub struct Session {
     socket: PeerSocket,
     status: SessionStatus,
@@ -118,6 +138,19 @@ pub struct Session {
 }
 
 impl Session {
+    /// # connect(1)
+    /// **Usage**
+    /// - setup a socket connection,
+    /// - init the default session status to [[SessionStatus::Init]]
+    /// - init the default session mode to [[SessionMode::Command]]
+    /// - set the 'created' to the current time.
+    /// **Parameters**
+    /// - 1. ***&SocketAddr(addr)***: the socket address we try to connect
+    /// **Return**
+    /// - 1. ***Result<Self>***
+    /// ## Examples
+    /// ```
+    /// ```
     pub fn connect(addr: &SocketAddr) -> Result<Self> {
         match PeerSocket::connect(addr) {
             Ok(r) => {
@@ -135,7 +168,15 @@ impl Session {
         }
     }
 
-    pub fn disconnect(addr: &SocketAddr) -> Self {
+    /// # disconnect(&mut self, 0)
+    /// **Usage**
+    /// - abort current socket
+    /// **Return**
+    /// - 1. ***Result<()>***
+    /// ## Examples
+    /// ```
+    /// ```
+    pub fn disconnect(&mut self) -> Result<()> {
         unimplemented!()
     }
 
@@ -202,6 +243,12 @@ impl Evented for Session {
 
     fn deregister(&self, poll: &Poll) -> Result<()> {
         self.socket.deregister(poll)
+    }
+}
+
+impl Drop for Session {
+    fn drop(&mut self) {
+        unimplemented!()
     }
 }
 
