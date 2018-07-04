@@ -1,25 +1,21 @@
+use nat::*;
+use network_eventloop::*;
 use peer::*;
 use session::*;
 use utils::*;
-use network_eventloop::*;
-
-use std::collections::HashMap;
-use std::io::*;
-use std::sync::{Mutex, Arc, Condvar};
-
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use common::address::Address as Account;
 use common::gen_message::*;
 use common::thread::{Thread, ThreadStatus};
 use common::observe::Observe;
 
-use nat::*;
-
 use mio::*;
 use mio::net::{TcpListener, TcpStream};
 
-
+use std::collections::HashMap;
+use std::io::*;
+use std::sync::{Mutex, Arc, Condvar};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 ///
 ///

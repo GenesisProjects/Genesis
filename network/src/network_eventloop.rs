@@ -1,15 +1,12 @@
-use peer::*;
-use session::*;
-use utils::*;
-
-use std::io::*;
-use std::time::Duration;
-use std::sync::{Mutex, Arc, Condvar};
-
+use common::thread::{Thread, ThreadStatus};
 use mio::*;
 use mio::net::{Poll, TcpListener, TcpStream};
-
-use common::thread::{Thread, ThreadStatus};
+use peer::*;
+use session::*;
+use std::io::*;
+use std::sync::{Arc, Condvar, Mutex};
+use std::time::Duration;
+use utils::*;
 
 const SERVER_TOKEN: Token = Token(0);
 
@@ -19,6 +16,15 @@ lazy_static! {
     };
 }
 
+/// # token_generator(0)
+/// **Usage**
+/// - generate a unique token
+/// **Return**
+/// - 1. ***[[Token]]***
+/// ## Examples
+/// ```
+/// let new_token = token_generator();
+/// ```
 fn token_generator() -> Token {
     let mut seq = TOKEN_SEQ.lock().unwrap();
     let token = Token(*seq);
@@ -26,25 +32,36 @@ fn token_generator() -> Token {
     token
 }
 
+/// # NetworkEventLoop
+/// **Usage**
+/// - a implementation of the mio, polled by [[common::thread::Thread]]
+/// **Parameters**
+/// - 1. ***events***       events queue
+/// - 2. ***round***        current round
+/// - 3. ***status***       instance of [[ThreadStatus]]
+/// - 4. ***poll***         instance of [[Poll]]
+/// ## Examples
+/// ```
+/// ```
 pub struct NetworkEventLoop {
     pub events: Events,
-    pub loop_count: usize,
+    pub round: usize,
     pub status: ThreadStatus,
-    poll: Poll
+    poll: Poll,
 }
 
 impl NetworkEventLoop {
     pub fn new(events_size: usize) -> Self {
         // Event storage
         let mut events = Events::with_capacity(events_size);
-        // The `Poll` instance
+        // The [[Poll]] instance
         let poll = Poll::new().expect("Can not instantialize poll");
 
         NetworkEventLoop {
-            loop_count: 0usize,
+            round: 0usize,
             events: events,
             poll: poll,
-            status: ThreadStatus::Stop
+            status: ThreadStatus::Stop,
         }
     }
 
@@ -63,10 +80,18 @@ impl NetworkEventLoop {
         self.poll.deregister(peer);
     }
 
+    /// # next_tick(&mut self)
+    /// **Usage**
+    /// - fetch new events, called by a thread at beginning of each loop-cycle.
+    /// **Result**
+    /// Result<usize>: num of new events
+    /// ## Examples
+    /// ```
+    /// ```
     pub fn next_tick(&mut self) -> Result<usize> {
         //TODO: make loop span configurable
         self.poll.poll(&mut self.events, Some(Duration::from_millis(10))).and_then(|events_size| {
-            self.loop_count += 1;
+            self.round += 1;
             Ok(events_size)
         })
     }
