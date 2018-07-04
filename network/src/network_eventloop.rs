@@ -7,7 +7,7 @@ use std::time::Duration;
 use std::sync::{Mutex, Arc, Condvar};
 
 use mio::*;
-use mio::net::{TcpListener, TcpStream};
+use mio::net::{Poll, TcpListener, TcpStream};
 
 use common::thread::{Thread, ThreadStatus};
 
