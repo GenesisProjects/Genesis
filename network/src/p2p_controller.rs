@@ -96,7 +96,7 @@ impl P2PController {
         let mut raw_peers_table = self.peer_list.values().map(|peer_ref| {
             peer_ref.peer_table()
         }).fold(Vec::<(Account, SocketInfo)>::new(), |mut init, ref mut table: Vec<(Account,SocketInfo)>| {
-            init.append(table.clone());
+            init.append(table);
             init
         });
 
@@ -140,7 +140,9 @@ impl P2PController {
     }
 
     fn refresh_peer_list(&mut self) {
-        self.waiting_list = self.search_peers();
+        self.waiting_list = self.search_peers().into_iter().map(|(ref account, (ref addr, ref port))| {
+            addr.clone()
+        }).collect();
     }
 
     fn get_peer(&self, token: Token) -> Option<PeerRef> {

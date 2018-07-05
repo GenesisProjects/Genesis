@@ -2,7 +2,6 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV
 
 use common::address::Address as Account;
 use common::hash::{Hash, HASH_LEN};
-use common::key::Signature;
 use chrono::*;
 use rlp::RLPSerialize;
 use rlp::types::*;

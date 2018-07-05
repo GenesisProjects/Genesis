@@ -1,4 +1,3 @@
-pub mod ip_addr;
 pub mod message;
 pub mod nat;
 pub mod network_eventloop;
