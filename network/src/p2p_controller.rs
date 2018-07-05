@@ -25,7 +25,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV
 /// - 1.    ***account***:              current wallet account.
 /// - 2.    ***peer_list***:            all peers that establised session
 /// - 3.    ***max_allowed_peers***:    limit of allowed peers
-/// - 4.    ***waitting_list***:        peers informed by the goship message
+/// - 4.    ***waiting_list***:        peers informed by the goship message
 /// - 5.    ***max_waiting_list***:     max num of peers waiting for connection
 /// - 6.    ***block_list***:           black list
 /// - 7.    ***max_blocked_peers***:    black list size
@@ -37,7 +37,7 @@ pub struct P2PController {
     account: Account,
     peer_list: HashMap<Token, PeerRef>,
     max_allowed_peers: usize,
-    waitting_list: Vec<SocketAddr>,
+    waiting_list: Vec<SocketAddr>,
     max_waiting_list: usize,
     block_list: Vec<SocketAddr>,
     max_blocked_peers: usize,
@@ -96,7 +96,7 @@ impl P2PController {
         let mut raw_peers_table = self.peer_list.values().map(|peer_ref| {
             peer_ref.peer_table()
         }).fold(Vec::<(Account, SocketInfo)>::new(), |mut init, ref mut table: Vec<(Account,SocketInfo)>| {
-            init.append(table);
+            init.append(table.clone());
             init
         });
 
@@ -139,8 +139,8 @@ impl P2PController {
         unimplemented!()
     }
 
-    fn reflesh_peer_list(&mut self) {
-        self.block_list.clear();
+    fn refresh_peer_list(&mut self) {
+        self.waiting_list = self.search_peers();
     }
 
     fn get_peer(&self, token: Token) -> Option<PeerRef> {
@@ -283,7 +283,7 @@ impl Thread for P2PController {
                     account: account.clone(),
                     peer_list: peer_list,
                     max_allowed_peers: max_allowed_peers,
-                    waitting_list: vec![],
+                    waiting_list: vec![],
                     max_waiting_list: max_waiting_list,
                     block_list: vec![],
                     max_blocked_peers: max_blocked_peers,
