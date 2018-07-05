@@ -28,7 +28,7 @@ pub struct BlockInfo {
     block_len: usize,
     last_block_num: usize,
 
-    esitmated_cycle_num: usize
+    esitmated_round: usize
 }
 
 #[derive(Debug)]
