@@ -18,7 +18,7 @@ pub struct Pool<T: Poolable> {
 
 impl<T: Poolable> Pool<T> {
     pub fn new(max: usize) -> Self {
-        let mut working_pool: Vec<RefCell<T>> = vec![];
+        let working_pool: Vec<RefCell<T>> = vec![];
         let mut recycle_pool: Vec<RefCell<T>> = vec![];
         for i in 0usize .. max {
             recycle_pool.push(RefCell::new(T::empty_obj()));

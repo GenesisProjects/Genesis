@@ -95,7 +95,7 @@ impl Peer {
         })
     }
 
-    pub fn update(&mut self, block_info: &BlockInfo) {
+    pub fn update_block_info(&mut self, block_info: &BlockInfo) {
         self.block_info = Some(block_info.clone());
     }
 
@@ -117,6 +117,10 @@ impl Peer {
 
     pub fn addr(&self) -> SocketAddr {
         self.ip_addr.clone()
+    }
+
+    pub fn process(&mut self) {
+        self.session.process()
     }
 }
 

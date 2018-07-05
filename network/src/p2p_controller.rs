@@ -14,6 +14,7 @@ use mio::net::{TcpListener, TcpStream};
 
 use std::collections::HashMap;
 use std::io::*;
+use std::rc::{Rc, Weak};
 use std::sync::{Mutex, Arc, Condvar};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
@@ -141,41 +142,58 @@ impl P2PController {
         unimplemented!()
     }
 
-    fn add_peer(peer_ref: PeerRef) {
+    fn get_peer(&self, token: Token) -> Option<PeerRef> {
+        self.peer_list.get(&token).map(|inner| {
+            inner.clone()
+        })
+    }
+
+    fn add_peer(&mut self, token: &Token, peer_ref: PeerRef) {
+        self.peer_list.insert(token.clone(),peer_ref.clone());
+    }
+
+    fn remove_peer(&mut self, peer_ref: PeerRef) {
         unimplemented!()
     }
 
-    fn remove_peer(peer_ref: PeerRef) {
-        unimplemented!()
-    }
-
-    fn ban_peer(addr: Account, loops: usize) {
+    fn ban_peer(&mut self, addr: Account, loops: usize) {
         unimplemented!()
     }
 
     fn process_events(&mut self) {
+        let mut new_peers: Vec<(Token, PeerRef)> = vec![];
+
         for event in &(self.eventloop.events) {
             match event.token() {
                 SERVER_TOKEN => {
                     match self.listener.accept() {
                         Ok((socket, addr)) => {
                             // init peer
-                            Peer::new(socket, &addr);
-                            // store the incoming socket
-                            //self.eventloop.register_peer()
+                            let peer = Peer::new(socket, &addr);
+                            let token = self.eventloop.register_peer(&peer);
+                            if !self.socket_exist(&addr) {
+                                new_peers.push((token, Rc::new(peer)));
+                            }
                         },
                         Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
                             // EAGAIN
                         },
                         e => {
-
+                            panic!("{:?}", e)
                         }
                     }
                 },
                 PEER_TOKEN => {
-
+                    // process peer event
+                    self.get_peer(PEER_TOKEN).and_then(|ref mut peer_ref| {
+                        Rc::get_mut(peer_ref).unwrap().process();
+                        Some(true)
+                    });
                 }
             }
+        }
+        for (ref token, ref peer) in &new_peers {
+            self.add_peer(token, peer.clone());
         }
     }
 
