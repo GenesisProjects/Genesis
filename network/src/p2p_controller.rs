@@ -89,7 +89,7 @@ impl P2PController {
     }
 
     fn init_peers_table(&mut self) {
-        unimplemented!()
+        self.peer_list = HashMap::<Token, PeerRef>::new();
     }
 
     fn search_peers(&self) -> Vec<(Account, SocketInfo)> {
@@ -135,11 +135,12 @@ impl P2PController {
     }
 
     fn peers_persist(&self) -> Result<usize> {
+        // store to fs?
         unimplemented!()
     }
 
     fn reflesh_peer_list(&mut self) {
-        unimplemented!()
+        self.block_list.clear();
     }
 
     fn get_peer(&self, token: Token) -> Option<PeerRef> {
@@ -152,12 +153,15 @@ impl P2PController {
         self.peer_list.insert(token.clone(),peer_ref.clone());
     }
 
-    fn remove_peer(&mut self, peer_ref: PeerRef) {
-        unimplemented!()
+    fn remove_peer(&mut self, token: Token) {
+        self.peer_list.remove(&token);
     }
 
-    fn ban_peer(&mut self, addr: Account, loops: usize) {
-        unimplemented!()
+    fn ban_peer(&mut self, addr: &SocketAddr, loops: usize) {
+        while self.block_list.len() > self.max_blocked_peers {
+            self.block_list.remove(0);
+        }
+        self.block_list.push(addr.clone());
     }
 
     fn process_events(&mut self) {
