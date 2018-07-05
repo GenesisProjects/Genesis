@@ -196,7 +196,7 @@ impl P2PController {
                 }
             }
         }
-        for (ref token, ref peer) in &new_peers {
+        for &(ref token, ref peer) in &new_peers {
             self.add_peer(token, peer.clone());
         }
     }
@@ -312,7 +312,10 @@ impl Thread for P2PController {
                         self.process_events();
                         true
                     },
-                    Err(_) => false
+                    Err(e) => {
+                        panic!("exception: {:?}", e);
+                        false
+                    }
                 }
             },
             ThreadStatus::Stop => false,
