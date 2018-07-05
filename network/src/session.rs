@@ -292,7 +292,7 @@ impl Evented for Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
-        unimplemented!()
+        let _ = Drop::drop(self.socket);
     }
 }
 
