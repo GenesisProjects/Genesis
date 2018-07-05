@@ -170,8 +170,8 @@ impl P2PController {
                         Ok((socket, addr)) => {
                             // init peer
                             let peer = Peer::new(socket, &addr);
-                            let token = self.eventloop.register_peer(&peer);
                             if !self.socket_exist(&addr) {
+                                let token = self.eventloop.register_peer(&peer);
                                 new_peers.push((token, Rc::new(peer)));
                             }
                         },
