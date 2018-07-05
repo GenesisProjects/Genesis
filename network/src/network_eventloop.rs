@@ -1,6 +1,6 @@
 use common::thread::{Thread, ThreadStatus};
 use mio::*;
-use mio::net::{Poll, TcpListener, TcpStream};
+use mio::net::{TcpListener, TcpStream};
 use peer::*;
 use session::*;
 use std::io::*;

@@ -17,8 +17,21 @@ use std::io::*;
 use std::sync::{Mutex, Arc, Condvar};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
-///
-///
+/// # P2PController
+/// **Usage**
+/// - p2p network controller
+/// **Member**
+/// - 1.    ***account***:              current wallet account.
+/// - 2.    ***peer_list***:            all peers that establised session
+/// - 3.    ***max_allowed_peers***:    limit of allowed peers
+/// - 4.    ***waitting_list***:        peers informed by the goship message
+/// - 5.    ***max_waiting_list***:     max num of peers waiting for connection
+/// - 6.    ***block_list***:           black list
+/// - 7.    ***max_blocked_peers***:    black list size
+/// - 8.    ***eventloop***:            instance of [[NetworkEventLoop]]
+/// - 9.    ***listener***:             server socket
+/// - 10.   ***ch_pair***:              message channel,
+/// the only way communicate with other controller/thread
 pub struct P2PController {
     account: Account,
     peer_list: HashMap<Token, PeerRef>,
@@ -33,15 +46,34 @@ pub struct P2PController {
 }
 
 impl P2PController {
+    /// # launch_controller(1)
+    /// **Usage**
+    /// - launch the controller with a new thread
+    /// - subscribe a interthread channel
+    /// **Parameters**
+    /// - 1. ***String(name)***: the interthread channel name
+    /// ## Examples
+    /// ```
+    /// ```
     pub fn launch_controller(name: String) {
         P2PController::launch::<P2PController>(name);
     }
 
+    /// # bootstrap(&mut self, 0)
+    /// **Usage**
+    /// - connect to a peer with tcp protocol
+    /// - send boostrap p2pevent
+    /// ## Examples
+    /// ```
+    /// ```
     pub fn bootstrap(&mut self) {
         //TODO: port configuable
         let socket_info = match get_local_ip() {
-            Some(socket_info) => get_public_ip_addr(Protocol::UPNP, &(SocketAddr::new(socket_info, 19999), 19999)),
-            None => None
+            Some(socket_info) => {
+                get_public_ip_addr(Protocol::UPNP, &(SocketAddr::new(socket_info, 19999), 19999));
+                unimplemented!()
+            }
+            None => unimplemented!()
         };
 
         self.init_peers_table();
@@ -121,17 +153,16 @@ impl P2PController {
         unimplemented!()
     }
 
-    fn register<'a>(&self, peer_ref: PeerRef, local_block_info: &'a BlockInfo) -> Result<BlockInfo> {
-        unimplemented!()
-    }
-
     fn process_events(&mut self) {
         for event in &(self.eventloop.events) {
             match event.token() {
                 SERVER_TOKEN => {
                     match self.listener.accept() {
-                        Ok((socket, _)) => {
+                        Ok((socket, addr)) => {
+                            // init peer
+                            Peer::new(socket, &addr);
                             // store the incoming socket
+                            //self.eventloop.register_peer()
                         },
                         Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
                             // EAGAIN

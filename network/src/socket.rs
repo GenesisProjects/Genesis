@@ -30,6 +30,14 @@ pub struct PeerSocket {
 }
 
 impl PeerSocket {
+    pub fn new(socket: TcpStream) -> Self {
+        PeerSocket {
+            stream: socket,
+            buffer:  ByteBuffer::new(),
+            line_cache: vec![]
+        }
+    }
+
     pub fn connect(addr: &SocketAddr) -> STDResult<Self> {
         match TcpStream::connect(addr) {
             Ok(r) => Ok(PeerSocket {

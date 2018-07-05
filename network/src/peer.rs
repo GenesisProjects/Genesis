@@ -5,10 +5,12 @@ use std::io::*;
 use std::result::Result as SerdeResult;
 
 use common::address::Address as Account;
-use session::*;
 use nat::SocketInfo;
+use session::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};
+use mio::net::{TcpListener, TcpStream};
+
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
 pub type PeerRef = Rc<Peer>;
@@ -68,6 +70,17 @@ pub struct Peer {
 }
 
 impl Peer {
+    pub fn new(socket: TcpStream, addr: &SocketAddr) -> Self {
+        Peer {
+            ip_addr: addr.clone(),
+            peer_type: PeerType::Unknown,
+            account: None,
+            session: Session::new(socket, addr),
+            block_info: None,
+            peer_table: PeerTable::new()
+        }
+    }
+
     pub fn connect(addr: &SocketAddr) -> Result<Self> {
         Session::connect(addr).and_then(|session| {
             Ok(Peer {

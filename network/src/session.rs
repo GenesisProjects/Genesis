@@ -138,6 +138,18 @@ pub struct Session {
 }
 
 impl Session {
+    pub fn new(socket: TcpStream, addr: &SocketAddr) -> Self {
+        Session {
+            socket: PeerSocket::new(socket),
+            status: SessionStatus::Init,
+            addr: addr.clone(),
+            created: Utc::now(),
+            context: TaskContext::new(0usize),
+            connected: false,
+            mode: SessionMode::Command
+        }
+    }
+
     /// # connect(1)
     /// **Usage**
     /// - setup a socket connection,
