@@ -323,10 +323,18 @@ impl Thread for P2PController {
         }
     }
 
-    /// update with new msg
+    /// # update(&mut self, 1)
+    /// **Usage**
+    /// - consume message from the inter-controller message channel,
+    /// - tranform the inter-controller message into [[P2PMessage]]
+    /// - send the [[P2PMessage]] by calling [[]]
+    /// ## Examples
+    /// ```
+    /// ```
     fn update(&mut self, msg: Message) {
         unimplemented!()
     }
+
     fn set_status(&mut self, status: ThreadStatus) {
         self.eventloop.status = status;
     }

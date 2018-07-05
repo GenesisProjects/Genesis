@@ -138,6 +138,20 @@ pub struct Session {
 }
 
 impl Session {
+    /// # new(2)
+    /// **Usage**
+    /// - accept the connection and init a new session by incoming socket,
+    /// - init the default session status to [[SessionStatus::Init]]
+    /// - init the default session mode to [[SessionMode::Command]]
+    /// - set the 'created' to the current time.
+    /// **Parameters**
+    /// - 1. ***TcpStream(socket)***: tcp socket instance
+    /// - 1. ***&SocketAddr(addr)***: the socket address we try to connect
+    /// **Return**
+    /// - 1. ***Self***
+    /// ## Examples
+    /// ```
+    /// ```
     pub fn new(socket: TcpStream, addr: &SocketAddr) -> Self {
         Session {
             socket: PeerSocket::new(socket),
@@ -197,12 +211,30 @@ impl Session {
         self.status.clone()
     }
 
+    /// # process(&mut self)
+   /// **Usage**
+   /// - process the incoming byte stream
+   /// - if the session mode is [[SessionMode::Command]], then call process_events
+   /// - if the session mode is [[SessionMode::Transmisson]], then call process_data
+   /// ## Examples
+   /// ```
+   /// ```
     #[inline]
     pub fn process(&mut self) {
         match self.mode {
             SessionMode::Command => self.process_events(),
             SessionMode::Transmission => self.process_data()
         }
+    }
+
+    #[inline]
+    pub fn send_data(&mut self, data: &[u8]) -> Result<()> {
+        self.socket.send_data(data)
+    }
+
+    #[inline]
+    pub fn send_event(&mut self, msg: SocketMessage) -> Result<()> {
+        self.socket.send_msg(msg)
     }
 
     #[inline]
