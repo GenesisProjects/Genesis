@@ -373,6 +373,7 @@ impl Session {
                                     };
                                 }
                                 self.table = PeerTable::new_with_hosts(hosts);
+                                self.status = SessionStatus::WaitGosship;
                                 true
                             }
                         },
@@ -382,7 +383,7 @@ impl Session {
             },
             "GOSSIP" => {
                 match self.status {
-                    SessionStatus::Init => {
+                    /*SessionStatus::Init => {
                         let host = args[4];
                         match host {
                             SocketMessageArg::String(_, value) => {
@@ -396,19 +397,33 @@ impl Session {
                             },
                             _ => false
                         }
-                    },
+                    },*/
                     _ => false
                 }
             },
             "REJECT" => {
-                match self.status {
-                    SessionStatus::Init => {
-                        self.status = SessionStatus::ConnectionReject;
-                        true
-                    },
-                    _ => false
+                if args.len() != 4 {
+                    false
+                } else {
+                    match &args[3] {
+                        &SocketMessageArg::String { ref value } => {
+                            // print cmd log here
+                            unimplemented!()
+                        },
+                        _ => {
+                            return false;
+                        }
+                    }
+                    match self.status {
+                        SessionStatus::Init | SessionStatus::WaitingBlockInfoRequest => {
+                            self.status = SessionStatus::ConnectionReject;
+                            true
+                        },
+                        _ => false
+                    }
                 }
-            }
+            },
+            _ => false
         }
     }
 
