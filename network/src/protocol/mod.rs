@@ -3,6 +3,7 @@ use common::hash::Hash;
 use common::key::KeyPair;
 use message::defines::*;
 use peer::{PeerTable, BlockInfo};
+use chrono::prelude::*;
 
 /// # P2PController
 /// **Usage**
@@ -27,6 +28,9 @@ impl P2PProtocol {
                 },
                 SocketMessageArg::Account {
                     value: self.account.to_owned()
+                },
+                SocketMessage::Timestamp {
+                    value: DateTime<Utc> = Utc::now()
                 }
             ],
         )
@@ -35,11 +39,55 @@ impl P2PProtocol {
     //TODO: more protocols
 
     pub fn gossip(&self, peers: &PeerTable) -> SocketMessage {
-        unimplemented!()
+        SocketMessage::new(
+            "GOSSIP".to_string(),
+            vec![
+                SocketMessageArg::Vesion {
+                    value: self.vesion.to_owned()
+                },
+                SocketMessageArg::Account {
+                    value: self.account.to_owned()
+                },
+                SocketMessage::Timestamp {
+                    value: DateTime<Utc> = Utc::now()
+                },
+                SocketMessage::String {
+                    value: {
+                        let mut peers_table = peers.values().map(|peer| {
+                            peer.peer_table()
+                        }).fold(Vec<String>::new(), |mut init, ref mut table: Vec<(Option<Account>, SocketInfo)>| {
+                            let addr_table = table.iter().map(|(ref account, (ref addr, ref port))| {
+                                addr.to_string()
+                            }).collect();
+
+                            init.append(addr_table);
+                            init
+                        });
+                        peers_table.to_string()
+                    }
+                }
+            ],
+        )
     }
 
     pub fn reject(&self, reason: String) -> SocketMessage {
-        unimplemented!()
+        SocketMessage::new(
+            "REJECT".to_string(),
+            vec![
+                SocketMessageArg::Vesion {
+                    value: self.vesion.to_owned()
+                },
+                SocketMessageArg::Account {
+                    value: self.account.to_owned()
+                },
+                SocketMessage::Timestamp {
+                    value: DateTime<Utc> = Utc::now()
+                },
+                SocketMessage::String {
+                    value: reason.to_owned()
+                },
+            ],
+        )
     }
 
     pub fn request_block_info(&self,
