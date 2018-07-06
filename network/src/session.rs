@@ -270,47 +270,24 @@ impl Session {
         match event {
             //TODO: process logic
             "BOOTSTRAP" => {
-<<<<<<< HEAD
-                if args.len() < 4 {
-                    false
-                } else {
-                    let slice = &args[3 .. ];
-                    let mut hosts: Vec<(String, i32)> = vec![];
-                    for arg in slice {
-                        match arg {
-                            &SocketMessageArg::String { ref value } => {
-                                //TODO: make port configurable
-                                hosts.push((value.clone(), 19999))
-                            }
-                            _ => ()
-                        };
-                    }
-                    PeerTable::new_with_hosts(hosts);
-                    true
-                }
-                /*let host = args[4];
-                match host {
-                    SocketMessageArg::String(_, value) => {
-                        self.connect(host);
-                    },
-                    _ => panic!("Unknown host value")
-                }*/
-                unimplemented!()
-=======
                 match self.status {
                     SessionStatus::Init => {
-                        let host = args[4];
-                        match host {
-                            SocketMessageArg::String(_, value) => {
-                                match self.connect(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(value)), 39999)) {
-                                    Ok(s) => {
-                                        self.status = SessionStatus::WaitGosship;
-                                        true
-                                    },
-                                    Err(e) => false
-                                }
-                            },
-                            _ => false
+                        if args.len() < 4 {
+                            false
+                        } else {
+                            let slice = &args[3 .. ];
+                            let mut hosts: Vec<(String, i32)> = vec![];
+                            for arg in slice {
+                                match arg {
+                                    &SocketMessageArg::String { ref value } => {
+                                        //TODO: make port configurable
+                                        hosts.push((value.clone(), 19999))
+                                    }
+                                    _ => ()
+                                };
+                            }
+                            PeerTable::new_with_hosts(hosts);
+                            true
                         }
                     },
                     _ => false
@@ -344,8 +321,7 @@ impl Session {
                     },
                     _ => false
                 }
->>>>>>> 9394f3e133ea6220393de60092d978ba9d459192
-            },
+            }
         }
         unimplemented!()
     }
