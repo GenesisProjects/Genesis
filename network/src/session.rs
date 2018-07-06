@@ -356,22 +356,59 @@ impl Session {
                 if args.len() < 4 {
                     false
                 } else {
-                    let slice = &args[3 .. ];
-                    let mut hosts: Vec<(String, i32)> = vec![];
-                    for arg in slice {
-                        match arg {
-                            &SocketMessageArg::String { ref value } => {
-                                //TODO: make port configurable
-                                hosts.push((value.clone(), 19999))
+                    match self.status {
+                        SessionStatus::Init => {
+                            if args.len() < 4 {
+                                false
+                            } else {
+                                let slice = &args[3 .. ];
+                                let mut hosts: Vec<(String, i32)> = vec![];
+                                for arg in slice {
+                                    match arg {
+                                        &SocketMessageArg::String { ref value } => {
+                                            //TODO: make port configurable
+                                            hosts.push((value.clone(), 39999))
+                                        }
+                                        _ => ()
+                                    };
+                                }
+                                self.table = PeerTable::new_with_hosts(hosts);
+                                true
                             }
-                            _ => ()
-                        };
+                        },
+                        _ => false
                     }
-                    self.table = PeerTable::new_with_hosts(hosts);
-                    true
                 }
             },
-            _ => false
+            "GOSSIP" => {
+                match self.status {
+                    SessionStatus::Init => {
+                        let host = args[4];
+                        match host {
+                            SocketMessageArg::String(_, value) => {
+                                match self.connect(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(value)), 39999)) {
+                                    Ok(s) => {
+                                        self.status = SessionStatus::WaitingRequestBlockInfo;
+                                        true
+                                    },
+                                    Err(e) => false
+                                }
+                            },
+                            _ => false
+                        }
+                    },
+                    _ => false
+                }
+            },
+            "REJECT" => {
+                match self.status {
+                    SessionStatus::Init => {
+                        self.status = SessionStatus::ConnectionReject;
+                        true
+                    },
+                    _ => false
+                }
+            }
         }
     }
 
