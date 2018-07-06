@@ -93,6 +93,12 @@ impl SocketMessage {
         }
     }
 
+    pub fn verify(&self) -> bool {
+        match self.event.as_str() {
+            _ => false
+        }
+    }
+
     pub fn get_event(&self) -> String {
         self.event.to_owned()
     }
