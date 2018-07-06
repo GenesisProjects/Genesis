@@ -203,7 +203,7 @@ impl Session {
     /// ```
     /// ```
     pub fn disconnect(&mut self) -> Result<()> {
-        unimplemented!()
+        self.socket = PeerSocket::new(TcpStream::connect("127.0.0.1:39999").unwrap());
     }
 
     #[inline]
@@ -267,7 +267,13 @@ impl Session {
         match event {
             //TODO: process logic
             "BOOTSTRAP" => {
-                unimplemented!()
+                let host = args[4];
+                match host {
+                    SocketMessageArg::String(_, value) => {
+                        self.connect(host);
+                    },
+                    _ => panic!("Unknown host value")
+                }
             },
             _ => unimplemented!()
         }
