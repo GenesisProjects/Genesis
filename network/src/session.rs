@@ -194,6 +194,7 @@ pub struct Session {
     status: SessionStatus,
     addr: SocketAddr,
     created: DateTime<Utc>,
+    updated: DateTime<Utc>,
     context: TaskContext,
     connected: bool,
     mode: SessionMode,
@@ -223,6 +224,7 @@ impl Session {
             status: SessionStatus::Init,
             addr: addr.clone(),
             created: Utc::now(),
+            updated: Utc::now(),
             context: TaskContext::new(0usize),
             connected: false,
             mode: SessionMode::Command,
@@ -253,6 +255,7 @@ impl Session {
                     status: SessionStatus::Init,
                     addr: addr.clone(),
                     created: Utc::now(),
+                    updated: Utc::now(),
                     context: TaskContext::new(0usize),
                     connected: false,
                     mode: SessionMode::Command,
@@ -297,6 +300,11 @@ impl Session {
         self.connected
     }
 
+    #[inline]
+    pub fn duration_from_last_update(&self) -> i64 {
+        (Utc::now() - self.updated).num_nanoseconds().unwrap_or(0i64)
+    }
+
     /// # process(&mut self)
    /// **Usage**
    /// - process the incoming byte stream
@@ -307,6 +315,7 @@ impl Session {
    /// ```
     #[inline]
     pub fn process(&mut self) {
+        self.updated = Utc::now();
         match self.mode {
             SessionMode::Command => self.process_events(),
             SessionMode::Transmission => self.process_data()
@@ -373,7 +382,11 @@ impl Session {
                             self.status = SessionStatus::WaitGosship;
                             true
                         },
-                        _ => false
+                        _ => {
+                            // print cmd output here
+                            unimplemented!();
+                            false
+                        }
                     }
                 }
             },
@@ -403,7 +416,7 @@ impl Session {
                 } else {
                     match &args[3] {
                         &SocketMessageArg::String { ref value } => {
-                            // print cmd log here
+                            // print cmd output here
                             unimplemented!()
                         },
                         _ => {
