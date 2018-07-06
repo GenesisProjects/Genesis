@@ -353,29 +353,25 @@ impl Session {
         match event {
             //TODO: process logic
             "BOOTSTRAP" => {
-                if args.len() < 4 {
+                if !msg.verify() {
                     false
                 } else {
                     match self.status {
                         SessionStatus::Init => {
-                            if args.len() < 4 {
-                                false
-                            } else {
-                                let slice = &args[3 .. ];
-                                let mut hosts: Vec<(String, i32)> = vec![];
-                                for arg in slice {
-                                    match arg {
-                                        &SocketMessageArg::String { ref value } => {
-                                            //TODO: make port configurable
-                                            hosts.push((value.clone(), 39999))
-                                        }
-                                        _ => ()
-                                    };
-                                }
-                                self.table = PeerTable::new_with_hosts(hosts);
-                                self.status = SessionStatus::WaitGosship;
-                                true
+                            let slice = &args[3 .. ];
+                            let mut hosts: Vec<(String, i32)> = vec![];
+                            for arg in slice {
+                                match arg {
+                                    &SocketMessageArg::String { ref value } => {
+                                        //TODO: make port configurable
+                                        hosts.push((value.clone(), 39999))
+                                    }
+                                    _ => ()
+                                };
                             }
+                            self.table = PeerTable::new_with_hosts(hosts);
+                            self.status = SessionStatus::WaitGosship;
+                            true
                         },
                         _ => false
                     }
@@ -402,7 +398,7 @@ impl Session {
                 }
             },
             "REJECT" => {
-                if args.len() != 4 {
+                if !msg.verify() {
                     false
                 } else {
                     match &args[3] {
