@@ -270,6 +270,7 @@ impl Session {
         match event {
             //TODO: process logic
             "BOOTSTRAP" => {
+<<<<<<< HEAD
                 if args.len() < 4 {
                     false
                 } else {
@@ -295,8 +296,56 @@ impl Session {
                     _ => panic!("Unknown host value")
                 }*/
                 unimplemented!()
+=======
+                match self.status {
+                    SessionStatus::Init => {
+                        let host = args[4];
+                        match host {
+                            SocketMessageArg::String(_, value) => {
+                                match self.connect(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(value)), 39999)) {
+                                    Ok(s) => {
+                                        self.status = SessionStatus::WaitGosship;
+                                        true
+                                    },
+                                    Err(e) => false
+                                }
+                            },
+                            _ => false
+                        }
+                    },
+                    _ => false
+                }
             },
-            _ => unimplemented!()
+            "GOSSIP" => {
+                match self.status {
+                    SessionStatus::Init => {
+                        let host = args[4];
+                        match host {
+                            SocketMessageArg::String(_, value) => {
+                                match self.connect(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(value)), 39999)) {
+                                    Ok(s) => {
+                                        self.status = SessionStatus::WaitingRequestBlockInfo;
+                                        true
+                                    },
+                                    Err(e) => false
+                                }
+                            },
+                            _ => false
+                        }
+                    },
+                    _ => false
+                }
+            },
+            "REJECT" => {
+                match self.status {
+                    SessionStatus::Init => {
+                        self.status = SessionStatus::ConnectionReject;
+                        true
+                    },
+                    _ => false
+                }
+>>>>>>> 9394f3e133ea6220393de60092d978ba9d459192
+            },
         }
         unimplemented!()
     }
@@ -319,7 +368,7 @@ impl Evented for Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
-
+        unimplemented!()
     }
 }
 
