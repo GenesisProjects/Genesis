@@ -267,15 +267,54 @@ impl Session {
         match event {
             //TODO: process logic
             "BOOTSTRAP" => {
-                let host = args[4];
-                match host {
-                    SocketMessageArg::String(_, value) => {
-                        self.connect(host);
+                match self.status {
+                    SessionStatus::Init => {
+                        let host = args[4];
+                        match host {
+                            SocketMessageArg::String(_, value) => {
+                                match self.connect(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(value)), 39999)) {
+                                    Ok(s) => {
+                                        self.status = SessionStatus::WaitGosship;
+                                        true
+                                    },
+                                    Err(e) => false
+                                }
+                            },
+                            _ => false
+                        }
                     },
-                    _ => panic!("Unknown host value")
+                    _ => false
                 }
             },
-            _ => unimplemented!()
+            "GOSSIP" => {
+                match self.status {
+                    SessionStatus::Init => {
+                        let host = args[4];
+                        match host {
+                            SocketMessageArg::String(_, value) => {
+                                match self.connect(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(value)), 39999)) {
+                                    Ok(s) => {
+                                        self.status = SessionStatus::WaitingRequestBlockInfo;
+                                        true
+                                    },
+                                    Err(e) => false
+                                }
+                            },
+                            _ => false
+                        }
+                    },
+                    _ => false
+                }
+            },
+            "REJECT" => {
+                match self.status {
+                    SessionStatus::Init => {
+                        self.status = SessionStatus::ConnectionReject;
+                        true
+                    },
+                    _ => false
+                }
+            },
         }
         unimplemented!()
     }
@@ -298,7 +337,7 @@ impl Evented for Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
-
+        unimplemented!()
     }
 }
 
