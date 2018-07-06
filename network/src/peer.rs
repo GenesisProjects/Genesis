@@ -23,73 +23,11 @@ enum PeerType {
     Unknown
 }
 
-#[derive(Clone, Debug)]
-pub struct BlockInfo {
-    block_len: usize,
-    last_block_num: usize,
-
-    esitmated_round: usize
-}
-
-#[derive(Debug)]
-pub struct PeerTable {
-    table: Vec<(Option<Account>, SocketInfo)>,
-    limit: usize
-}
-
-impl Clone for PeerTable {
-    fn clone(&self) -> Self {
-        PeerTable {
-            table: self.table.iter().map(|peer_info| peer_info.clone()).collect(),
-            limit: self.limit
-        }
-    }
-}
-
-impl PeerTable {
-    pub fn new() -> Self {
-        // TODO: make limit configuable
-        PeerTable {
-            table: vec![],
-            limit: 512
-        }
-    }
-
-    pub fn new_with_hosts(hosts: Vec<(String, i32)>) -> Self {
-        // TODO: make limit configuable
-        PeerTable {
-            table: hosts
-                .into_iter()
-                .map(|host| {
-                    socket_info(host.0, host.1)
-                })
-                .filter(|socket_result| {
-                    match socket_result {
-                        &Ok(_) => true,
-                        &Err(_) => false
-                    }
-                })
-                .map(|socket_result| {
-                    (None, socket_result.unwrap())
-                })
-                .collect()
-            ,
-            limit: 512
-        }
-    }
-
-    pub fn table(&self) -> Vec<(Option<Account>, SocketInfo)> {
-        self.clone().table
-    }
-}
-
 pub struct Peer {
     ip_addr: SocketAddr,
     peer_type: PeerType,
     account: Option<Account>,
-    session: Session,
-    block_info: Option<BlockInfo>,
-    peer_table: PeerTable
+    session: Session
 }
 
 impl Peer {
@@ -99,8 +37,6 @@ impl Peer {
             peer_type: PeerType::Unknown,
             account: None,
             session: Session::new(socket, addr),
-            block_info: None,
-            peer_table: PeerTable::new()
         }
     }
 
@@ -111,19 +47,12 @@ impl Peer {
                 peer_type: PeerType::Unknown,
                 account: None,
                 session: session,
-
-                block_info: None,
-                peer_table: PeerTable::new()
             })
         })
     }
 
-    pub fn update_block_info(&mut self, block_info: &BlockInfo) {
-        self.block_info = Some(block_info.clone());
-    }
-
-    pub fn update_peer_table(new_peer_ref: PeerRef) {
-        unimplemented!()
+    pub fn table(&self) -> PeerTable {
+        self.session.table()
     }
 
     pub fn status(&self) -> SessionStatus {
@@ -131,7 +60,7 @@ impl Peer {
     }
 
     pub fn peer_table(&self) -> Vec<(Option<Account>, SocketInfo)> {
-        self.peer_table.clone().table
+        self.table().table
     }
 
     pub fn account(&self) -> Option<Account> {

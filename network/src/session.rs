@@ -10,9 +10,68 @@ use std::time::Instant;
 use common::address::Address as Account;
 use message::defines::*;
 use nat::*;
-use peer::PeerTable;
 use pool_manager::SHARED_POOL_MANAGER;
 use socket::*;
+
+#[derive(Clone, Debug)]
+pub struct BlockInfo {
+    block_len: usize,
+    last_block_num: usize,
+
+    esitmated_round: usize
+}
+
+#[derive(Debug)]
+pub struct PeerTable {
+    pub table: Vec<(Option<Account>, SocketInfo)>,
+    pub limit: usize
+}
+
+impl Clone for PeerTable {
+    fn clone(&self) -> Self {
+        PeerTable {
+            table: self.table.iter().map(|peer_info| peer_info.clone()).collect(),
+            limit: self.limit
+        }
+    }
+}
+
+impl PeerTable {
+    pub fn new() -> Self {
+        // TODO: make limit configuable
+        PeerTable {
+            table: vec![],
+            limit: 512
+        }
+    }
+
+    pub fn new_with_hosts(hosts: Vec<(String, i32)>) -> Self {
+        // TODO: make limit configuable
+        PeerTable {
+            table: hosts
+                .into_iter()
+                .map(|host| {
+                    socket_info(host.0, host.1)
+                })
+                .filter(|socket_result| {
+                    match socket_result {
+                        &Ok(_) => true,
+                        &Err(_) => false
+                    }
+                })
+                .map(|socket_result| {
+                    (None, socket_result.unwrap())
+                })
+                .collect()
+            ,
+            limit: 512
+        }
+    }
+
+    pub fn table(&self) -> Vec<(Option<Account>, SocketInfo)> {
+        self.clone().table
+    }
+}
 
 /// # TaskContext
 /// **Usage**
@@ -138,6 +197,9 @@ pub struct Session {
     context: TaskContext,
     connected: bool,
     mode: SessionMode,
+
+    table: PeerTable,
+    block_info: Option<BlockInfo>
 }
 
 impl Session {
@@ -163,7 +225,10 @@ impl Session {
             created: Utc::now(),
             context: TaskContext::new(0usize),
             connected: false,
-            mode: SessionMode::Command
+            mode: SessionMode::Command,
+
+            table: PeerTable::new(),
+            block_info: None
         }
     }
 
@@ -190,7 +255,10 @@ impl Session {
                     created: Utc::now(),
                     context: TaskContext::new(0usize),
                     connected: false,
-                    mode: SessionMode::Command
+                    mode: SessionMode::Command,
+
+                    table: PeerTable::new(),
+                    block_info: None
                 })
             },
             Err(e) => Err(e)
@@ -212,6 +280,21 @@ impl Session {
     #[inline]
     pub fn status(&self) -> SessionStatus {
         self.status.clone()
+    }
+
+    #[inline]
+    pub fn block_info(&self) -> Option<BlockInfo> {
+        self.block_info.clone()
+    }
+
+    #[inline]
+    pub fn table(&self) -> PeerTable {
+        self.table.clone()
+    }
+
+    #[inline]
+    pub fn connected(&self) -> bool {
+        self.connected
     }
 
     /// # process(&mut self)
@@ -270,7 +353,6 @@ impl Session {
         match event {
             //TODO: process logic
             "BOOTSTRAP" => {
-<<<<<<< HEAD
                 if args.len() < 4 {
                     false
                 } else {
@@ -285,69 +367,12 @@ impl Session {
                             _ => ()
                         };
                     }
-                    PeerTable::new_with_hosts(hosts);
+                    self.table = PeerTable::new_with_hosts(hosts);
                     true
                 }
-                /*let host = args[4];
-                match host {
-                    SocketMessageArg::String(_, value) => {
-                        self.connect(host);
-                    },
-                    _ => panic!("Unknown host value")
-                }*/
-                unimplemented!()
-=======
-                match self.status {
-                    SessionStatus::Init => {
-                        let host = args[4];
-                        match host {
-                            SocketMessageArg::String(_, value) => {
-                                match self.connect(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(value)), 39999)) {
-                                    Ok(s) => {
-                                        self.status = SessionStatus::WaitGosship;
-                                        true
-                                    },
-                                    Err(e) => false
-                                }
-                            },
-                            _ => false
-                        }
-                    },
-                    _ => false
-                }
             },
-            "GOSSIP" => {
-                match self.status {
-                    SessionStatus::Init => {
-                        let host = args[4];
-                        match host {
-                            SocketMessageArg::String(_, value) => {
-                                match self.connect(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(value)), 39999)) {
-                                    Ok(s) => {
-                                        self.status = SessionStatus::WaitingRequestBlockInfo;
-                                        true
-                                    },
-                                    Err(e) => false
-                                }
-                            },
-                            _ => false
-                        }
-                    },
-                    _ => false
-                }
-            },
-            "REJECT" => {
-                match self.status {
-                    SessionStatus::Init => {
-                        self.status = SessionStatus::ConnectionReject;
-                        true
-                    },
-                    _ => false
-                }
->>>>>>> 9394f3e133ea6220393de60092d978ba9d459192
-            },
+            _ => false
         }
-        unimplemented!()
     }
 
 }

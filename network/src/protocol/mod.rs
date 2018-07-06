@@ -2,7 +2,7 @@ use common::address::Address as Account;
 use common::hash::Hash;
 use common::key::KeyPair;
 use message::defines::*;
-use peer::{PeerTable, BlockInfo};
+use session::{PeerTable, BlockInfo};
 
 /// # P2PController
 /// **Usage**
