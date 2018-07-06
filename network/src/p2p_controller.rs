@@ -92,10 +92,10 @@ impl P2PController {
         self.peer_list = HashMap::<Token, PeerRef>::new();
     }
 
-    fn search_peers(&self) -> Vec<(Account, SocketInfo)> {
+    fn search_peers(&self) -> Vec<(Option<Account>, SocketInfo)> {
         let mut raw_peers_table = self.peer_list.values().map(|peer_ref| {
             peer_ref.peer_table()
-        }).fold(Vec::<(Account, SocketInfo)>::new(), |mut init, ref mut table: Vec<(Account,SocketInfo)>| {
+        }).fold(Vec::<(Option<Account>, SocketInfo)>::new(), |mut init, ref mut table: Vec<(Option<Account>,SocketInfo)>| {
             init.append(table);
             init
         });
@@ -105,7 +105,13 @@ impl P2PController {
         raw_peers_table.dedup_by(|&mut (ref addr_a, _), &mut (ref addr_b, _)| *addr_a == *addr_b);
 
         // filter out self
-        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref addr, _)| *addr != self.account).collect();
+        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref addr, _)| {
+            if let Some(ref account) = (*addr) {
+                account.clone() != self.account
+            } else {
+                true
+            }
+        }).collect();
 
         // filter out in current peer list
         raw_peers_table = raw_peers_table.into_iter().filter(|&(ref account, (ref addr, ref port))| !self.socket_exist(addr)).collect();

@@ -5,7 +5,7 @@ use std::io::*;
 use std::result::Result as SerdeResult;
 
 use common::address::Address as Account;
-use nat::SocketInfo;
+use nat::*;
 use session::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};
@@ -33,7 +33,7 @@ pub struct BlockInfo {
 
 #[derive(Debug)]
 pub struct PeerTable {
-    table: Vec<(Account, SocketInfo)>,
+    table: Vec<(Option<Account>, SocketInfo)>,
     limit: usize
 }
 
@@ -55,7 +55,30 @@ impl PeerTable {
         }
     }
 
-    pub fn table(&self) -> Vec<(Account, SocketInfo)> {
+    pub fn new_with_hosts(hosts: Vec<(String, i32)>) -> Self {
+        // TODO: make limit configuable
+        PeerTable {
+            table: hosts
+                .into_iter()
+                .map(|host| {
+                    socket_info(host.0, host.1)
+                })
+                .filter(|socket_result| {
+                    match socket_result {
+                        &Ok(_) => true,
+                        &Err(_) => false
+                    }
+                })
+                .map(|socket_result| {
+                    (None, socket_result.unwrap())
+                })
+                .collect()
+            ,
+            limit: 512
+        }
+    }
+
+    pub fn table(&self) -> Vec<(Option<Account>, SocketInfo)> {
         self.clone().table
     }
 }
@@ -107,7 +130,7 @@ impl Peer {
         self.session.status()
     }
 
-    pub fn peer_table(&self) -> Vec<(Account, SocketInfo)> {
+    pub fn peer_table(&self) -> Vec<(Option<Account>, SocketInfo)> {
         self.peer_table.clone().table
     }
 

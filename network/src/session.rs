@@ -8,9 +8,11 @@ use std::net::{Shutdown, SocketAddr};
 use std::time::Instant;
 
 use common::address::Address as Account;
+use message::defines::*;
+use nat::*;
+use peer::PeerTable;
 use pool_manager::SHARED_POOL_MANAGER;
 use socket::*;
-use message::defines::*;
 
 /// # TaskContext
 /// **Usage**
@@ -87,6 +89,7 @@ pub enum SessionStatus {
     Idle,
     Transmission,
     ConnectionReject,
+    Abort,
 
     // client reserved
     WaitGosship,
@@ -134,7 +137,7 @@ pub struct Session {
     created: DateTime<Utc>,
     context: TaskContext,
     connected: bool,
-    mode: SessionMode
+    mode: SessionMode,
 }
 
 impl Session {
@@ -202,8 +205,8 @@ impl Session {
     /// ## Examples
     /// ```
     /// ```
-    pub fn disconnect(&mut self) -> Result<()> {
-        self.socket = PeerSocket::new(TcpStream::connect("127.0.0.1:39999").unwrap());
+    pub fn disconnect(&mut self) {
+        self.status = SessionStatus::Abort;
     }
 
     #[inline]
@@ -267,13 +270,31 @@ impl Session {
         match event {
             //TODO: process logic
             "BOOTSTRAP" => {
-                let host = args[4];
+                if args.len() < 4 {
+                    false
+                } else {
+                    let slice = &args[3 .. ];
+                    let mut hosts: Vec<(String, i32)> = vec![];
+                    for arg in slice {
+                        match arg {
+                            &SocketMessageArg::String { ref value } => {
+                                //TODO: make port configurable
+                                hosts.push((value.clone(), 19999))
+                            }
+                            _ => ()
+                        };
+                    }
+                    PeerTable::new_with_hosts(hosts);
+                    true
+                }
+                /*let host = args[4];
                 match host {
                     SocketMessageArg::String(_, value) => {
                         self.connect(host);
                     },
                     _ => panic!("Unknown host value")
-                }
+                }*/
+                unimplemented!()
             },
             _ => unimplemented!()
         }

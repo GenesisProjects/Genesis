@@ -26,7 +26,7 @@ impl P2PProtocol {
                     value: self.vesion.to_owned()
                 },
                 SocketMessageArg::Account {
-                    value: account
+                    value: self.account.to_owned()
                 }
             ],
         )
