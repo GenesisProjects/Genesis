@@ -107,11 +107,11 @@ impl SocketMessage {
         self.arg.to_owned()
     }
 
-    pub fn init_ping() -> Self {
-        SocketMessage { event: "PING".to_string(), arg: vec![] }
+    pub fn heartbeat() -> Self {
+        SocketMessage { event: "HEARTBEAT".to_string(), arg: vec![] }
     }
 
-    pub fn init_exception(reason: &str) -> Self {
+    pub fn exception(reason: &str) -> Self {
         SocketMessage { event: "EXCEPTION".to_string(), arg: vec![SocketMessageArg::String { value: reason.to_string() }] }
     }
 }
@@ -178,7 +178,7 @@ impl MessageCodec for SocketMessage {
         });
 
         if total_unknown > 0 {
-            Self::init_exception("contain unknown args")
+            Self::exception("contain unknown args")
         } else {
             SocketMessage {
                 event: vec[0].to_string(),

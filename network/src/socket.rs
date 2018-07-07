@@ -128,7 +128,7 @@ impl PeerSocket {
             let line_str = str::from_utf8(&line);
             match line_str {
                 Ok(r) => SocketMessage::decoder(r),
-                Err(e) => SocketMessage::init_exception("cannot parse input string as utf8 encoded")
+                Err(e) => SocketMessage::exception("cannot parse input string as utf8 encoded")
             }
         }).collect::<Vec<SocketMessage>>())
     }
