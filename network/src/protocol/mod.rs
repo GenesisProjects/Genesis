@@ -21,20 +21,20 @@ pub struct P2PProtocol {
 
 impl P2PProtocol {
     pub fn bootstrap(&self) -> SocketMessage {
-        SocketMessage::new(
+        let mut msg = SocketMessage::new(
             "BOOTSTRAP".to_string(),
-            vec![
-                SocketMessageArg::Vesion {
-                    value: self.vesion.to_owned()
-                },
-                SocketMessageArg::Account {
-                    value: self.account.to_owned()
-                },
-                SocketMessageArg::Timestamp {
-                    value: Utc::now()
-                }
-            ],
-        )
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: self.account.to_owned()
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
+        };
+
+        msg
     }
 
     //TODO: more protocols
