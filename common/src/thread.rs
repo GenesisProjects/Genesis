@@ -36,7 +36,7 @@ pub trait Thread {
                                     context_ref.set_status(ThreadStatus::Stop);
                                 },
                                 _ => {
-                                    context_ref.update(forward_msg);
+                                    context_ref.msg_handler(forward_msg);
                                 },
                             }
                         }
@@ -58,11 +58,14 @@ pub trait Thread {
     /// run loop
     fn run(&mut self) -> bool;
 
-    /// update
-    fn update(&mut self, msg: Message);
+    /// handle message
+    fn msg_handler(&mut self, msg: Message);
 
     /// set status
     fn set_status(&mut self, status: ThreadStatus);
+
+    /// update
+    fn update(&mut self);
 
     ///
     fn new() -> Result<Self> where Self: Sized;

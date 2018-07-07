@@ -331,7 +331,7 @@ impl Thread for P2PController {
         }
     }
 
-    /// # update(&mut self, 1)
+    /// # msg_handler(&mut self, 1)
     /// **Usage**
     /// - consume message from the inter-controller message channel,
     /// - tranform the inter-controller message into [[P2PMessage]]
@@ -339,12 +339,23 @@ impl Thread for P2PController {
     /// ## Examples
     /// ```
     /// ```
-    fn update(&mut self, msg: Message) {
+    fn msg_handler(&mut self, msg: Message) {
         unimplemented!()
     }
 
     fn set_status(&mut self, status: ThreadStatus) {
         self.eventloop.status = status;
+    }
+
+    /// # update(&mut self, 0)
+    /// **Usage**
+    /// - check peerlist, block invalid peers
+    /// - refresh the waiting list if peers is not enough
+    /// ## Examples
+    /// ```
+    /// ```
+    fn update(&mut self) {
+        
     }
 }
 
