@@ -2,6 +2,7 @@ use common::address::Address as Account;
 use common::hash::Hash;
 use common::key::KeyPair;
 use message::defines::*;
+use nat::*;
 use session::{PeerTable, BlockInfo};
 use chrono::prelude::*;
 
@@ -29,8 +30,8 @@ impl P2PProtocol {
                 SocketMessageArg::Account {
                     value: self.account.to_owned()
                 },
-                SocketMessage::Timestamp {
-                    value: DateTime<Utc> = Utc::now()
+                SocketMessageArg::Timestamp {
+                    value: Utc::now()
                 }
             ],
         )
@@ -38,35 +39,30 @@ impl P2PProtocol {
 
     //TODO: more protocols
 
-    pub fn gossip(&self, peers: &PeerTable) -> SocketMessage {
+    pub fn gossip(&self, table: &PeerTable) -> SocketMessage {
+        let mut args: Vec<SocketMessageArg>  = vec![];
+        args.append(&mut vec![
+            SocketMessageArg::Vesion {
+                value: self.vesion.to_owned()
+            },
+            SocketMessageArg::Account {
+                value: self.account.to_owned()
+            },
+            SocketMessageArg::Timestamp {
+                value: Utc::now()
+            }
+        ]);
+
+        for host in &table.table {
+            let socket_info = &host.1;
+            let addr = &socket_info.0;
+            let addr_str = addr.ip().to_string();
+            args.push(SocketMessageArg::String { value: addr_str })
+        }
+
         SocketMessage::new(
             "GOSSIP".to_string(),
-            vec![
-                SocketMessageArg::Vesion {
-                    value: self.vesion.to_owned()
-                },
-                SocketMessageArg::Account {
-                    value: self.account.to_owned()
-                },
-                SocketMessage::Timestamp {
-                    value: DateTime<Utc> = Utc::now()
-                },
-                SocketMessage::String {
-                    value: {
-                        let mut peers_table = peers.values().map(|peer| {
-                            peer.peer_table()
-                        }).fold(Vec<String>::new(), |mut init, ref mut table: Vec<(Option<Account>, SocketInfo)>| {
-                            let addr_table = table.iter().map(|(ref account, (ref addr, ref port))| {
-                                addr.to_string()
-                            }).collect();
-
-                            init.append(addr_table);
-                            init
-                        });
-                        peers_table.to_string()
-                    }
-                }
-            ],
+            args
         )
     }
 
@@ -80,10 +76,10 @@ impl P2PProtocol {
                 SocketMessageArg::Account {
                     value: self.account.to_owned()
                 },
-                SocketMessage::Timestamp {
-                    value: DateTime<Utc> = Utc::now()
+                SocketMessageArg::Timestamp {
+                    value: Utc::now()
                 },
-                SocketMessage::String {
+                SocketMessageArg::String {
                     value: reason.to_owned()
                 },
             ],
