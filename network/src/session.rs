@@ -10,9 +10,9 @@ use std::time::Instant;
 use common::address::Address as Account;
 use common::hash::Hash;
 use message::defines::*;
+use message::protocol::*;
 use nat::*;
 use pool_manager::SHARED_POOL_MANAGER;
-use protocol::*;
 use socket::*;
 
 pub const CMD_ERR_PENALTY: u32 = 100u32;
@@ -143,6 +143,7 @@ pub struct Session {
     context: TaskContext,
     connected: bool,
     mode: SessionMode,
+    protocol: P2PProtocol,
 
     table: PeerTable,
     block_info: Option<BlockInfo>
@@ -173,6 +174,7 @@ impl Session {
             context: TaskContext::new(0usize),
             connected: false,
             mode: SessionMode::Command,
+            protocol: P2PProtocol::new(),
 
             table: PeerTable::new(),
             block_info: None
@@ -204,6 +206,7 @@ impl Session {
                     context: TaskContext::new(0usize),
                     connected: false,
                     mode: SessionMode::Command,
+                    protocol: P2PProtocol::new(),
 
                     table: PeerTable::new(),
                     block_info: None

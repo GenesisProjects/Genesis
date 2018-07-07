@@ -66,7 +66,7 @@ impl PeerTable {
     }
 }
 
-/// # P2PController
+/// # P2PProtocol
 /// **Usage**
 /// - basic protocols, implemented to generate [[SocketMessage]]
 /// **Member**
@@ -75,11 +75,16 @@ impl PeerTable {
 /// - 3.    ***key_pair***:     client public/private keypair.
 pub struct P2PProtocol {
     vesion: String,
-    account: Account,
-    key_pair: KeyPair,
 }
 
 impl P2PProtocol {
+    pub fn new() -> Self {
+        //TODO: make version number configurable
+        P2PProtocol {
+            vesion: "0.0.0".to_string(),
+        }
+    }
+
     pub fn bootstrap(&self) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "BOOTSTRAP".to_string(),
@@ -89,7 +94,7 @@ impl P2PProtocol {
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
         } << SocketMessageArg::Account {
-            value: self.account.to_owned()
+            value: Account::load().expect("Can not load account")
         } << SocketMessageArg::Timestamp {
             value: Utc::now()
         };
@@ -108,7 +113,7 @@ impl P2PProtocol {
         msg = msg <<  SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
         } << SocketMessageArg::Account {
-            value: self.account.to_owned()
+            value: Account::load().expect("Can not load account")
         } << SocketMessageArg::Timestamp {
             value: Utc::now()
         };
@@ -132,7 +137,7 @@ impl P2PProtocol {
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
         } << SocketMessageArg::Account {
-            value: self.account.to_owned()
+            value: Account::load().expect("Can not load account")
         } << SocketMessageArg::Timestamp {
             value: Utc::now()
         } << SocketMessageArg::String {
@@ -154,7 +159,7 @@ impl P2PProtocol {
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
         } << SocketMessageArg::Account {
-            value: self.account.to_owned()
+            value: Account::load().expect("Can not load account")
         } << SocketMessageArg::Timestamp {
             value: Utc::now()
         } << SocketMessageArg::Int {
@@ -177,7 +182,7 @@ impl P2PProtocol {
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
         } << SocketMessageArg::Account {
-            value: self.account.to_owned()
+            value: Account::load().expect("Can not load account")
         } << SocketMessageArg::Timestamp {
             value: Utc::now()
         } << SocketMessageArg::Int {
