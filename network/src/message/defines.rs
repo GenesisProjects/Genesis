@@ -1,4 +1,5 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::ops::*;
 
 use common::address::Address as Account;
 use common::hash::{Hash, HASH_LEN};
@@ -83,6 +84,17 @@ impl SocketMessageArg {
 pub struct SocketMessage {
     event: String,
     arg: Vec<SocketMessageArg>
+}
+
+
+impl Shl<SocketMessageArg> for SocketMessage {
+    type Output = Self;
+
+    fn shl(self, arg: SocketMessageArg) -> SocketMessage {
+        let mut new_self = self.clone();
+        new_self.arg.push(arg);
+        new_self
+    }
 }
 
 impl SocketMessage {
