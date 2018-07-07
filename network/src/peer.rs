@@ -7,6 +7,7 @@ use std::result::Result as SerdeResult;
 use common::address::Address as Account;
 use nat::*;
 use session::*;
+use protocol::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::net::{TcpListener, TcpStream};

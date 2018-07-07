@@ -3,8 +3,68 @@ use common::hash::Hash;
 use common::key::KeyPair;
 use message::defines::*;
 use nat::*;
-use session::{PeerTable, BlockInfo};
 use chrono::prelude::*;
+
+#[derive(Clone, Debug)]
+pub struct BlockInfo {
+    pub block_len: usize,
+    pub last_block_num: usize,
+    pub last_block_hash: Hash,
+
+    pub esitmated_round: usize
+}
+
+#[derive(Debug)]
+pub struct PeerTable {
+    pub table: Vec<(Option<Account>, SocketInfo)>,
+    pub limit: usize
+}
+
+impl Clone for PeerTable {
+    fn clone(&self) -> Self {
+        PeerTable {
+            table: self.table.iter().map(|peer_info| peer_info.clone()).collect(),
+            limit: self.limit
+        }
+    }
+}
+
+impl PeerTable {
+    pub fn new() -> Self {
+        // TODO: make limit configuable
+        PeerTable {
+            table: vec![],
+            limit: 512
+        }
+    }
+
+    pub fn new_with_hosts(hosts: Vec<(String, i32)>) -> Self {
+        // TODO: make limit configuable
+        PeerTable {
+            table: hosts
+                .into_iter()
+                .map(|host| {
+                    socket_info(host.0, host.1)
+                })
+                .filter(|socket_result| {
+                    match socket_result {
+                        &Ok(_) => true,
+                        &Err(_) => false
+                    }
+                })
+                .map(|socket_result| {
+                    (None, socket_result.unwrap())
+                })
+                .collect()
+            ,
+            limit: 512
+        }
+    }
+
+    pub fn table(&self) -> Vec<(Option<Account>, SocketInfo)> {
+        self.clone().table
+    }
+}
 
 /// # P2PController
 /// **Usage**
@@ -64,7 +124,7 @@ impl P2PProtocol {
     }
 
     pub fn reject(&self, reason: String) -> SocketMessage {
-        let msg = SocketMessage::new(
+        let mut msg = SocketMessage::new(
             "REJECT".to_string(),
             vec![]
         );
@@ -86,7 +146,7 @@ impl P2PProtocol {
                               self_block_len: usize,
                               self_last_hash: Hash) -> SocketMessage {
 
-        let msg = SocketMessage::new(
+        let mut msg = SocketMessage::new(
             "REQUEST_BLOCK_INFO".to_string(),
             vec![]
         );
@@ -98,7 +158,7 @@ impl P2PProtocol {
         } << SocketMessageArg::Timestamp {
             value: Utc::now()
         } << SocketMessageArg::Int {
-            value: self_block_len
+            value: self_block_len as i32
         } << SocketMessageArg::Hash {
             value: self_last_hash.to_owned()
         };
@@ -106,8 +166,10 @@ impl P2PProtocol {
         msg
     }
 
-    pub fn block_info(&self, block_info: &BlockInfo) -> SocketMessage {
-        let msg = SocketMessage::new(
+    pub fn block_info(&self,
+                      block_info: &BlockInfo,
+                      block_hash: Hash) -> SocketMessage {
+        let mut msg = SocketMessage::new(
             "BLOCK_INFO".to_string(),
             vec![]
         );
@@ -119,13 +181,12 @@ impl P2PProtocol {
         } << SocketMessageArg::Timestamp {
             value: Utc::now()
         } << SocketMessageArg::Int {
-            value: block_info.block_len
+            value: block_info.block_len as i32
         } << SocketMessageArg::Hash {
-            value: None //Todo: Gen hash from block info
+            value: block_hash
         };
 
         msg
     }
 
-    //TODO: more protocols
 }

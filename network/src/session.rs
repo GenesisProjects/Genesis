@@ -8,73 +8,15 @@ use std::net::{Shutdown, SocketAddr};
 use std::time::Instant;
 
 use common::address::Address as Account;
+use common::hash::Hash;
 use message::defines::*;
 use nat::*;
 use pool_manager::SHARED_POOL_MANAGER;
+use protocol::*;
 use socket::*;
 
 pub const CMD_ERR_PENALTY: u32 = 100u32;
 pub const DATA_TRANS_ERR_PENALTY: u32 = 200u32;
-
-#[derive(Clone, Debug)]
-pub struct BlockInfo {
-    block_len: usize,
-    last_block_num: usize,
-
-    esitmated_round: usize
-}
-
-#[derive(Debug)]
-pub struct PeerTable {
-    pub table: Vec<(Option<Account>, SocketInfo)>,
-    pub limit: usize
-}
-
-impl Clone for PeerTable {
-    fn clone(&self) -> Self {
-        PeerTable {
-            table: self.table.iter().map(|peer_info| peer_info.clone()).collect(),
-            limit: self.limit
-        }
-    }
-}
-
-impl PeerTable {
-    pub fn new() -> Self {
-        // TODO: make limit configuable
-        PeerTable {
-            table: vec![],
-            limit: 512
-        }
-    }
-
-    pub fn new_with_hosts(hosts: Vec<(String, i32)>) -> Self {
-        // TODO: make limit configuable
-        PeerTable {
-            table: hosts
-                .into_iter()
-                .map(|host| {
-                    socket_info(host.0, host.1)
-                })
-                .filter(|socket_result| {
-                    match socket_result {
-                        &Ok(_) => true,
-                        &Err(_) => false
-                    }
-                })
-                .map(|socket_result| {
-                    (None, socket_result.unwrap())
-                })
-                .collect()
-            ,
-            limit: 512
-        }
-    }
-
-    pub fn table(&self) -> Vec<(Option<Account>, SocketInfo)> {
-        self.clone().table
-    }
-}
 
 /// # TaskContext
 /// **Usage**

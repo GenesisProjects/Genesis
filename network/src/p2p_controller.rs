@@ -350,12 +350,12 @@ impl Thread for P2PController {
     /// # update(&mut self, 0)
     /// **Usage**
     /// - check peerlist, block invalid peers
-    /// - refresh the waiting list if peers is not enough
+    /// - refresh the waiting list if peers are not enough
     /// ## Examples
     /// ```
     /// ```
     fn update(&mut self) {
-        
+
     }
 }
 
