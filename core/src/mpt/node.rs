@@ -263,7 +263,7 @@ impl<T: RLPSerialize + Clone> RLPSerialize for TrieNode<T> {
                    _ => Err(RLPError::RLPErrorUnknown)
                }
            },
-           &RLP::RLPItem { ref value } => Err(RLPError::RLPErrorUnknown)
+           _ => Err(RLPError::RLPErrorUnknown)
        }
     }
 }

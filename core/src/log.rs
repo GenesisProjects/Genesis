@@ -1,10 +1,7 @@
-extern crate common;
-extern crate rlp;
-
-use self::common::address::Address;
-use self::common::hash::Hash;
-use self::rlp::RLPSerialize;
-use self::rlp::types::*;
+use common::address::Address;
+use common::hash::Hash;
+use rlp::RLPSerialize;
+use rlp::types::*;
 ///
 ///
 ///

@@ -6,7 +6,6 @@ use super::SocketInfo;
 
 pub fn map_external_address_upnp(local: &SocketInfo) -> Option<SocketInfo> {
     let result = match *local {
-        _ => { println!("Socket info error"); None },
         (SocketAddr::V4(ref local_addr), udp_port) => match search_gateway_from_timeout(local_addr.ip().clone(), Duration::new(5, 0)) {
             Err(ref err) => { println!("Gateway search error: {}", err); None },
             Ok(gateway) => {
@@ -36,7 +35,8 @@ pub fn map_external_address_upnp(local: &SocketInfo) -> Option<SocketInfo> {
                     },
                 }
             },
-        }
+        },
+        _ => { println!("Can not unpack the socket info for the internal host information"); None },
     };
     result
 }

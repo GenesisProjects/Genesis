@@ -1,12 +1,12 @@
 extern crate ring;
 extern crate untrusted;
 
+use address::*;
 use self::ring::{rand, signature};
+use self::ring::signature::ED25519_PKCS8_V2_LEN as PKCS_LEN;
 use self::untrusted::Input as Input;
 
-use self::ring::signature::ED25519_PKCS8_V2_LEN as PKCS_LEN;
-
-use address::*;
+use std::clone::Clone;
 
 pub const PUBLIC_KEY_LEN: usize = 32;
 
@@ -28,6 +28,7 @@ pub trait KeyPairOp<'a, 'b> {
     /// Get the public key
     fn gen_rand_keypair() -> Result<(KeyPair, Secret), String>;
     fn restore_keypair(input: &'a [u8]) -> Result<KeyPair, String>;
+    fn restore_keypair_from_file() -> Result<KeyPair, String>;
 
     fn sign_msg(&self, msg: &'a [u8]) -> signature::Signature;
     fn verify_sig(addr: &Address, msg: &'a [u8], sig: &signature::Signature) -> bool;
@@ -63,6 +64,20 @@ impl<'a, 'b> KeyPairOp<'a, 'b> for KeyPair {
     #[inline]
     fn restore_keypair(input: &'a [u8]) -> Result<KeyPair, String> {
         match signature::Ed25519KeyPair::from_pkcs8(Input::from(&input)) {
+            Err(why) => {
+                Err(String::from(format!("{}{}", "Failed to generate key_pair: ", why)))
+            }
+            Ok(key_pair) => {
+                Ok(KeyPair { pair: key_pair })
+            }
+        }
+    }
+
+    #[inline]
+    fn restore_keypair_from_file() -> Result<KeyPair, String> {
+        //TODO:
+        let input: Vec<u8> = vec![1,2,3];
+        match signature::Ed25519KeyPair::from_pkcs8(Input::from(&input[..])) {
             Err(why) => {
                 Err(String::from(format!("{}{}", "Failed to generate key_pair: ", why)))
             }
