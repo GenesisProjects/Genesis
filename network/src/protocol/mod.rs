@@ -64,34 +64,67 @@ impl P2PProtocol {
     }
 
     pub fn reject(&self, reason: String) -> SocketMessage {
-        SocketMessage::new(
+        let msg = SocketMessage::new(
             "REJECT".to_string(),
-            vec![
-                SocketMessageArg::Vesion {
-                    value: self.vesion.to_owned()
-                },
-                SocketMessageArg::Account {
-                    value: self.account.to_owned()
-                },
-                SocketMessageArg::Timestamp {
-                    value: Utc::now()
-                },
-                SocketMessageArg::String {
-                    value: reason.to_owned()
-                },
-            ],
-        )
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: self.account.to_owned()
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
+        } << SocketMessageArg::String {
+            value: reason.to_owned()
+        };
+
+        msg
     }
 
     pub fn request_block_info(&self,
-                              reason: String,
                               self_block_len: usize,
                               self_last_hash: Hash) -> SocketMessage {
-        unimplemented!()
+
+        let msg = SocketMessage::new(
+            "REQUEST_BLOCK_INFO".to_string(),
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: self.account.to_owned()
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
+        } << SocketMessageArg::Int {
+            value: self_block_len
+        } << SocketMessageArg::Hash {
+            value: self_last_hash.to_owned()
+        };
+
+        msg
     }
 
     pub fn block_info(&self, block_info: &BlockInfo) -> SocketMessage {
-        unimplemented!()
+        let msg = SocketMessage::new(
+            "BLOCK_INFO".to_string(),
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: self.account.to_owned()
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
+        } << SocketMessageArg::Int {
+            value: block_info.block_len
+        } << SocketMessageArg::Hash {
+            value: None //Todo: Gen hash from block info
+        };
+
+        msg
     }
 
     //TODO: more protocols
