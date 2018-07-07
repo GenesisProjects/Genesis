@@ -85,6 +85,13 @@ impl P2PProtocol {
         }
     }
 
+    pub fn verify(&self, msg: &SocketMessage) -> bool {
+        // TODO:
+        match msg.event().as_str() {
+            _ => false
+        }
+    }
+
     pub fn bootstrap(&self) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "BOOTSTRAP".to_string(),

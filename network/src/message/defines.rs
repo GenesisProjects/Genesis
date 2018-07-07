@@ -105,17 +105,11 @@ impl SocketMessage {
         }
     }
 
-    pub fn verify(&self) -> bool {
-        match self.event.as_str() {
-            _ => false
-        }
-    }
-
-    pub fn get_event(&self) -> String {
+    pub fn event(&self) -> String {
         self.event.to_owned()
     }
 
-    pub fn get_args(&self) -> Vec<SocketMessageArg> {
+    pub fn args(&self) -> Vec<SocketMessageArg> {
         self.arg.to_owned()
     }
 

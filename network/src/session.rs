@@ -308,13 +308,13 @@ impl Session {
     }
 
     fn process_single_event(&mut self, msg: &SocketMessage) -> bool {
-        let event = msg.get_event();
+        let event = msg.event();
         let event = event.as_str();
-        let args = &msg.get_args();
+        let args = &msg.args();
         match event {
             //TODO: process logic
             "BOOTSTRAP" => {
-                if !msg.verify() {
+                if !self.protocol.verify(&msg) {
                     false
                 } else {
                     match self.status {
@@ -363,7 +363,7 @@ impl Session {
                 }
             },
             "REJECT" => {
-                if !msg.verify() {
+                if !self.protocol.verify(&msg) {
                     false
                 } else {
                     match &args[3] {
