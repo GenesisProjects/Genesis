@@ -13,6 +13,9 @@ use nat::*;
 use pool_manager::SHARED_POOL_MANAGER;
 use socket::*;
 
+pub const CMD_ERR_PENALTY: u32 = 100u32;
+pub const DATA_TRANS_ERR_PENALTY: u32 = 200u32;
+
 #[derive(Clone, Debug)]
 pub struct BlockInfo {
     block_len: usize,
@@ -314,7 +317,7 @@ impl Session {
    /// ```
    /// ```
     #[inline]
-    pub fn process(&mut self) {
+    pub fn process(&mut self) -> u32 {
         self.updated = Utc::now();
         match self.mode {
             SessionMode::Command => self.process_events(),
@@ -342,17 +345,21 @@ impl Session {
         self.connected = true;
     }
 
-    fn process_data(&mut self) {
+    fn process_data(&mut self) -> u32 {
         unimplemented!()
     }
 
-    fn process_events(&mut self) {
+    fn process_events(&mut self) -> u32 {
+        let mut err_count: usize = 0usize;
         self.socket.receive_msgs().and_then(|msgs| {
             for msg_ref in &msgs {
-                self.process_single_event(msg_ref);
+                if !self.process_single_event(msg_ref) {
+                    err_count += 1;
+                }
             }
             Ok(msgs)
         });
+        (err_count as u32) * CMD_ERR_PENALTY
     }
 
     fn process_single_event(&mut self, msg: &SocketMessage) -> bool {

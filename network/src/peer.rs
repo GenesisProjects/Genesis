@@ -16,6 +16,8 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 pub type PeerRef = Rc<Peer>;
 pub type WeakPeerRef = Weak<Peer>;
 
+pub const INIT_CREDIT: u32 = 800u32;
+
 #[derive(Clone,Debug)]
 enum PeerType {
     Normal,
@@ -27,7 +29,8 @@ pub struct Peer {
     ip_addr: SocketAddr,
     peer_type: PeerType,
     account: Option<Account>,
-    session: Session
+    session: Session,
+    credit: u32
 }
 
 impl Peer {
@@ -37,6 +40,7 @@ impl Peer {
             peer_type: PeerType::Unknown,
             account: None,
             session: Session::new(socket, addr),
+            credit: INIT_CREDIT
         }
     }
 
@@ -47,8 +51,13 @@ impl Peer {
                 peer_type: PeerType::Unknown,
                 account: None,
                 session: session,
+                credit: INIT_CREDIT
             })
         })
+    }
+
+    pub fn peer_should_kill(&self) -> bool {
+        unimplemented!()
     }
 
     pub fn table(&self) -> PeerTable {
@@ -71,8 +80,17 @@ impl Peer {
         self.ip_addr.clone()
     }
 
+    pub fn credit(&self) -> u32 {
+        self.credit
+    }
+
     pub fn process(&mut self) {
-        self.session.process()
+        let penalty = self.session.process();
+        if penalty <= self.credit {
+            self.credit -= penalty;
+        } else {
+            self.credit = 0;
+        }
     }
 }
 
