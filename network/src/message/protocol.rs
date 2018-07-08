@@ -5,6 +5,8 @@ use message::defines::*;
 use nat::*;
 use chrono::prelude::*;
 
+const MAX_DELAY:i64 = 30i64;
+
 #[derive(Clone, Debug)]
 pub struct BlockInfo {
     pub block_len: usize,
@@ -85,9 +87,128 @@ impl P2PProtocol {
         }
     }
 
+    fn verify_version(&self, index: usize, msg: &SocketMessage) -> bool {
+        if let Some(v) = msg.version_at(index) {
+            self.vesion == v
+        } else {
+            false
+        }
+    }
+
+    fn verify_account(index: usize, msg: &SocketMessage) -> bool {
+        if let Some(v) = msg.account_at(index) {
+            v.text.len() == 32
+        } else {
+            false
+        }
+    }
+
+    fn verify_timestamp(index: usize, msg: &SocketMessage) -> bool {
+        if let Some(v) = msg.timestamp_at(index) {
+            (Utc::now() - v).num_seconds() < MAX_DELAY
+        } else {
+            false
+        }
+    }
+
     pub fn verify(&self, msg: &SocketMessage) -> bool {
-        // TODO:
         match msg.event().as_str() {
+            "BOOTSTRAP" => {
+                if msg.args().len() < 4 {
+                    return false;
+                }
+
+                if ! (self.verify_version(0usize, msg)
+                    && Self::verify_account(1usize, msg)
+                    && Self::verify_timestamp(2usize, msg)) {
+                    return false;
+                }
+
+                for arg in &msg.args()[3..] {
+                    match arg {
+                        &SocketMessageArg::String { ref value } => {},
+                        _ => { return false; }
+                    }
+                };
+                return true;
+            },
+            "GOSSIP" => {
+                if msg.args().len() < 4 {
+                    return false;
+                }
+
+                if ! (self.verify_version(0usize, msg)
+                    && Self::verify_account(1usize, msg)
+                    && Self::verify_timestamp(2usize, msg)) {
+                    return false;
+                }
+
+                for arg in &msg.args()[3..] {
+                    match arg {
+                        &SocketMessageArg::String { ref value } => {},
+                        _ => { return false; }
+                    }
+                };
+                return true;
+            },
+            "REJECT" => {
+                if msg.args().len() != 4 {
+                    return false;
+                }
+
+                if ! (self.verify_version(0usize, msg)
+                    && Self::verify_account(1usize, msg)
+                    && Self::verify_timestamp(2usize, msg)) {
+                    return false;
+                }
+
+                match msg.string_at(3) {
+                    Some(_) => true,
+                    None => false
+                }
+            },
+            "REQUEST_BLOCK_INFO" => {
+                if msg.args().len() != 5 {
+                    return false;
+                }
+
+                if ! (self.verify_version(0usize, msg)
+                    && Self::verify_account(1usize, msg)
+                    && Self::verify_timestamp(2usize, msg)) {
+                    return false;
+                }
+
+                let mut ret = match msg.int_at(3) {
+                    Some(_) => true,
+                    None => false
+                };
+                ret = ret && match msg.int_at(3) {
+                    Some(_) => true,
+                    None => false
+                };
+                ret
+            },
+            "REQUEST_BLOCK" => {
+                if msg.args().len() != 5 {
+                    return false;
+                }
+
+                if ! (self.verify_version(0usize, msg)
+                    && Self::verify_account(1usize, msg)
+                    && Self::verify_timestamp(2usize, msg)) {
+                    return false;
+                }
+
+                let mut ret = match msg.int_at(3) {
+                    Some(_) => true,
+                    None => false
+                };
+                ret = ret && match msg.int_at(3) {
+                    Some(_) => true,
+                    None => false
+                };
+                ret
+            },
             _ => false
         }
     }

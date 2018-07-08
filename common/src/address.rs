@@ -15,12 +15,15 @@ pub struct Address {
     pub text: String
 }
 
-impl Address {
-    /// Convert key to addr
-    pub fn key2addr(key: PublicKey) -> Address {
-        Address { text: key.to_base58() }
+impl From<PublicKey> for Address {
+    fn from(v: PublicKey) -> Self {
+        Address {
+            text: v.to_base58()
+        }
     }
+}
 
+impl Address {
     /// Convert to key
     pub fn to_key(&self) -> Option<PublicKey> {
         match self.text.from_base58() {

@@ -105,6 +105,48 @@ impl SocketMessage {
         }
     }
 
+    pub fn int_at(&self, index: usize) -> Option<i32> {
+        match self.arg[index] {
+            SocketMessageArg::Int { value } => Some(value),
+            _ => None
+        }
+    }
+
+    pub fn string_at(&self, index: usize) -> Option<String> {
+        match &self.arg[index] {
+            &SocketMessageArg::String { ref value } => Some(value.clone()),
+            _ => None
+        }
+    }
+
+    pub fn account_at(&self, index: usize) -> Option<Account> {
+        match &self.arg[index] {
+            &SocketMessageArg::Account { ref value } => Some(value.clone()),
+            _ => None
+        }
+    }
+
+    pub fn hash_at(&self, index: usize) -> Option<Hash> {
+        match self.arg[index] {
+            SocketMessageArg::Hash { value } => Some(value),
+            _ => None
+        }
+    }
+
+    pub fn version_at(&self, index: usize) -> Option<String> {
+        match &self.arg[index] {
+            &SocketMessageArg::Vesion { ref value } => Some(value.clone()),
+            _ => None
+        }
+    }
+
+    pub fn timestamp_at(&self, index: usize) -> Option<DateTime<Utc>> {
+        match self.arg[index] {
+            SocketMessageArg::Timestamp { value } => Some(value),
+            _ => None
+        }
+    }
+
     pub fn event(&self) -> String {
         self.event.to_owned()
     }
