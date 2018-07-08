@@ -1,6 +1,7 @@
 use nat::*;
 use network_eventloop::*;
 use peer::*;
+use message::protocol::*;
 use session::*;
 use utils::*;
 
@@ -60,32 +61,44 @@ impl P2PController {
         P2PController::launch::<P2PController>(name);
     }
 
-    /// # bootstrap(&mut self, 0)
+    /// # connect(&mut self, 1)
     /// **Usage**
     /// - connect to a peer with tcp protocol
-    /// - send boostrap p2pevent
+     /// **Parameters**
+    /// - 1. ***SocketInfo(addr)***: the target peer addr
+    /// **Return**: [[PeerRef]]
     /// ## Examples
     /// ```
     /// ```
-    pub fn bootstrap(&mut self) {
+    fn connect(&mut self, addr: SocketInfo) -> Result<(PeerRef)> {
         //TODO: port configuable
-        let socket_info = match get_local_ip() {
+        match get_local_ip() {
             Some(socket_info) => {
-                get_public_ip_addr(Protocol::UPNP, &(SocketAddr::new(socket_info, 19999), 19999));
-                unimplemented!()
+                match get_public_ip_addr(
+                    Protocol::UPNP,
+                    &(SocketAddr::new(socket_info, 19999), 19999)
+                ) {
+                    Some(socket_info) => {
+                        match TcpStream::connect(&addr.0) {
+                            Ok(stream) => {
+                                Ok(Rc::new(Peer::new(stream, &addr.0)))
+                            },
+                            Err(e) => Err(e)
+                        }
+                    },
+                    None => {
+                        Err(Error::new(
+                            ErrorKind::ConnectionRefused,
+                            "Connot get a public interface"
+                        ))
+                    }
+                }
             }
-            None => unimplemented!()
-        };
-
-        self.init_peers_table();
-
-        for token in self.peer_list.keys() {
-            let peer_ref = self.peer_list.get(token);
-            let addr = peer_ref.unwrap().clone().addr();
-            let _ = TcpStream::connect(&addr);
+            None => Err(Error::new(
+                ErrorKind::Other,
+                "Connot get a local ip"
+            ))
         }
-
-        unimplemented!()
     }
 
     fn init_peers_table(&mut self) {
@@ -208,7 +221,12 @@ impl P2PController {
             self.add_peer(token, peer.clone());
         }
     }
+}
 
+impl Notify for P2PController {
+    fn notify_bootstrap(&mut self, peer_ref: PeerRef) {
+        //Rc::get_mut(peer_ref).unwrap().se
+    }
 }
 
 impl Observe for P2PController {
@@ -270,7 +288,7 @@ impl Observe for P2PController {
 impl Thread for P2PController {
     fn new() -> Result<Self> {
         //TODO: load port from config
-        let addr = "127.0.0.1:39999".parse().unwrap();
+        let addr = "127.0.0.1:19999".parse().unwrap();
         //TODO: make socket resuseable
         let server = TcpListener::bind(&addr);
         let account = Account::load();

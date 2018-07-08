@@ -102,7 +102,7 @@ pub enum SessionStatus {
     WaitTransmission,
 
     // server reserved
-    WaitingBlockInfoRequest,
+    WaitBlockInfoRequest,
     WaitTransmissionRequest,
     WaitSyncInfoRequest,
     WaitTransmissionAccept
@@ -312,7 +312,6 @@ impl Session {
         let event = event.as_str();
         let args = &msg.args();
         match event {
-            //TODO: process logic
             "BOOTSTRAP" => {
                 if !self.protocol.verify(&msg) {
                     false
@@ -325,7 +324,7 @@ impl Session {
                                 match arg {
                                     &SocketMessageArg::String { ref value } => {
                                         //TODO: make port configurable
-                                        hosts.push((value.clone(), 39999))
+                                        hosts.push((value.clone(), 19999))
                                     }
                                     _ => ()
                                 };
@@ -343,23 +342,32 @@ impl Session {
                 }
             },
             "GOSSIP" => {
-                match self.status {
-                    /*SessionStatus::Init => {
-                        let host = args[4];
-                        match host {
-                            SocketMessageArg::String(_, value) => {
-                                match self.connect(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(value)), 39999)) {
-                                    Ok(s) => {
-                                        self.status = SessionStatus::WaitingRequestBlockInfo;
-                                        true
-                                    },
-                                    Err(e) => false
-                                }
-                            },
-                            _ => false
+                if !self.protocol.verify(&msg) {
+                    false
+                } else {
+                    match self.status {
+                        SessionStatus::Init => {
+                            let slice = &args[3 .. ];
+                            let mut hosts: Vec<(String, i32)> = vec![];
+                            for arg in slice {
+                                match arg {
+                                    &SocketMessageArg::String { ref value } => {
+                                        //TODO: make port configurable
+                                        hosts.push((value.clone(), 19999))
+                                    }
+                                    _ => ()
+                                };
+                            }
+                            self.table = PeerTable::new_with_hosts(hosts);
+                            self.status = SessionStatus::WaitBlockInfoRequest;
+                            true
+                        },
+                        _ => {
+                            // print cmd output here
+                            unimplemented!();
+                            false
                         }
-                    },*/
-                    _ => false
+                    }
                 }
             },
             "REJECT" => {
@@ -376,7 +384,7 @@ impl Session {
                         }
                     }
                     match self.status {
-                        SessionStatus::Init | SessionStatus::WaitingBlockInfoRequest => {
+                        SessionStatus::Init | SessionStatus::WaitBlockInfoRequest => {
                             self.status = SessionStatus::ConnectionReject;
                             true
                         },

@@ -1,11 +1,26 @@
+use chrono::prelude::*;
+
 use common::address::Address as Account;
 use common::hash::Hash;
 use common::key::KeyPair;
+
 use message::defines::*;
 use nat::*;
-use chrono::prelude::*;
+use peer::PeerRef;
 
 const MAX_DELAY:i64 = 30i64;
+
+pub trait Notify {
+    /// # notify_bootstrap(&mut self, 1)
+   /// **Usage**
+   /// - send boostrap p2pevent
+    /// **Parameters**
+   /// - 1. ***String(name)***: the interthread channel name
+   /// ## Examples
+   /// ```
+   /// ```
+    fn notify_bootstrap(&mut self, peer_ref: PeerRef);
+}
 
 #[derive(Clone, Debug)]
 pub struct BlockInfo {
