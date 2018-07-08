@@ -1,6 +1,5 @@
 use common::hash::*;
 use common::address::*;
-use common::bloom::*;
 use num::bigint::BigInt;
 use rlp::RLPSerialize;
 use rlp::types::*;

@@ -1,13 +1,10 @@
-extern crate crypto;
-extern crate rlp;
+use crypto::digest::Digest;
+use crypto::sha2::Sha256;
 
-use self::crypto::digest::Digest;
-use self::crypto::sha2::Sha256;
-
-use self::rlp::RLPSerialize;
-use self::rlp::encoder::SHARED_ENCODER;
-use self::rlp::types::RLP;
-use self::rlp::encoder::Encoder;
+use rlp::RLPSerialize;
+use rlp::encoder::SHARED_ENCODER;
+use rlp::types::RLP;
+use rlp::encoder::Encoder;
 
 /// macro gen_hash! takes (*_str => '&str' type data) and (*_raw => '&[u8]' type data) as input
 /// it generates a 'String' type output

@@ -1,13 +1,10 @@
-extern crate ring;
-extern crate rust_base58;
-
 use std::string::String;
 
 use rlp::RLPSerialize;
 use rlp::types::*;
+use key::*;
 
-use self::rust_base58::{ToBase58, FromBase58};
-use super::key::*;
+use rust_base58::{ToBase58, FromBase58};
 
 /// Common key operations
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd)]

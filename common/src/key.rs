@@ -1,10 +1,7 @@
-extern crate ring;
-extern crate untrusted;
-
 use address::*;
-use self::ring::{rand, signature};
-use self::ring::signature::ED25519_PKCS8_V2_LEN as PKCS_LEN;
-use self::untrusted::Input as Input;
+use ring::{rand, signature};
+use ring::signature::ED25519_PKCS8_V2_LEN as PKCS_LEN;
+use untrusted::Input as Input;
 
 use std::clone::Clone;
 

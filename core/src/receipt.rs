@@ -1,6 +1,5 @@
 use common::hash::*;
 use common::address::*;
-use common::bloom::*;
 use num::bigint::BigInt;
 use rlp::RLPSerialize;
 use rlp::types::*;
@@ -21,7 +20,7 @@ struct Receipt {
     pub post_state: Vec<u8>,
     pub status: ReceiptStatus,
     pub cumulative_gas_used: u64,
-    pub logs_bloom: Option<Bloom<Log>>,
+    //pub logs_bloom: Option<Bloom<Log>>,
     pub logs: Option<Vec<Log>>,
 
     // Implementation fields (don't reorder!)
@@ -37,7 +36,7 @@ impl Receipt {
             post_state: root.to_vec(),
             status: ReceiptStatus::ReceiptStatusUnknown,
             cumulative_gas_used: cumulative_gas_used,
-            logs_bloom: None,
+            //logs_bloom: None,
             logs: None,
 
             txhash: None,
