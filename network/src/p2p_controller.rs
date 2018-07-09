@@ -37,6 +37,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV
 pub struct P2PController {
     account: Account,
     peer_list: HashMap<Token, PeerRef>,
+    min_required_peers: usize,
     max_allowed_peers: usize,
     waiting_list: Vec<SocketAddr>,
     max_waiting_list: usize,
@@ -158,10 +159,20 @@ impl P2PController {
         unimplemented!()
     }
 
-    fn refresh_peer_list(&mut self) {
+    fn refresh_waiting_list(&mut self) {
         self.waiting_list = self.search_peers().into_iter().map(|(ref account, (ref addr, ref port))| {
             addr.clone()
         }).collect();
+    }
+
+    fn fetch_peers_from_waiting_list(&mut self) -> Vec<SocketAddr> {
+        let w_len = self.waiting_list.len();
+        let size = if w_len + self.peer_list.len() > self.max_allowed_peers {
+            self.max_allowed_peers - self.peer_list.len()
+        } else {
+            w_len
+        };
+        self.waiting_list.drain(0..size).collect()
     }
 
     fn get_peer(&self, token: Token) -> Option<PeerRef> {
@@ -298,16 +309,19 @@ impl Thread for P2PController {
                 //TODO: load events size from config
                 let event_loop = NetworkEventLoop::new(1024);
                 //TODO: max_allowed_peers configuable
-                let max_allowed_peers = 512;
+                let max_allowed_peers: usize = 512;
                 //TODO: max_blocked_peers configuable
-                let max_blocked_peers = 1024;
+                let max_blocked_peers: usize = 1024;
                 //TODO: max_waiting_list configuable
-                let max_waiting_list = 1024;
+                let max_waiting_list: usize = 1024;
+                //TODO: max_waiting_list configuable
+                let min_required_peers: usize = 4;
 
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
                 Ok(P2PController {
                     account: account.clone(),
                     peer_list: peer_list,
+                    min_required_peers: min_required_peers,
                     max_allowed_peers: max_allowed_peers,
                     waiting_list: vec![],
                     max_waiting_list: max_waiting_list,
@@ -373,7 +387,50 @@ impl Thread for P2PController {
     /// ```
     /// ```
     fn update(&mut self) {
+        // find failed tokens in the peer list
+        let failed_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
+            pair.1.credit() == 0
+        }).map(|pair| {
+            pair.0.clone()
+        }).collect();
 
+        // remove all failed tokens from the peer list
+        for token in failed_tokens {
+            let addr = self.get_peer(token.clone()).unwrap().addr().clone();
+            self.remove_peer(token);
+            self.block_list.push(addr);
+            if self.block_list.len() > self.max_blocked_peers {
+                self.block_list.remove(0);
+            }
+        }
+
+        // if the peer table is too small then refresh it.
+        if self.peer_list.len() < self.min_required_peers {
+            if self.waiting_list.len() < self.min_required_peers {
+                self.refresh_waiting_list();
+            }
+            let sockets = self.fetch_peers_from_waiting_list();
+            let peers: Vec<PeerRef> = sockets.into_iter()
+                .map(|addr| {
+                    self.connect((addr, 39999))
+                })
+                .filter(|result| {
+                    match result {
+                        &Ok(_) => true,
+                        &Err(_) => false
+                    }
+                })
+                .map(|result| {
+                    result.unwrap()
+                })
+                .collect();
+
+            // register new peers to the eventloop, add into peer list
+            for peer in peers {
+                let token = self.eventloop.register_peer(&peer);
+                self.peer_list.insert(token, peer);
+            }
+        }
     }
 }
 
