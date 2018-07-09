@@ -21,7 +21,7 @@ use std::rc::{Rc, Weak};
 use std::sync::{Mutex, Arc, Condvar};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
-const UPDATE_TIMEBASE: i32 = 3000;
+const UPDATE_TIMEBASE: i64 = 3000;
 
 /// # P2PController
 /// **Usage**
@@ -394,10 +394,10 @@ impl Thread for P2PController {
     /// ```
     /// ```
     fn update(&mut self) {
-        if Utc::now() - self.last_updated < UPDATE_TIMEBASE {
+        if (Utc::now() - self.last_updated).num_seconds() < UPDATE_TIMEBASE as i64 {
             return;
         }
-        self.last_updated = Utc::now()
+        self.last_updated = Utc::now();
 
         // find failed tokens in the peer list
         let failed_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
