@@ -30,8 +30,9 @@ pub struct Peer {
     ip_addr: SocketAddr,
     peer_type: PeerType,
     account: Option<Account>,
-    session: Session,
     credit: u32,
+
+    pub session: Session
 }
 
 impl Peer {

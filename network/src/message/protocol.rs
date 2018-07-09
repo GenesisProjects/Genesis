@@ -8,6 +8,8 @@ use message::defines::*;
 use nat::*;
 use peer::PeerRef;
 
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+
 const MAX_DELAY:i64 = 30i64;
 
 pub trait Notify {
@@ -19,7 +21,7 @@ pub trait Notify {
    /// ## Examples
    /// ```
    /// ```
-    fn notify_bootstrap(&mut self, peer_ref: PeerRef);
+    fn notify_bootstrap(protocol: P2PProtocol, mut peer_ref: PeerRef, table: &PeerTable);
 }
 
 #[derive(Clone, Debug)]
@@ -228,7 +230,7 @@ impl P2PProtocol {
         }
     }
 
-    pub fn bootstrap(&self) -> SocketMessage {
+    pub fn bootstrap(&self, table: &PeerTable) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "BOOTSTRAP".to_string(),
             vec![]
@@ -241,6 +243,11 @@ impl P2PProtocol {
         } << SocketMessageArg::Timestamp {
             value: Utc::now()
         };
+
+        for &(_, ref addr) in &table.table {
+            let addr:SocketAddr = addr.0.clone();
+            msg = msg << SocketMessageArg::String { value: addr.to_string() };
+        }
 
         msg
     }

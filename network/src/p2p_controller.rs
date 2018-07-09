@@ -51,7 +51,8 @@ pub struct P2PController {
     eventloop: NetworkEventLoop,
     listener: TcpListener,
     ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>,
-    last_updated: DateTime<Utc>
+    last_updated: DateTime<Utc>,
+    protocol: P2PProtocol
 }
 
 impl P2PController {
@@ -241,8 +242,10 @@ impl P2PController {
 }
 
 impl Notify for P2PController {
-    fn notify_bootstrap(&mut self, peer_ref: PeerRef) {
-        //Rc::get_mut(peer_ref).unwrap().se
+    fn notify_bootstrap(protocol: P2PProtocol, mut peer_ref: PeerRef, table: &PeerTable) {
+        let peer = Rc::get_mut(&mut peer_ref).unwrap();
+        peer.session.send_event(protocol.bootstrap(table));
+
     }
 }
 
@@ -336,8 +339,8 @@ impl Thread for P2PController {
                     eventloop: event_loop,
                     listener: server,
                     ch_pair: None,
-
-                    last_updated: Utc::now()
+                    last_updated: Utc::now(),
+                    protocol: P2PProtocol::new()
                 })
             },
             (Ok(_), None) => {
@@ -443,6 +446,9 @@ impl Thread for P2PController {
                 let token = self.eventloop.register_peer(&peer);
                 self.peer_list.insert(token, peer);
             }
+
+            // bootstrap all peers at init status
+
         }
     }
 }
