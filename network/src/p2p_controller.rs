@@ -22,6 +22,7 @@ use std::sync::{Mutex, Arc, Condvar};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 pub const UPDATE_TIMEBASE: i64 = 3000;
+pub const EXPIRE: i64 = 1000 * 60;
 pub const CHANNEL_NAME: &'static str = "P2P_CONTROLLER";
 
 /// # P2PController
@@ -121,6 +122,10 @@ impl P2PController {
             init
         });
 
+        //TODO: boostrap peers configurable
+        // add bootstrap peers
+        //raw_peers_table.push
+
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
         raw_peers_table.dedup_by(|&mut (ref addr_a, _), &mut (ref addr_b, _)| *addr_a == *addr_b);
@@ -167,9 +172,11 @@ impl P2PController {
     }
 
     fn refresh_waiting_list(&mut self) {
-        self.waiting_list = self.search_peers().into_iter().map(|(ref account, (ref addr, ref port))| {
-            addr.clone()
-        }).collect();
+        self.waiting_list = self.search_peers()
+            .into_iter()
+            .map(|(ref account, (ref addr, ref port))| {
+                addr.clone()
+            }).collect();
     }
 
     fn fetch_peers_from_waiting_list(&mut self) -> Vec<SocketAddr> {
@@ -327,7 +334,7 @@ impl Thread for P2PController {
                 let max_blocked_peers: usize = 1024;
                 //TODO: max_waiting_list configuable
                 let max_waiting_list: usize = 1024;
-                //TODO: max_waiting_list configuable
+                //TODO: min required # of peers configuable
                 let min_required_peers: usize = 4;
 
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
@@ -420,7 +427,8 @@ impl Thread for P2PController {
 
     /// # update(&mut self, 0)
     /// **Usage**
-    /// - check peerlist, block invalid peers
+    /// - maintain peerlist, block untrusted peers
+    /// - send heartbeats
     /// - refresh the waiting list if peers are not enough
     /// ## Examples
     /// ```
@@ -431,15 +439,48 @@ impl Thread for P2PController {
         }
         self.last_updated = Utc::now();
 
-        // find failed tokens in the peer list
-        let failed_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
+        // find aborted token in the peer list
+        let aborted_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
+            match pair.1.status() {
+                SessionStatus::Abort => true,
+                _ => false
+            }
+        }).map(|pair| {
+            pair.0.clone()
+        }).collect();
+
+        // remove all aborted tokens from the peer list
+        for token in aborted_tokens {
+            let addr = self.get_peer(token.clone()).unwrap().addr().clone();
+            self.remove_peer(token);
+        }
+
+        // find all expired token in the peer list
+        let expired_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
+            if pair.1.session.milliseconds_from_last_update() > EXPIRE {
+               true
+            } else {
+                false
+            }
+        }).map(|pair| {
+            pair.0.clone()
+        }).collect();
+
+        // remove all expired tokens from the peer list
+        for token in expired_tokens {
+            let addr = self.get_peer(token.clone()).unwrap().addr().clone();
+            self.remove_peer(token);
+        }
+
+        // find untrusted tokens in the peer list
+        let untrusted_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
             pair.1.credit() == 0
         }).map(|pair| {
             pair.0.clone()
         }).collect();
 
-        // remove all failed tokens from the peer list
-        for token in failed_tokens {
+        // remove all untrusted tokens from the peer list
+        for token in untrusted_tokens {
             let addr = self.get_peer(token.clone()).unwrap().addr().clone();
             self.remove_peer(token);
             self.block_list.push(addr);

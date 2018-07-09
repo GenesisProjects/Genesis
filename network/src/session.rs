@@ -255,8 +255,8 @@ impl Session {
     }
 
     #[inline]
-    pub fn duration_from_last_update(&self) -> i64 {
-        (Utc::now() - self.updated).num_nanoseconds().unwrap_or(0i64)
+    pub fn milliseconds_from_last_update(&self) -> i64 {
+        (Utc::now() - self.updated).num_milliseconds()
     }
 
     #[inline]
