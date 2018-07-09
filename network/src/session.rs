@@ -138,6 +138,7 @@ pub enum SessionMode {
 /// - 6. ***connected***:   true if communication session has been established
 /// - 6. ***mode***:        instance of [SessionMode]
 pub struct Session {
+    token: Option<Token>,
     socket: PeerSocket,
     status: SessionStatus,
     addr: SocketAddr,
@@ -169,6 +170,7 @@ impl Session {
     /// ```
     pub fn new(socket: TcpStream, addr: &SocketAddr) -> Self {
         Session {
+            token: None,
             socket: PeerSocket::new(socket),
             status: SessionStatus::Init,
             addr: addr.clone(),
@@ -201,6 +203,7 @@ impl Session {
         match PeerSocket::connect(addr) {
             Ok(r) => {
                 Ok(Session {
+                    token: None,
                     socket: r,
                     status: SessionStatus::Init,
                     addr: addr.clone(),
@@ -254,6 +257,11 @@ impl Session {
     #[inline]
     pub fn duration_from_last_update(&self) -> i64 {
         (Utc::now() - self.updated).num_nanoseconds().unwrap_or(0i64)
+    }
+
+    #[inline]
+    pub fn set_token(&mut self, token: Token) {
+        self.token = Some(token);
     }
 
     /// # process(&mut self)
@@ -335,10 +343,13 @@ impl Session {
                             self.table = PeerTable::new_with_hosts(hosts);
                             self.status = SessionStatus::WaitGosship;
                             // notify controller send gossip
-                            MESSAGE_CENTER.lock().unwrap().send(
-                                &CHANNEL_NAME.to_string(),
-                                Message::new(0u16, "gossip".to_string())
-                            );
+                            if let Some(token) = self.token.clone() {
+                                MESSAGE_CENTER.lock().unwrap().send(
+                                    &CHANNEL_NAME.to_string(),
+                                    Message::new(token.0 as u16, "gossip".to_string())
+                                );
+                            }
+
                             true
                         },
                         _ => {

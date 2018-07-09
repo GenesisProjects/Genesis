@@ -16,12 +16,18 @@ pub trait Notify {
     /// # notify_bootstrap(&mut self, 1)
    /// **Usage**
    /// - send boostrap p2pevent
-    /// **Parameters**
-   /// - 1. ***String(name)***: the interthread channel name
    /// ## Examples
    /// ```
    /// ```
     fn notify_bootstrap(protocol: P2PProtocol, mut peer_ref: PeerRef, table: &PeerTable);
+
+    /// # notify_gossip(&mut self, 1)
+  /// **Usage**
+  /// - send gossip p2pevent
+  /// ## Examples
+  /// ```
+  /// ```
+    fn notify_gossip(protocol: P2PProtocol, mut peer_ref: PeerRef, table: &PeerTable);
 }
 
 #[derive(Clone, Debug)]

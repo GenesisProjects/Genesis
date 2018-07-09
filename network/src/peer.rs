@@ -31,6 +31,7 @@ pub struct Peer {
     peer_type: PeerType,
     account: Option<Account>,
     credit: u32,
+    token: Option<Token>,
 
     pub session: Session
 }
@@ -41,8 +42,10 @@ impl Peer {
             ip_addr: addr.clone(),
             peer_type: PeerType::Unknown,
             account: None,
+            credit: INIT_CREDIT,
+            token: None,
+
             session: Session::new(socket, addr),
-            credit: INIT_CREDIT
         }
     }
 
@@ -52,8 +55,10 @@ impl Peer {
                 ip_addr: addr.clone(),
                 peer_type: PeerType::Unknown,
                 account: None,
-                session: session,
-                credit: INIT_CREDIT
+                credit: INIT_CREDIT,
+                token: None,
+
+                session: session
             })
         })
     }
@@ -84,6 +89,11 @@ impl Peer {
 
     pub fn credit(&self) -> u32 {
         self.credit
+    }
+
+    pub fn set_token(&mut self, token: Token) {
+        self.token = Some(token);
+        self.session.set_token(token);
     }
 
     pub fn process(&mut self) {

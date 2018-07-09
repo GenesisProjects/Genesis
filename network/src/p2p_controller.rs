@@ -245,7 +245,11 @@ impl Notify for P2PController {
     fn notify_bootstrap(protocol: P2PProtocol, mut peer_ref: PeerRef, table: &PeerTable) {
         let peer = Rc::get_mut(&mut peer_ref).unwrap();
         peer.session.send_event(protocol.bootstrap(table));
+    }
 
+    fn notify_gossip(protocol: P2PProtocol, mut peer_ref: PeerRef, table: &PeerTable) {
+        let peer = Rc::get_mut(&mut peer_ref).unwrap();
+        peer.session.send_event(protocol.gossip(table));
     }
 }
 
@@ -383,7 +387,31 @@ impl Thread for P2PController {
     /// ```
     /// ```
     fn msg_handler(&mut self, msg: Message) {
-        unimplemented!()
+        match msg.msg.as_ref() {
+            "gossip" => {
+                let token = Token(msg.op as usize);
+                let peer_ref = self.peer_list.get(&token);
+                if let None = peer_ref {
+                    return;
+                }
+
+                // generate hosts list
+                let hosts: Vec<(String, i32)> = self.peer_list.iter()
+                    .map(|mut pair| {
+                        (
+                            pair.1.addr().to_string(),
+                            39999 as i32
+                        )
+                    }).collect();
+                let table = PeerTable::new_with_hosts(hosts);
+                Self::notify_gossip(
+                    self.protocol.clone(),
+                    peer_ref.unwrap().clone(),
+                    &table
+                );
+            },
+            _ => {}
+        }
     }
 
     fn set_status(&mut self, status: ThreadStatus) {
@@ -442,15 +470,20 @@ impl Thread for P2PController {
                 .collect();
 
             // register new peers to the eventloop, add into peer list
-            for peer in peers {
+            for mut peer in peers {
                 let token = self.eventloop.register_peer(&peer);
+                Rc::get_mut(&mut peer.clone()).unwrap().set_token(token.clone());
                 self.peer_list.insert(token, peer);
             }
 
             // bootstrap all peers at init status
-            let hosts: Vec<(String, i32)> = self.peer_list.iter().map(|mut pair| {
-                (Rc::get_mut(&mut pair.1.clone()).unwrap().addr().to_string(), 39999 as i32)
-            }).collect();
+            let hosts: Vec<(String, i32)> = self.peer_list.iter()
+                .map(|mut pair| {
+                    (
+                        pair.1.addr().to_string(),
+                        39999 as i32
+                    )
+                }).collect();
             let table = PeerTable::new_with_hosts(hosts);
             for (_, peer_ref) in &self.peer_list {
                 match peer_ref.clone().session.status() {
