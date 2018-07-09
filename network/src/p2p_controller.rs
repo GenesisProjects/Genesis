@@ -5,6 +5,8 @@ use message::protocol::*;
 use session::*;
 use utils::*;
 
+use chrono::*;
+
 use common::address::Address as Account;
 use common::gen_message::*;
 use common::thread::{Thread, ThreadStatus};
@@ -18,6 +20,8 @@ use std::io::*;
 use std::rc::{Rc, Weak};
 use std::sync::{Mutex, Arc, Condvar};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+
+const UPDATE_TIMEBASE: i32 = 3000;
 
 /// # P2PController
 /// **Usage**
@@ -45,7 +49,8 @@ pub struct P2PController {
     max_blocked_peers: usize,
     eventloop: NetworkEventLoop,
     listener: TcpListener,
-    ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>
+    ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>,
+    last_updated: DateTime<Utc>
 }
 
 impl P2PController {
@@ -329,7 +334,9 @@ impl Thread for P2PController {
                     max_blocked_peers: max_blocked_peers,
                     eventloop: event_loop,
                     listener: server,
-                    ch_pair: None
+                    ch_pair: None,
+
+                    last_updated: Utc::now()
                 })
             },
             (Ok(_), None) => {
@@ -387,6 +394,11 @@ impl Thread for P2PController {
     /// ```
     /// ```
     fn update(&mut self) {
+        if Utc::now() - self.last_updated < UPDATE_TIMEBASE {
+            return;
+        }
+        self.last_updated = Utc::now()
+
         // find failed tokens in the peer list
         let failed_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
             pair.1.credit() == 0

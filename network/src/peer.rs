@@ -31,7 +31,7 @@ pub struct Peer {
     peer_type: PeerType,
     account: Option<Account>,
     session: Session,
-    credit: u32
+    credit: u32,
 }
 
 impl Peer {
