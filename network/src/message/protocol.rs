@@ -92,6 +92,7 @@ impl PeerTable {
 /// - 1.    ***vesion***:       current client version.
 /// - 2.    ***account***:      current wallet account.
 /// - 3.    ***key_pair***:     client public/private keypair.
+#[derive(Clone)]
 pub struct P2PProtocol {
     vesion: String,
 }

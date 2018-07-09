@@ -448,7 +448,22 @@ impl Thread for P2PController {
             }
 
             // bootstrap all peers at init status
-
+            let hosts: Vec<(String, i32)> = self.peer_list.iter().map(|mut pair| {
+                (Rc::get_mut(&mut pair.1.clone()).unwrap().addr().to_string(), 39999 as i32)
+            }).collect();
+            let table = PeerTable::new_with_hosts(hosts);
+            for (_, peer_ref) in &self.peer_list {
+                match peer_ref.clone().session.status() {
+                    SessionStatus::Init => {
+                          Self::notify_bootstrap(
+                              self.protocol.clone(),
+                              peer_ref.clone(),
+                              &table
+                          )
+                    },
+                    _ => {}
+                };
+            }
         }
     }
 }
