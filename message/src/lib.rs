@@ -30,6 +30,15 @@ pub struct Message {
     pub msg: String
 }
 
+impl Message {
+    pub fn new(op: u16, msg: String) -> Self {
+        Message {
+            op: op,
+            msg: msg
+        }
+    }
+}
+
 ///
 pub struct MessageQueue {
     queue: LinkedList<Message>,

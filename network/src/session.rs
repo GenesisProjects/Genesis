@@ -9,10 +9,13 @@ use std::time::Instant;
 
 use common::address::Address as Account;
 use common::hash::Hash;
+use gen_message::{MESSAGE_CENTER, Message};
+
 use message::defines::*;
 use message::protocol::*;
 use nat::*;
 use pool_manager::SHARED_POOL_MANAGER;
+use p2p_controller::CHANNEL_NAME;
 use socket::*;
 
 pub const CMD_ERR_PENALTY: u32 = 100u32;
@@ -331,6 +334,11 @@ impl Session {
                             }
                             self.table = PeerTable::new_with_hosts(hosts);
                             self.status = SessionStatus::WaitGosship;
+                            // notify controller send gossip
+                            MESSAGE_CENTER.lock().unwrap().send(
+                                &CHANNEL_NAME.to_string(),
+                                Message::new(0u16, "gossip".to_string())
+                            );
                             true
                         },
                         _ => {

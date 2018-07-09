@@ -22,5 +22,6 @@ snap = "0.2"
 
 common = { version = "0.1.0", path = "../common" }
 gen_core = { version = "0.1.0", path = "../core" }
+gen_message = { version = "0.1.0", path = "../message" }
 rlp = { version = "0.1.0", path = "../rlp" }
 role = { version = "0.1.0", path = "../role" }

@@ -21,7 +21,8 @@ use std::rc::{Rc, Weak};
 use std::sync::{Mutex, Arc, Condvar};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
-const UPDATE_TIMEBASE: i64 = 3000;
+pub const UPDATE_TIMEBASE: i64 = 3000;
+pub const CHANNEL_NAME: &'static str = "P2P_CONTROLLER";
 
 /// # P2PController
 /// **Usage**
@@ -63,8 +64,8 @@ impl P2PController {
     /// ## Examples
     /// ```
     /// ```
-    pub fn launch_controller(name: String) {
-        P2PController::launch::<P2PController>(name);
+    pub fn launch_controller() {
+        P2PController::launch::<P2PController>(CHANNEL_NAME.to_string());
     }
 
     /// # connect(&mut self, 1)
@@ -246,12 +247,12 @@ impl Notify for P2PController {
 }
 
 impl Observe for P2PController {
-    fn subscribe(&mut self, name: String) {
+    fn subscribe(&mut self) {
         self.ch_pair = Some(
             MESSAGE_CENTER
             .lock()
             .unwrap()
-            .subscribe(&name)
+            .subscribe(&CHANNEL_NAME.to_string())
             .clone()
         );
     }

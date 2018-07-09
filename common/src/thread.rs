@@ -19,7 +19,7 @@ pub trait Thread {
             let mut context = T::new();
             match &mut context {
                 &mut Ok(ref mut context_ref) => {
-                    context_ref.subscribe(name);
+                    context_ref.subscribe();
                     context_ref.set_status(ThreadStatus::Running);
                     loop {
                         let ret = context_ref.run();

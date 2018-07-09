@@ -9,7 +9,7 @@ use std::net::*;
 use std::str::FromStr;
 
 fn main() {
-    P2PController::launch_controller("test".to_string());
+    P2PController::launch_controller();
     loop {
 
     }
