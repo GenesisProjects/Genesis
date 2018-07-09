@@ -23,6 +23,7 @@ pub trait Thread {
                     context_ref.set_status(ThreadStatus::Running);
                     loop {
                         let ret = context_ref.run();
+                        context_ref.update();
                         if let Some(msg) = context_ref.receive_async() {
                             let forward_msg = msg.clone();
                             match msg.msg.as_ref() {

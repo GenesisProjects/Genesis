@@ -355,7 +355,7 @@ impl Thread for P2PController {
             ThreadStatus::Running => {
                 match result {
                     Ok(size) => {
-                        println!("{} events are ready", size);
+                        // println!("{} events are ready", size);
                         self.process_events();
                         true
                     },
@@ -394,7 +394,7 @@ impl Thread for P2PController {
     /// ```
     /// ```
     fn update(&mut self) {
-        if (Utc::now() - self.last_updated).num_seconds() < UPDATE_TIMEBASE as i64 {
+        if (Utc::now() - self.last_updated).num_milliseconds() < UPDATE_TIMEBASE {
             return;
         }
         self.last_updated = Utc::now();
