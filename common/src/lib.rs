@@ -4,7 +4,6 @@ pub mod key;
 pub mod thread;
 pub mod observe;
 
-pub extern crate bit_vec;
 pub extern crate crypto;
 pub extern crate rand;
 pub extern crate ring;
