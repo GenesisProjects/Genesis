@@ -249,14 +249,22 @@ impl P2PController {
 }
 
 impl Notify for P2PController {
+    #[inline]
     fn notify_bootstrap(protocol: P2PProtocol, mut peer_ref: PeerRef, table: &PeerTable) {
         let peer = Rc::get_mut(&mut peer_ref).unwrap();
         peer.session.send_event(protocol.bootstrap(table));
     }
 
+    #[inline]
     fn notify_gossip(protocol: P2PProtocol, mut peer_ref: PeerRef, table: &PeerTable) {
         let peer = Rc::get_mut(&mut peer_ref).unwrap();
         peer.session.send_event(protocol.gossip(table));
+    }
+
+    #[inline]
+    fn heartbeat(protocol: P2PProtocol, mut peer_ref: PeerRef) {
+        let peer = Rc::get_mut(&mut peer_ref).unwrap();
+        peer.session.send_event(protocol.heartbeat());
     }
 }
 
@@ -527,17 +535,24 @@ impl Thread for P2PController {
                 }).collect();
             let table = PeerTable::new_with_hosts(hosts);
             for (_, peer_ref) in &self.peer_list {
-                match peer_ref.clone().session.status() {
+                match peer_ref.session.status() {
                     SessionStatus::Init => {
-                          Self::notify_bootstrap(
-                              self.protocol.clone(),
-                              peer_ref.clone(),
-                              &table
-                          )
+                        Self::notify_bootstrap(
+                            self.protocol.clone(),
+                            peer_ref.clone(),
+                            &table
+                        )
                     },
                     _ => {}
                 };
             }
+        }
+
+        for (_, peer_ref) in &self.peer_list {
+            Self::heartbeat(
+                self.protocol.clone(),
+                peer_ref.clone()
+            )
         }
     }
 }
