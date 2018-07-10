@@ -20,7 +20,8 @@ use std::collections::HashMap;
 use std::io::*;
 use std::rc::{Rc, Weak};
 use std::sync::{Mutex, Arc, Condvar};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::net::*;
+use std::str::FromStr;
 
 pub const UPDATE_TIMEBASE: i64 = 3000;
 pub const EXPIRE: i64 = 1000 * 60;
@@ -82,8 +83,8 @@ impl P2PController {
     /// ```
     fn connect(&mut self, addr: SocketInfo) -> Result<(PeerRef)> {
         //TODO: port configuable
-        match get_local_ip() {
-            Some(socket_info) => {
+        match TcpStream::connect(&addr.0) {
+            /*Some(socket_info) => {
                 match get_public_ip_addr(
                     Protocol::UPNP,
                     &(SocketAddr::new(socket_info, 19999), 19999)
@@ -107,7 +108,11 @@ impl P2PController {
             None => Err(Error::new(
                 ErrorKind::Other,
                 "Connot get a local ip"
-            ))
+            ))*/
+            Ok(stream) => {
+                Ok(Rc::new(RefCell::new(Peer::new(stream, &addr.0))))
+            },
+            Err(e) => Err(e)
         }
     }
 
@@ -125,7 +130,7 @@ impl P2PController {
 
         //TODO: boostrap peers configurable
         // add bootstrap peers
-        //raw_peers_table.push
+        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), (SocketAddr::from_str("127.0.0.1:20000").unwrap(), 9999)));
 
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
@@ -145,7 +150,6 @@ impl P2PController {
 
         // filter out in block list
         raw_peers_table = raw_peers_table.into_iter().filter(|&(ref account, (ref addr, ref port))| !self.socket_blocked(addr)).collect();
-
         raw_peers_table
     }
 
@@ -178,6 +182,7 @@ impl P2PController {
             .map(|(ref account, (ref addr, ref port))| {
                 addr.clone()
             }).collect();
+        println!("waiting_list {}", self.waiting_list.len());
     }
 
     fn fetch_peers_from_waiting_list(&mut self) -> Vec<SocketAddr> {
@@ -270,10 +275,10 @@ impl Observe for P2PController {
     fn subscribe(&mut self) {
         self.ch_pair = Some(
             MESSAGE_CENTER
-            .lock()
-            .unwrap()
-            .subscribe(&CHANNEL_NAME.to_string())
-            .clone()
+                .lock()
+                .unwrap()
+                .subscribe(&CHANNEL_NAME.to_string())
+                .clone()
         );
     }
 
@@ -376,7 +381,7 @@ impl Thread for P2PController {
             ThreadStatus::Running => {
                 match result {
                     Ok(size) => {
-                        // println!("{} events are ready", size);
+                        println!("{} events are ready", size);
                         self.process_events();
                         true
                     },
@@ -467,7 +472,7 @@ impl Thread for P2PController {
         // find all expired token in the peer list
         let expired_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
             if pair.1.borrow().session.milliseconds_from_last_update() > EXPIRE {
-               true
+                true
             } else {
                 false
             }
@@ -520,12 +525,13 @@ impl Thread for P2PController {
                     result.unwrap()
                 })
                 .collect();
-
-            // register new peers to the eventloop, add into peer list
-            for ref peer_ref in peers {
-                let token = self.eventloop.register_peer(&peer_ref.borrow());
-                peer_ref.borrow_mut().set_token(token.clone());
-                self.peer_list.insert(token, peer_ref.clone());
+            {
+                // register new peers to the eventloop, add into peer list
+                for ref peer_ref in peers {
+                    let token = self.eventloop.register_peer(&peer_ref.borrow());
+                    peer_ref.borrow_mut().set_token(token.clone());
+                    self.peer_list.insert(token, peer_ref.clone());
+                }
             }
 
             // bootstrap all peers at init status
@@ -537,8 +543,10 @@ impl Thread for P2PController {
                     )
                 }).collect();
             let table = PeerTable::new_with_hosts(hosts);
+
             for (_, peer_ref) in &self.peer_list {
-                match peer_ref.borrow().session.status() {
+                let session_status = peer_ref.borrow().session.status();
+                match session_status {
                     SessionStatus::Init => {
                         Self::notify_bootstrap(
                             self.protocol.clone(),
@@ -562,6 +570,6 @@ impl Thread for P2PController {
 
 impl Drop for P2PController {
     fn drop(&mut self) {
-        unimplemented!()
+
     }
 }
