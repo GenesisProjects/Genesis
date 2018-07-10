@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::time::{Duration, SystemTime};
 use std::rc::{Rc, Weak};
@@ -14,8 +15,8 @@ use mio::net::{TcpListener, TcpStream};
 
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
-pub type PeerRef = Rc<Peer>;
-pub type WeakPeerRef = Weak<Peer>;
+pub type PeerRef = Rc<RefCell<Peer>>;
+pub type WeakPeerRef = Weak<RefCell<Peer>>;
 
 pub const INIT_CREDIT: u32 = 800u32;
 

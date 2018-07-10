@@ -19,7 +19,7 @@ pub trait Notify {
    /// ## Examples
    /// ```
    /// ```
-    fn notify_bootstrap(protocol: P2PProtocol, mut peer_ref: PeerRef, table: &PeerTable);
+    fn notify_bootstrap(protocol: P2PProtocol, peer_ref: PeerRef, table: &PeerTable);
 
     /// # notify_gossip(&mut self, 1)
     /// **Usage**
@@ -27,7 +27,7 @@ pub trait Notify {
     /// ## Examples
     /// ```
     /// ```
-    fn notify_gossip(protocol: P2PProtocol, mut peer_ref: PeerRef, table: &PeerTable);
+    fn notify_gossip(protocol: P2PProtocol, peer_ref: PeerRef, table: &PeerTable);
 
     /// # heartbeat(&mut self, 1)
     /// **Usage**
@@ -35,7 +35,7 @@ pub trait Notify {
     /// ## Examples
     /// ```
     /// ```
-    fn heartbeat(protocol: P2PProtocol, mut peer_ref: PeerRef);
+    fn heartbeat(protocol: P2PProtocol, peer_ref: PeerRef);
 }
 
 #[derive(Clone, Debug)]
