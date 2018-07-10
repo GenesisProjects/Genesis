@@ -12,7 +12,7 @@ use std::time::Instant;
 use std::rc::Rc;
 use std::str;
 
-pub const MAXT_LINE_CAHCE_LEN: usize = 1024 * 4;
+pub const MAX_LINE_CAHCE_LEN: usize = 1024 * 4;
 
 pub enum SocketMessageErr {
     IOFailed,
@@ -113,7 +113,7 @@ impl PeerSocket {
                 self.clean_line_cache();
             } else {
                 self.line_cache.push(ch as u8);
-                if self.line_cache.len() > MAXT_LINE_CAHCE_LEN {
+                if self.line_cache.len() > MAX_LINE_CAHCE_LEN {
                     self.clean_line_cache();
                     return Err(SocketMessageErr::LineCacheOverflow)
                 }
