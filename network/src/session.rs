@@ -438,6 +438,7 @@ impl Evented for Session {
     }
 
     fn deregister(&self, poll: &Poll) -> Result<()> {
+        println!("session: {:?} deregister here", self.token);
         self.socket.deregister(poll)
     }
 }

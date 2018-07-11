@@ -185,7 +185,9 @@ impl P2PController {
     }
 
     fn remove_peer(&mut self, token: Token) {
-        self.peer_list.remove(&token);
+        if let Some(peer_ref) = self.peer_list.remove(&token) {
+            self.eventloop.deregister(&peer_ref.borrow());
+        }
     }
 
     fn ban_peer(&mut self, addr: &SocketAddr, loops: usize) {
