@@ -77,7 +77,7 @@ impl PeerTable {
             table: hosts
                 .into_iter()
                 .map(|host| {
-                    socket_info(host.0, host.1)
+                    socket_info(host.0)
                 })
                 .filter(|socket_result| {
                     match socket_result {
@@ -260,7 +260,7 @@ impl P2PProtocol {
         };
 
         for &(_, ref addr) in &table.table {
-            let addr:SocketAddr = addr.0.clone();
+            let addr:SocketAddr = addr.clone();
             msg = msg << SocketMessageArg::String { value: addr.to_string() };
         }
 
@@ -285,7 +285,7 @@ impl P2PProtocol {
 
         for host in &table.table {
             let socket_info = &host.1;
-            let addr = &socket_info.0;
+            let addr = socket_info;
             let addr_str = addr.ip().to_string();
             msg = msg << SocketMessageArg::String { value: addr_str }
         }

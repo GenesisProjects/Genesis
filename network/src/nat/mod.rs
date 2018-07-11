@@ -4,12 +4,12 @@ pub mod upnp;
 
 use std::net::{AddrParseError, IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
-pub type SocketInfo = (SocketAddr, u16);
+pub type SocketInfo = SocketAddr;
 
-pub fn socket_info(addr: String, port: i32) -> Result<SocketInfo, AddrParseError> {
+pub fn socket_info(addr: String) -> Result<SocketInfo, AddrParseError> {
     let result = addr.parse::<SocketAddr>();
     match result {
-        Ok(r) => Ok((r, port as u16)),
+        Ok(r) => Ok(r),
         Err(e) => Err(e)
     }
 }

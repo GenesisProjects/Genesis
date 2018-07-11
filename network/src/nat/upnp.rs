@@ -5,8 +5,9 @@ use std::time::Duration;
 use super::SocketInfo;
 
 pub fn map_external_address_upnp(local: &SocketInfo) -> Option<SocketInfo> {
+    let udp_port = local.port();
     let result = match *local {
-        (SocketAddr::V4(ref local_addr), udp_port) => match search_gateway_from_timeout(local_addr.ip().clone(), Duration::new(5, 0)) {
+        SocketAddr::V4(ref local_addr) => match search_gateway_from_timeout(local_addr.ip().clone(), Duration::new(5, 0)) {
             Err(ref err) => { println!("Gateway search error: {}", err); None },
             Ok(gateway) => {
                 match gateway.get_external_ip() {
@@ -27,7 +28,7 @@ pub fn map_external_address_upnp(local: &SocketInfo) -> Option<SocketInfo> {
                                         None
                                     },
                                     Ok(udp_port) => {
-                                        Some((SocketAddr::V4(SocketAddrV4::new(external_addr, tcp_port)), udp_port))
+                                        Some(SocketAddr::V4(SocketAddrV4::new(external_addr, tcp_port)))
                                     },
                                 }
                             },

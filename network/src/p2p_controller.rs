@@ -83,7 +83,7 @@ impl P2PController {
     /// ```
     fn connect(&mut self, addr: SocketInfo) -> Result<(PeerRef)> {
         //TODO: port configuable
-        match TcpStream::connect(&addr.0) {
+        match TcpStream::connect(&addr) {
             /*Some(socket_info) => {
                 match get_public_ip_addr(
                     Protocol::UPNP,
@@ -110,7 +110,7 @@ impl P2PController {
                 "Connot get a local ip"
             ))*/
             Ok(stream) => {
-                Ok(Rc::new(RefCell::new(Peer::new(stream, &addr.0))))
+                Ok(Rc::new(RefCell::new(Peer::new(stream, &addr))))
             },
             Err(e) => Err(e)
         }
@@ -130,7 +130,7 @@ impl P2PController {
 
         //TODO: boostrap peers configurable
         // add bootstrap peers
-        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), (SocketAddr::from_str("127.0.0.1:20000").unwrap(), 9999)));
+        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("127.0.0.1:20000").unwrap()));
 
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
@@ -146,10 +146,10 @@ impl P2PController {
         }).collect();
 
         // filter out in current peer list
-        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref account, (ref addr, ref port))| !self.socket_exist(addr)).collect();
+        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref account, ref addr)| !self.socket_exist(addr)).collect();
 
         // filter out in block list
-        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref account, (ref addr, ref port))| !self.socket_blocked(addr)).collect();
+        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref account, ref addr)| !self.socket_blocked(addr)).collect();
         raw_peers_table
     }
 
@@ -179,7 +179,7 @@ impl P2PController {
     fn refresh_waiting_list(&mut self) {
         self.waiting_list = self.search_peers()
             .into_iter()
-            .map(|(ref account, (ref addr, ref port))| {
+            .map(|(ref account, ref addr)| {
                 addr.clone()
             }).collect();
         println!("waiting_list {}", self.waiting_list.len());
@@ -513,7 +513,7 @@ impl Thread for P2PController {
             let sockets = self.fetch_peers_from_waiting_list();
             let peers: Vec<PeerRef> = sockets.into_iter()
                 .map(|addr| {
-                    self.connect((addr, 39999))
+                    self.connect(addr)
                 })
                 .filter(|result| {
                     match result {

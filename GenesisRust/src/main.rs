@@ -14,6 +14,6 @@ fn main() {
 
     }
     let test = get_local_ip();
-    let result = get_public_ip_addr(Protocol::UPNP, &(SocketAddr::from_str("192.168.0.1:20").unwrap(), 9999));
+    let result = get_public_ip_addr(Protocol::UPNP, &SocketAddr::from_str("192.168.0.1:20").unwrap());
     println!("{:?}", test);
 }
