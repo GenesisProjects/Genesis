@@ -22,10 +22,13 @@ use std::rc::{Rc, Weak};
 use std::sync::{Mutex, Arc, Condvar};
 use std::net::*;
 use std::str::FromStr;
+use std::time::Duration;
+use std::thread;
 
 use gen_utils::log_writer::LOGGER;
 
 pub const UPDATE_TIMEBASE: i64 = 3000;
+pub const CONNECT_TIMEOUT: i64 = 3000;
 pub const EXPIRE: i64 = 1000 * 60;
 pub const CHANNEL_NAME: &'static str = "P2P_CONTROLLER";
 
@@ -107,7 +110,7 @@ impl P2PController {
 
         //TODO: boostrap peers configurable
         // add bootstrap peers
-        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("127.0.0.5:20000").unwrap()));
+        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("192.168.0.3:20000").unwrap()));
 
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
@@ -198,19 +201,20 @@ impl P2PController {
         for event in &(self.eventloop.events) {
             match event.token() {
                 SERVER_TOKEN => {
-                    println!("server event");
                     match self.listener.accept() {
                         Ok((socket, addr)) => {
+                            println!("Accepting a new peer");
                             // init peer
                             let peer = Peer::new(socket, &addr);
                             if !self.socket_exist(&addr) {
-                                let token = self.eventloop.register_peer(&peer);
-                                new_peers.push((token, Rc::new(RefCell::new(peer))));
+                                if let Ok(token) = self.eventloop.register_peer(&peer) {
+                                    new_peers.push((token, Rc::new(RefCell::new(peer))));
+                                }
                             }
                         },
                         Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
                             // EAGAIN
-                            println!("EAGAIN");
+                            println!("Socket is not ready anymore, stop accepting");
                         },
                         e => {
                             panic!("{:?}", e)
@@ -221,6 +225,7 @@ impl P2PController {
                     // process peer event
                     println!("peer event");
                     self.get_peer(PEER_TOKEN).and_then(|ref mut peer_ref| {
+                        peer_ref.borrow_mut().session.set_connect(true);
                         peer_ref.borrow_mut().process();
                         Some(true)
                     });
@@ -462,6 +467,24 @@ impl Thread for P2PController {
             self.remove_peer(token);
         }
 
+        // find all connection timeout tokens in the peer list
+        let timeout_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
+            if pair.1.borrow().session.milliseconds_connecting() > CONNECT_TIMEOUT {
+                true
+            } else {
+                false
+            }
+        }).map(|pair| {
+            pair.0.clone()
+        }).collect();
+
+        // remove all connection timeout tokens from the peer list
+        for token in timeout_tokens {
+            let result = self.get_peer(token.clone()).unwrap();
+            let addr = result.borrow().addr();
+            self.remove_peer(token);
+        }
+
         // find untrusted tokens in the peer list
         let untrusted_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
             pair.1.borrow().credit() == 0
@@ -486,27 +509,28 @@ impl Thread for P2PController {
                 self.refresh_waiting_list();
             }
             let sockets = self.fetch_peers_from_waiting_list();
-            let peers: Vec<PeerRef> = sockets.into_iter()
+            let peers: Vec<(Token, PeerRef)> = sockets.into_iter()
                 .map(|addr| {
-                    self.connect(addr)
+                    let peer_ref = self.connect(addr).unwrap();
+                    thread::sleep(Duration::from_millis(20));
+                    let ret = (self.eventloop.register_peer(&peer_ref.borrow()), peer_ref.clone());
+                    ret
                 })
                 .filter(|result| {
-                    match result {
+                    match &result.0 {
                         &Ok(_) => true,
                         &Err(_) => false
                     }
                 })
                 .map(|result| {
-                    result.unwrap()
+                    (result.0.unwrap(), result.1)
                 })
                 .collect();
-            {
-                // register new peers to the eventloop, add into peer list
-                for ref peer_ref in peers {
-                    let token = self.eventloop.register_peer(&peer_ref.borrow());
-                    peer_ref.borrow_mut().set_token(token.clone());
-                    self.peer_list.insert(token, peer_ref.clone());
-                }
+
+            // register new peers to the eventloop, add into peer list
+            for (ref token, ref peer_ref) in peers {
+                peer_ref.borrow_mut().set_token(token.clone());
+                self.peer_list.insert(token.clone(), peer_ref.clone());
             }
 
             // bootstrap all peers at init status

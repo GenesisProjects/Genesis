@@ -262,6 +262,15 @@ impl Session {
     }
 
     #[inline]
+    pub fn milliseconds_connecting(&self) -> i64 {
+        if !self.connected {
+            (Utc::now() - self.created).num_milliseconds()
+        } else {
+            0
+        }
+    }
+
+    #[inline]
     pub fn set_token(&mut self, token: Token) {
         self.token = Some(token);
     }
@@ -294,13 +303,13 @@ impl Session {
     }
 
     #[inline]
-    fn toggle_mode(&mut self, mode: SessionMode) {
-        self.mode = mode;
+    pub fn set_connect(&mut self, connected: bool) {
+        self.connected = true;
     }
 
     #[inline]
-    fn set_connect(&mut self, connected: bool) {
-        self.connected = true;
+    fn toggle_mode(&mut self, mode: SessionMode) {
+        self.mode = mode;
     }
 
     fn process_data(&mut self) -> u32 {
@@ -435,7 +444,7 @@ impl Evented for Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
-        println!("session: {:?} drop here", self);
+        println!("session: {:?} drop here", self.token);
     }
 }
 
