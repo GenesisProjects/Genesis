@@ -316,7 +316,7 @@ impl Observe for P2PController {
 impl Thread for P2PController {
     fn new() -> Result<Self> {
         //TODO: load port from config
-        let addr = "127.0.0.1:19998".parse().unwrap();
+        let addr = "127.0.0.1:19999".parse().unwrap();
         //TODO: make socket resuseable
         let server = TcpListener::bind(&addr);
         let account = Account::load();
