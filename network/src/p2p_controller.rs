@@ -207,9 +207,10 @@ impl P2PController {
                         Ok((socket, addr)) => {
                             println!("Accepting a new peer");
                             // init peer
-                            let peer = Peer::new(socket, &addr);
+                            let mut peer = Peer::new(socket, &addr);
                             if !self.socket_exist(&addr) {
                                 if let Ok(token) = self.eventloop.register_peer(&peer) {
+                                    peer.set_token(token.clone());
                                     new_peers.push((token, Rc::new(RefCell::new(peer))));
                                 }
                             }
