@@ -45,6 +45,7 @@ fn token_generator() -> Token {
 /// ```
 pub struct NetworkEventLoop {
     pub events: Events,
+    pub events_size: usize,
     pub round: usize,
     pub status: ThreadStatus,
     poll: Poll,
@@ -60,6 +61,7 @@ impl NetworkEventLoop {
         NetworkEventLoop {
             round: 0usize,
             events: events,
+            events_size: events_size,
             poll: poll,
             status: ThreadStatus::Stop,
         }
