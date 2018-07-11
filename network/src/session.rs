@@ -31,6 +31,7 @@ pub const DATA_TRANS_ERR_PENALTY: u32 = 200u32;
 /// ## Examples
 /// ```
 /// ```
+#[derive(Debug)]
 pub struct TaskContext {
     data_send: usize,
     data_recv: usize,
@@ -137,6 +138,7 @@ pub enum SessionMode {
 /// - 5. ***context***:     instance of [TaskContext]
 /// - 6. ***connected***:   true if communication session has been established
 /// - 6. ***mode***:        instance of [SessionMode]
+#[derive(Debug)]
 pub struct Session {
     token: Option<Token>,
     socket: PeerSocket,

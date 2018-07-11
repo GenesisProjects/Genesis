@@ -17,6 +17,7 @@ pub extern crate chrono;
 pub extern crate futures;
 pub extern crate gen_core;
 pub extern crate gen_message;
+pub extern crate gen_utils;
 #[macro_use]
 pub extern crate lazy_static;
 pub extern crate libc;

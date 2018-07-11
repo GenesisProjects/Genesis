@@ -27,6 +27,7 @@ enum PeerType {
     Unknown
 }
 
+#[derive(Debug)]
 pub struct Peer {
     ip_addr: SocketAddr,
     peer_type: PeerType,

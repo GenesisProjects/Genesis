@@ -126,6 +126,7 @@ impl LogWritter {
         tamp_path.with_extension("log");
         let mut file = OpenOptions::new().write(true).append(true).create(true).open(tamp_path).unwrap();
         let content = LogWritter::gen_format(msg, log_type, log_level);
+        println!("{}", content.clone());
         if let Err(e) = writeln!(file, "{}", content) {
             eprintln!("Couldn't write to file: {}", e);
         }

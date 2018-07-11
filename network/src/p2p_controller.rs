@@ -23,6 +23,8 @@ use std::sync::{Mutex, Arc, Condvar};
 use std::net::*;
 use std::str::FromStr;
 
+use gen_utils::log_writer::LOGGER;
+
 pub const UPDATE_TIMEBASE: i64 = 3000;
 pub const EXPIRE: i64 = 1000 * 60;
 pub const CHANNEL_NAME: &'static str = "P2P_CONTROLLER";
@@ -84,31 +86,6 @@ impl P2PController {
     fn connect(&mut self, addr: SocketInfo) -> Result<(PeerRef)> {
         //TODO: port configuable
         match TcpStream::connect(&addr) {
-            /*Some(socket_info) => {
-                match get_public_ip_addr(
-                    Protocol::UPNP,
-                    &(SocketAddr::new(socket_info, 19999), 19999)
-                ) {
-                    Some(socket_info) => {
-                        match TcpStream::connect(&addr.0) {
-                            Ok(stream) => {
-                                Ok(Rc::new(RefCell::new(Peer::new(stream, &addr.0))))
-                            },
-                            Err(e) => Err(e)
-                        }
-                    },
-                    None => {
-                        Err(Error::new(
-                            ErrorKind::ConnectionRefused,
-                            "Connot get a public interface"
-                        ))
-                    }
-                }
-            }
-            None => Err(Error::new(
-                ErrorKind::Other,
-                "Connot get a local ip"
-            ))*/
             Ok(stream) => {
                 Ok(Rc::new(RefCell::new(Peer::new(stream, &addr))))
             },
@@ -130,7 +107,7 @@ impl P2PController {
 
         //TODO: boostrap peers configurable
         // add bootstrap peers
-        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("127.0.0.1:20000").unwrap()));
+        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("127.0.0.1:19999").unwrap()));
 
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
@@ -182,7 +159,6 @@ impl P2PController {
             .map(|(ref account, ref addr)| {
                 addr.clone()
             }).collect();
-        println!("waiting_list {}", self.waiting_list.len());
     }
 
     fn fetch_peers_from_waiting_list(&mut self) -> Vec<SocketAddr> {
@@ -222,6 +198,7 @@ impl P2PController {
         for event in &(self.eventloop.events) {
             match event.token() {
                 SERVER_TOKEN => {
+                    println!("server event");
                     match self.listener.accept() {
                         Ok((socket, addr)) => {
                             // init peer
@@ -233,6 +210,7 @@ impl P2PController {
                         },
                         Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
                             // EAGAIN
+                            println!("EAGAIN");
                         },
                         e => {
                             panic!("{:?}", e)
@@ -241,6 +219,7 @@ impl P2PController {
                 },
                 PEER_TOKEN => {
                     // process peer event
+                    println!("peer event");
                     self.get_peer(PEER_TOKEN).and_then(|ref mut peer_ref| {
                         peer_ref.borrow_mut().process();
                         Some(true)
@@ -381,7 +360,6 @@ impl Thread for P2PController {
             ThreadStatus::Running => {
                 match result {
                     Ok(size) => {
-                        println!("{} events are ready", size);
                         self.process_events();
                         true
                     },
@@ -506,6 +484,7 @@ impl Thread for P2PController {
         if self.peer_list.len() < self.min_required_peers {
             if self.waiting_list.len() < self.min_required_peers {
                 self.refresh_waiting_list();
+                println!("loop: {}, waiting_list {:?}", self.eventloop.round, self.waiting_list);
             }
             let sockets = self.fetch_peers_from_waiting_list();
             let peers: Vec<PeerRef> = sockets.into_iter()
@@ -559,6 +538,8 @@ impl Thread for P2PController {
                 peer_ref.clone()
             )
         }
+
+        println!("loop: {}, peer_list {:?}", self.eventloop.round, self.peer_list);
     }
 }
 

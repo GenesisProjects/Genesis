@@ -23,6 +23,7 @@ pub enum SocketDataErr {
     IOFailed,
 }
 
+#[derive(Debug)]
 pub struct PeerSocket {
     stream: TcpStream,
     buffer: ByteBuffer,
