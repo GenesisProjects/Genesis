@@ -107,7 +107,7 @@ impl P2PController {
 
         //TODO: boostrap peers configurable
         // add bootstrap peers
-        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("127.0.0.1:19999").unwrap()));
+        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("127.0.0.5:20000").unwrap()));
 
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
@@ -484,7 +484,6 @@ impl Thread for P2PController {
         if self.peer_list.len() < self.min_required_peers {
             if self.waiting_list.len() < self.min_required_peers {
                 self.refresh_waiting_list();
-                println!("loop: {}, waiting_list {:?}", self.eventloop.round, self.waiting_list);
             }
             let sockets = self.fetch_peers_from_waiting_list();
             let peers: Vec<PeerRef> = sockets.into_iter()

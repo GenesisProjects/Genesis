@@ -435,7 +435,7 @@ impl Evented for Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
-        unimplemented!()
+        println!("session: {:?} drop here", self);
     }
 }
 
