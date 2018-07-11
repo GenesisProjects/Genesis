@@ -71,13 +71,13 @@ impl PeerTable {
         }
     }
 
-    pub fn new_with_hosts(hosts: Vec<(String, i32)>) -> Self {
+    pub fn new_with_hosts(hosts: Vec<String>) -> Self {
         // TODO: make limit configuable
         PeerTable {
             table: hosts
                 .into_iter()
                 .map(|host| {
-                    socket_info(host.0)
+                    socket_info(host)
                 })
                 .filter(|socket_result| {
                     match socket_result {

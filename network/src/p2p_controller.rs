@@ -416,12 +416,9 @@ impl Thread for P2PController {
                 let peer_ref = peer_ref.unwrap().clone();
 
                 // generate hosts list
-                let hosts: Vec<(String, i32)> = self.peer_list.iter()
+                let hosts: Vec<String> = self.peer_list.iter()
                     .map(|mut pair| {
-                        (
-                            pair.1.borrow().addr().to_string(),
-                            39999 as i32
-                        )
+                        pair.1.borrow().addr().to_string()
                     }).collect();
                 let table = PeerTable::new_with_hosts(hosts);
                 Self::notify_gossip(
@@ -535,12 +532,9 @@ impl Thread for P2PController {
             }
 
             // bootstrap all peers at init status
-            let hosts: Vec<(String, i32)> = self.peer_list.iter()
+            let hosts: Vec<String> = self.peer_list.iter()
                 .map(|mut pair| {
-                    (
-                        pair.1.borrow().addr().to_string(),
-                        39999 as i32
-                    )
+                    pair.1.borrow().addr().to_string()
                 }).collect();
             let table = PeerTable::new_with_hosts(hosts);
 

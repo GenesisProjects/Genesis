@@ -330,12 +330,12 @@ impl Session {
                     match self.status {
                         SessionStatus::Init => {
                             let slice = &args[3 .. ];
-                            let mut hosts: Vec<(String, i32)> = vec![];
+                            let mut hosts: Vec<String> = vec![];
                             for arg in slice {
                                 match arg {
                                     &SocketMessageArg::String { ref value } => {
                                         //TODO: make port configurable
-                                        hosts.push((value.clone(), 19999))
+                                        hosts.push(value.clone())
                                     }
                                     _ => ()
                                 };
@@ -367,12 +367,12 @@ impl Session {
                     match self.status {
                         SessionStatus::Init => {
                             let slice = &args[3 .. ];
-                            let mut hosts: Vec<(String, i32)> = vec![];
+                            let mut hosts: Vec<String> = vec![];
                             for arg in slice {
                                 match arg {
                                     &SocketMessageArg::String { ref value } => {
                                         //TODO: make port configurable
-                                        hosts.push((value.clone(), 19999))
+                                        hosts.push(value.clone())
                                     }
                                     _ => ()
                                 };
@@ -433,7 +433,7 @@ impl Evented for Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
-        //unimplemented!()
+        unimplemented!()
     }
 }
 
