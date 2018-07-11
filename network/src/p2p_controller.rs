@@ -202,7 +202,8 @@ impl P2PController {
 
         for event in &(self.eventloop.events) {
             match event.token() {
-                SERVER_TOKEN => {
+                Token(0) => {
+                    println!("server event {:?}", event.token());
                     match self.listener.accept() {
                         Ok((socket, addr)) => {
                             println!("Accepting a new peer");
@@ -224,10 +225,10 @@ impl P2PController {
                         }
                     }
                 },
-                PEER_TOKEN => {
+                _ => {
                     // process peer event
-                    println!("peer event");
-                    self.get_peer(PEER_TOKEN).and_then(|ref mut peer_ref| {
+                    println!("peer event {:?}", event.token());
+                    self.get_peer(event.token()).and_then(|ref mut peer_ref| {
                         peer_ref.borrow_mut().session.set_connect(true);
                         peer_ref.borrow_mut().process();
                         Some(true)
@@ -362,6 +363,7 @@ impl Thread for P2PController {
     }
 
     fn run(&mut self) -> bool {
+        self.eventloop.register_server(&self.listener);
         // fetch the next tick
         let result = self.eventloop.next_tick();
         match self.eventloop.status {
