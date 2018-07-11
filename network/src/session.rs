@@ -319,6 +319,7 @@ impl Session {
     fn process_events(&mut self) -> u32 {
         let mut err_count: usize = 0usize;
         self.socket.receive_msgs().and_then(|msgs| {
+            println!("process_single_event{}", &msgs.len());
             for msg_ref in &msgs {
                 println!("process_single_event {}", &msg_ref.event());
                 if !self.process_single_event(msg_ref) {
