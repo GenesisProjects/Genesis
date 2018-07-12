@@ -234,6 +234,7 @@ impl P2PController {
                         match result {
                             Ok(_) => {},
                             Err(e) => {
+                                println!("{}", e);
                                 self.eventloop.reregister_peer(PEER_TOKEN.clone(), &peer_ref.borrow_mut());
                             }
                         }
