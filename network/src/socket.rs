@@ -13,6 +13,7 @@ use std::rc::Rc;
 use std::str;
 
 pub const MAX_LINE_CAHCE_LEN: usize = 1024 * 4;
+pub const MIO_WINDOW_SIZE: usize = 1024;
 
 #[derive(Debug)]
 pub struct PeerSocket {
@@ -49,25 +50,24 @@ impl PeerSocket {
     }
 
     pub fn receive_data(&mut self, remain_size: usize) -> STDResult<Vec<u8>> {
-        let mut temp_buf: Vec<u8> = vec![];
+        let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
         match self.stream.read(&mut temp_buf) {
             Ok(size) => {
                 // if the read size is larger than remain_size, read the overflow bytes
                 // into the line cache
                 if size > remain_size {
                     self.buffer.write(&temp_buf[.. remain_size]);
-                    let vec = temp_buf[remain_size .. size].to_vec();
-                    self.line_cache = vec;
-                    temp_buf = vec![];
-                    match self.buffer.read_to_end(&mut temp_buf) {
-                        Ok(r) => Ok(temp_buf),
+                    let mut vec = temp_buf[remain_size .. size].to_vec();
+                    self.line_cache = vec.clone();
+                    match self.buffer.read_to_end(&mut vec) {
+                        Ok(r) => Ok(vec),
                         Err(e) => Err(e)
                     }
                 } else {
-                    self.buffer.write(&temp_buf[..]);
-                    temp_buf = vec![];
-                    match self.buffer.read_to_end(&mut temp_buf) {
-                        Ok(r) => Ok(temp_buf),
+                    self.buffer.write(&temp_buf[..size]);
+                    let mut vec: Vec<u8> = vec![];
+                    match self.buffer.read_to_end(&mut vec) {
+                        Ok(r) => Ok(vec),
                         Err(e) => Err(e)
                     }
                 }
@@ -82,21 +82,15 @@ impl PeerSocket {
     }
 
     pub fn receive_msgs(&mut self) -> STDResult<Vec<SocketMessage>> {
-        let mut buf: Vec<u8> = vec![];
-        loop {
-            let mut temp_buf = [0; 1024];
-            match self.stream.read(&mut temp_buf) {
-                Ok(size) => {
-                    println!("msg recieved: {}!!!", size);
-                    buf.append(&mut temp_buf.to_vec());
-                },
-                _ => {
-                    break;
-                }
-            }
+        let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
+        match self.stream.read(&mut temp_buf) {
+            Ok(size) => {
+                println!("msg recieved: {}!!!", size);
+                self.buffer.write(&temp_buf[..size]);
+                self.fetch_messages_from_buffer(size)
+            },
+            Err(e) => Err(e)
         }
-        self.buffer.write(&buf);
-        self.fetch_messages_from_buffer(buf.len())
     }
 
     fn fetch_messages_from_buffer(&mut self, size: usize) -> STDResult<Vec<SocketMessage>> {
