@@ -50,7 +50,7 @@ impl PeerSocket {
 
     pub fn receive_data(&mut self, remain_size: usize) -> STDResult<Vec<u8>> {
         let mut temp_buf: Vec<u8> = vec![];
-        match self.stream.read_to_end(&mut temp_buf) {
+        match self.stream.read(&mut temp_buf) {
             Ok(size) => {
                 // if the read size is larger than remain_size, read the overflow bytes
                 // into the line cache
