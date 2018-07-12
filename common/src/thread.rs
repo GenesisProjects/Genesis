@@ -48,10 +48,13 @@ pub trait Thread {
                     }
                 },
                 &mut Err(ref e) => {
-
+                    println!("Error: {:?}", e);
                 }
             }
-            context.unwrap().unsubscribe();
+            context.and_then(|mut context| {
+                context.unsubscribe();
+                Ok(context)
+            });
         }).unwrap();
     }
 

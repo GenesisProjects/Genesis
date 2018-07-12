@@ -227,7 +227,7 @@ impl P2PController {
                 },
                 PEER_TOKEN => {
                     // process peer event
-                    println!("peer event {:?}",PEER_TOKEN);
+                    println!("peer event: token {:?}, {:?}, {}",PEER_TOKEN, event, self.eventloop.round);
                     self.get_peer(PEER_TOKEN).and_then(|ref mut peer_ref| {
                         peer_ref.borrow_mut().session.set_connect(true);
                         peer_ref.borrow_mut().process();

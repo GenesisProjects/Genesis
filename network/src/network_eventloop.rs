@@ -74,7 +74,7 @@ impl NetworkEventLoop {
 
     pub fn register_peer(&self, peer: &Peer) -> Result<(Token)> {
         let new_token = token_generator();
-        match self.poll.register(peer, new_token, Ready::readable() | Ready::writable(), PollOpt::edge()) {
+        match self.poll.register(peer, new_token, Ready::readable(), PollOpt::edge()) {
             Ok(_) => Ok(new_token),
             Err(e) => Err(e)
         }
