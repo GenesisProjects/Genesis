@@ -12,7 +12,7 @@ use std::time::Instant;
 use std::rc::Rc;
 use std::str;
 
-pub const MAX_LINE_CAHCE_LEN: usize = 1024 * 4;
+pub const MAX_LINE_CAHCE_LEN: usize = 1024 * 1024 * 4;
 pub const MIO_WINDOW_SIZE: usize = 1024;
 
 #[derive(Debug)]
@@ -58,11 +58,12 @@ impl PeerSocket {
                 if size > remain_size {
                     self.buffer.write(&temp_buf[.. remain_size]);
                     let mut vec = temp_buf[remain_size .. size].to_vec();
-                    self.line_cache = vec.clone();
-                    match self.buffer.read_to_end(&mut vec) {
-                        Ok(r) => Ok(vec),
+                    let ret = match self.buffer.read_to_end(&mut vec) {
+                        Ok(r) => Ok(vec.clone()),
                         Err(e) => Err(e)
-                    }
+                    };
+                    self.buffer.write(&vec[..]);
+                    ret
                 } else {
                     self.buffer.write(&temp_buf[..size]);
                     let mut vec: Vec<u8> = vec![];
