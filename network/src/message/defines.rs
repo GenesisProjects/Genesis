@@ -217,7 +217,7 @@ impl MessageCodec for SocketMessage {
     fn decoder(input: &str) -> Self {
         let splits = input.trim().split(" ");
         let vec: Vec<&str> = splits.collect();
-        let args: Vec<SocketMessageArg> = vec.clone().into_iter().map(|el| { SocketMessageArg::new(el) }).collect();
+        let args: Vec<SocketMessageArg> = vec[1..].to_vec().into_iter().map(|el| { SocketMessageArg::new(el) }).collect();
 
         let total_unknown = args.clone().into_iter().fold(0usize, |cur, elem| {
             match elem {
