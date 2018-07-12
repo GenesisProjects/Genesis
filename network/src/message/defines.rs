@@ -210,6 +210,7 @@ impl MessageCodec for SocketMessage {
                 _ => ()
             }
         }
+        result.push('\n' as u8);
         result
     }
 
