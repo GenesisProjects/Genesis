@@ -8,7 +8,7 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 use utils::*;
 
-const SERVER_TOKEN: Token = Token(0);
+pub const SERVER_TOKEN: Token = Token(0);
 
 lazy_static! {
     pub static ref TOKEN_SEQ: Mutex<usize> = {
