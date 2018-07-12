@@ -69,6 +69,12 @@ impl PeerSocket {
                     }
                 }
             },
+            Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+                // EAGAIN
+                println!("Socket is not ready anymore, stop reading");
+                Ok(vec![])
+
+            },
             Err(e) => Err(e)
         }
     }
@@ -84,6 +90,12 @@ impl PeerSocket {
                 println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!{}", size);
                 self.buffer.write(&temp_buf[..]);
                 self.fetch_messages_from_buffer(size)
+            },
+            Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+                // EAGAIN
+                println!("Socket is not ready anymore, stop reading");
+                Ok(vec![])
+
             },
             Err(e) => Err(e)
         }
