@@ -22,7 +22,10 @@ pub struct PeerSocket {
 }
 
 impl PeerSocket {
-    pub fn new(socket: TcpStream) -> Self {
+    pub fn new(mut socket: TcpStream) -> Self {
+        // set the socket to nodelay mode
+        socket.set_nodelay(true);
+
         PeerSocket {
             stream: socket,
             buffer:  ByteBuffer::new(),
@@ -79,7 +82,7 @@ impl PeerSocket {
 
     pub fn receive_msgs(&mut self) -> STDResult<Vec<SocketMessage>> {
         let mut temp_buf: Vec<u8> = vec![];
-        match self.stream.read_to_end(&mut temp_buf) {
+        match self.stream.read(&mut temp_buf) {
             Ok(size) => {
                 println!("msg recieved: {}!!!", size);
                 self.buffer.write(&temp_buf[..]);
