@@ -86,7 +86,7 @@ impl PeerSocket {
         let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
         match self.stream.read(&mut temp_buf) {
             Ok(size) => {
-                println!("msg recieved: {}!!!", size);
+                println!("data chunk recieved: {}!!!", size);
                 self.buffer.write(&temp_buf[..size]);
                 self.fetch_messages_from_buffer(size)
             },
@@ -103,6 +103,11 @@ impl PeerSocket {
             }
             let ch = self.buffer.read_u8();
             if ch == '\n' as u8 {
+                println!(
+                    "msg recieved: {:?}",
+                    String::from_utf8(self.line_cache.clone())
+                        .unwrap_or("Malformed".to_string())
+                );
                 lines.push(self.line_cache.clone());
                 self.clean_line_cache();
             } else {
