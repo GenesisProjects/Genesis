@@ -295,7 +295,6 @@ impl Session {
                 Err(Error::new(ErrorKind::ConnectionAborted, "The peer connection has aborted"))
             },
             _ => {
-                self.updated = Utc::now();
                 match self.mode {
                     SessionMode::Command => self.process_events(),
                     SessionMode::Transmission => self.process_data()
@@ -332,6 +331,7 @@ impl Session {
         let mut err_count: usize = 0usize;
         match self.socket.receive_msgs() {
             Ok(msgs) => {
+                self.updated = Utc::now();
                 println!("process_single_event{}", &msgs.len());
                 for msg_ref in &msgs {
                     println!("process_single_event {}", &msg_ref.event());
@@ -340,6 +340,12 @@ impl Session {
                     }
                 }
                 Ok((err_count as u32) * CMD_ERR_PENALTY)
+            },
+            Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+                // EAGAIN
+                println!("Socket is not ready anymore, stop reading");
+                Ok(0u32)
+
             },
             Err(e) => Err(e)
         }
