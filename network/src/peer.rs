@@ -19,6 +19,7 @@ pub type PeerRef = Rc<RefCell<Peer>>;
 pub type WeakPeerRef = Weak<RefCell<Peer>>;
 
 pub const INIT_CREDIT: u32 = 800u32;
+pub const INIT_TTL: u32 = 255u32;
 
 #[derive(Clone,Debug)]
 enum PeerType {
@@ -34,6 +35,7 @@ pub struct Peer {
     account: Option<Account>,
     credit: u32,
     token: Option<Token>,
+    ttl: u32,
 
     pub session: Session
 }
@@ -46,6 +48,7 @@ impl Peer {
             account: None,
             credit: INIT_CREDIT,
             token: None,
+            ttl: INIT_TTL,
 
             session: Session::new(socket, addr),
         }
@@ -59,6 +62,7 @@ impl Peer {
                 account: None,
                 credit: INIT_CREDIT,
                 token: None,
+                ttl: INIT_TTL,
 
                 session: session
             })
@@ -98,12 +102,25 @@ impl Peer {
         self.session.set_token(token);
     }
 
-    pub fn process(&mut self) {
-        let penalty = self.session.process();
-        if penalty <= self.credit {
-            self.credit -= penalty;
-        } else {
-            self.credit = 0;
+    pub fn process(&mut self) -> Result<()> {
+        match self.session.process() {
+            Ok(penalty) => {
+                self.ttl = INIT_TTL;
+                if penalty <= self.credit {
+                    self.credit -= penalty;
+                } else {
+                    self.credit = 0;
+                }
+                Ok(())
+            },
+            Err(e) => {
+                if self.ttl > 0 {
+                    self.ttl -= 1;
+                } else {
+                    self.session.set_status(SessionStatus::Abort);
+                }
+                Err(e)
+            }
         }
     }
 }

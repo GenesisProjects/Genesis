@@ -242,6 +242,11 @@ impl Session {
     }
 
     #[inline]
+    pub fn set_status(&mut self, status: SessionStatus)  {
+        self.status = status;
+    }
+
+    #[inline]
     pub fn block_info(&self) -> Option<BlockInfo> {
         self.block_info.clone()
     }
@@ -284,11 +289,18 @@ impl Session {
    /// ```
    /// ```
     #[inline]
-    pub fn process(&mut self) -> u32 {
-        self.updated = Utc::now();
-        match self.mode {
-            SessionMode::Command => self.process_events(),
-            SessionMode::Transmission => self.process_data()
+    pub fn process(&mut self) -> Result<u32> {
+        match self.status  {
+            SessionStatus::Abort => {
+                Err(Error::new(ErrorKind::ConnectionAborted, "The peer connection has aborted"))
+            },
+            _ => {
+                self.updated = Utc::now();
+                match self.mode {
+                    SessionMode::Command => self.process_events(),
+                    SessionMode::Transmission => self.process_data()
+                }
+            }
         }
     }
 
@@ -312,23 +324,25 @@ impl Session {
         self.mode = mode;
     }
 
-    fn process_data(&mut self) -> u32 {
+    fn process_data(&mut self) -> Result<u32> {
         unimplemented!()
     }
 
-    fn process_events(&mut self) -> u32 {
+    fn process_events(&mut self) -> Result<u32> {
         let mut err_count: usize = 0usize;
-        self.socket.receive_msgs().and_then(|msgs| {
-            println!("process_single_event{}", &msgs.len());
-            for msg_ref in &msgs {
-                println!("process_single_event {}", &msg_ref.event());
-                if !self.process_single_event(msg_ref) {
-                    err_count += 1;
+        match self.socket.receive_msgs() {
+            Ok(msgs) => {
+                println!("process_single_event{}", &msgs.len());
+                for msg_ref in &msgs {
+                    println!("process_single_event {}", &msg_ref.event());
+                    if !self.process_single_event(msg_ref) {
+                        err_count += 1;
+                    }
                 }
-            }
-            Ok(msgs)
-        });
-        (err_count as u32) * CMD_ERR_PENALTY
+                Ok((err_count as u32) * CMD_ERR_PENALTY)
+            },
+            Err(e) => Err(e)
+        }
     }
 
     fn process_single_event(&mut self, msg: &SocketMessage) -> bool {

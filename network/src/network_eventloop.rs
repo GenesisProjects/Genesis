@@ -81,6 +81,10 @@ impl NetworkEventLoop {
 
     }
 
+    pub fn reregister_peer(&self, token: Token, peer: &Peer) {
+        self.poll.reregister(peer, token, Ready::readable(), PollOpt::edge());
+    }
+
     pub fn deregister(&self, peer: &Peer) {
         self.poll.deregister(peer);
     }
