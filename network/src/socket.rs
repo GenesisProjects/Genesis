@@ -77,7 +77,7 @@ impl PeerSocket {
     }
 
     pub fn send_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
-        println!("data1 {:?}", &msg);
+        // println!("data1 {:?}", &msg);
         self.stream.write_all(&msg.encoder()[..])
     }
 
