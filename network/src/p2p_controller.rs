@@ -110,7 +110,7 @@ impl P2PController {
 
         //TODO: boostrap peers configurable
         // add bootstrap peers
-        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("127.0.0.1:19999").unwrap()));
+        // raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("127.0.0.1:19998").unwrap()));
 
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
@@ -325,7 +325,7 @@ impl Observe for P2PController {
 impl Thread for P2PController {
     fn new() -> Result<Self> {
         //TODO: load port from config
-        let addr = "127.0.0.1:39999".parse().unwrap();
+        let addr = "127.0.0.1:19999".parse().unwrap();
         //TODO: make socket resuseable
         let server = TcpListener::bind(&addr);
         let account = Account::load();

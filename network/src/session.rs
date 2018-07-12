@@ -334,7 +334,7 @@ impl Session {
                 self.updated = Utc::now();
                 println!("process_single_event{}", &msgs.len());
                 for msg_ref in &msgs {
-                    println!("process_single_event {}", &msg_ref.event());
+                    println!("process_single_event {:?}", &msg_ref);
                     if !self.process_single_event(msg_ref) {
                         err_count += 1;
                     }

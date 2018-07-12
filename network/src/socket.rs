@@ -77,19 +77,26 @@ impl PeerSocket {
     }
 
     pub fn send_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
+        println!("data1 {:?}", &msg);
         self.stream.write_all(&msg.encoder()[..])
     }
 
     pub fn receive_msgs(&mut self) -> STDResult<Vec<SocketMessage>> {
-        let mut temp_buf: Vec<u8> = vec![];
-        match self.stream.read(&mut temp_buf) {
-            Ok(size) => {
-                println!("msg recieved: {}!!!", size);
-                self.buffer.write(&temp_buf[..]);
-                self.fetch_messages_from_buffer(size)
-            },
-            Err(e) => Err(e)
+        let mut buf: Vec<u8> = vec![];
+        loop {
+            let mut temp_buf = [0; 1024];
+            match self.stream.read(&mut temp_buf) {
+                Ok(size) => {
+                    println!("msg recieved: {}!!!", size);
+                    buf.append(&mut temp_buf.to_vec());
+                },
+                _ => {
+                    break;
+                }
+            }
         }
+        self.buffer.write(&buf);
+        self.fetch_messages_from_buffer(buf.len())
     }
 
     fn fetch_messages_from_buffer(&mut self, size: usize) -> STDResult<Vec<SocketMessage>> {
