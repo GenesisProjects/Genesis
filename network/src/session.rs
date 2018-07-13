@@ -304,8 +304,16 @@ impl Session {
     }
 
     #[inline]
-    pub fn send_data(&mut self, data: &[u8]) -> Result<()> {
-        self.socket.send_data(data)
+    pub fn send_data(&mut self, data: &[u8]) -> Result<usize> {
+        match self.socket.send_data(data) {
+            Ok(size) => {
+                self.context.data_send += size;
+                Ok(size)
+            },
+            Err(e) => Err(e)
+        }
+
+
     }
 
     #[inline]

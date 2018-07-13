@@ -52,7 +52,7 @@ impl PeerSocket {
     }
 
     #[inline]
-    pub fn send_data(&mut self, data: &[u8]) -> STDResult<()> {
+    pub fn send_data(&mut self, data: &[u8]) -> STDResult<usize> {
         let mut new_data =  data[..].to_vec();
         self.write_buffer.append(&mut new_data);
         match self.stream.write(&self.write_buffer[..]) {
@@ -62,7 +62,7 @@ impl PeerSocket {
                 if self.write_buffer.len() > MAX_WRITE_BUFF_SIZE {
                     Err(Error::new(ErrorKind::ConnectionAborted, "Buffer overflow"))
                 } else {
-                    Ok(())
+                    Ok(size)
                 }
             },
             Err(e) => Err(e)
