@@ -398,7 +398,6 @@ impl Session {
         }
     }
 
-    #[inline]
     fn process_single_event(&mut self, msg: &SocketMessage) -> bool {
         let event = msg.event();
         let event = event.as_str();
