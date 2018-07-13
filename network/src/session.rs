@@ -344,7 +344,7 @@ impl Session {
         match self.socket.receive_data(self.context.size_expected - self.context.data_recv) {
             Ok(data) => {
                 self.updated = Utc::now();
-                self.try_task_completed(data.len());
+                self.try_complete(data.len());
                 Ok(data.len() as u32)
             },
             Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
@@ -360,7 +360,7 @@ impl Session {
     }
 
     #[inline]
-    fn try_task_completed(&mut self, len: usize) -> Result<()> {
+    fn try_complete(&mut self, len: usize) -> Result<()> {
         self.context.data_recv += len;
         if self.context.data_recv >= self.context.size_expected {
             // encode and store data (transaction/block)
