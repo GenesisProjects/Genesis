@@ -332,7 +332,26 @@ impl Session {
     }
 
     fn process_data(&mut self) -> Result<u32> {
-        unimplemented!()
+        match self.socket.receive_data(self.context.size_expected) {
+            Ok(data) => {
+                self.updated = Utc::now();
+
+                // encode and store data
+                unimplemented!();
+
+                self.context.reset(self.context.size_expected - data.len());
+                Ok(0u32)
+            },
+            Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+                // EAGAIN
+                println!("Socket is not ready anymore, stop reading");
+                Ok(0u32)
+
+            },
+            Err(e) => {
+                Ok(DATA_TRANS_ERR_PENALTY)
+            }
+        }
     }
 
     fn process_events(&mut self) -> Result<u32> {
