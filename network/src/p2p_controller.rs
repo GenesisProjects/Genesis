@@ -110,7 +110,7 @@ impl P2PController {
 
         //TODO: boostrap peers configurable
         // add bootstrap peers
-        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("127.0.0.1:39999").unwrap()));
+        raw_peers_table.push((Some(Account {text: "local_test".to_string()}), SocketAddr::from_str("127.0.0.1:19999").unwrap()));
 
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
@@ -197,6 +197,13 @@ impl P2PController {
         self.block_list.push(addr.clone());
     }
 
+    fn has_blocked(&self, addr: &SocketAddr) -> bool {
+        let result = self.block_list.iter().find(|blocked_addr| {
+            blocked_addr.ip().to_string() == addr.ip().to_string()
+        });
+        result.is_some()
+    }
+
     fn process_events(&mut self) {
         let mut new_peers: Vec<(Token, PeerRef)> = vec![];
 
@@ -209,7 +216,7 @@ impl P2PController {
                             println!("Accepting a new peer");
                             // init peer
                             let mut peer = Peer::new(socket, &addr);
-                            if !self.socket_exist(&addr) {
+                            if !self.socket_exist(&addr) && !self.has_blocked(&addr) {
                                 if let Ok(token) = self.eventloop.register_peer(&mut peer) {
                                     peer.set_token(token.clone());
                                     new_peers.push((token, Rc::new(RefCell::new(peer))));
