@@ -21,6 +21,14 @@ use socket::*;
 pub const CMD_ERR_PENALTY: u32 = 100u32;
 pub const DATA_TRANS_ERR_PENALTY: u32 = 200u32;
 
+#[derive(Debug)]
+pub enum TaskType {
+    Block,
+    Transaction,
+    Account,
+    None
+}
+
 /// # TaskContext
 /// **Usage**
 /// - record the current transmission task infos
@@ -35,7 +43,8 @@ pub const DATA_TRANS_ERR_PENALTY: u32 = 200u32;
 pub struct TaskContext {
     data_send: usize,
     data_recv: usize,
-    size_expected: usize
+    size_expected: usize,
+    task_type: TaskType
 }
 
 impl TaskContext {
@@ -49,11 +58,12 @@ impl TaskContext {
     /// ## Examples
     /// ```
     /// ```
-    pub fn new(expected: usize) -> Self {
+    pub fn new(expected: usize, task_type: TaskType) -> Self {
         TaskContext {
             data_send: 0,
             data_recv: 0,
             size_expected: 0,
+            task_type: task_type
         }
     }
 
@@ -178,7 +188,7 @@ impl Session {
             addr: addr.clone(),
             created: Utc::now(),
             updated: Utc::now(),
-            context: TaskContext::new(0usize),
+            context: TaskContext::new(0usize, TaskType::None),
             connected: false,
             mode: SessionMode::Command,
             protocol: P2PProtocol::new(),
@@ -211,7 +221,7 @@ impl Session {
                     addr: addr.clone(),
                     created: Utc::now(),
                     updated: Utc::now(),
-                    context: TaskContext::new(0usize),
+                    context: TaskContext::new(0usize, TaskType::None),
                     connected: false,
                     mode: SessionMode::Command,
                     protocol: P2PProtocol::new(),
@@ -312,8 +322,6 @@ impl Session {
             },
             Err(e) => Err(e)
         }
-
-
     }
 
     #[inline]
@@ -331,16 +339,13 @@ impl Session {
         self.mode = mode;
     }
 
+    #[inline]
     fn process_data(&mut self) -> Result<u32> {
-        match self.socket.receive_data(self.context.size_expected) {
+        match self.socket.receive_data(self.context.size_expected - self.context.data_recv) {
             Ok(data) => {
                 self.updated = Utc::now();
-
-                // encode and store data
-                unimplemented!();
-
-                self.context.reset(self.context.size_expected - data.len());
-                Ok(0u32)
+                self.try_task_completed(data.len());
+                Ok(data.len() as u32)
             },
             Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
                 // EAGAIN
@@ -354,6 +359,21 @@ impl Session {
         }
     }
 
+    #[inline]
+    fn try_task_completed(&mut self, len: usize) -> Result<()> {
+        self.context.data_recv += len;
+        if self.context.data_recv >= self.context.size_expected {
+            // encode and store data (transaction/block)
+            unimplemented!();
+            self.status = SessionStatus::Idle;
+            self.mode = SessionMode::Command;
+            Ok(())
+        } else {
+            Err(Error::new(ErrorKind::WouldBlock, "Task has not completed yet."))
+        }
+    }
+
+    #[inline]
     fn process_events(&mut self) -> Result<u32> {
         let mut err_count: usize = 0usize;
         match self.socket.receive_msgs() {
@@ -378,6 +398,7 @@ impl Session {
         }
     }
 
+    #[inline]
     fn process_single_event(&mut self, msg: &SocketMessage) -> bool {
         let event = msg.event();
         let event = event.as_str();
