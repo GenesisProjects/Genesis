@@ -18,7 +18,8 @@ pub const MIO_WINDOW_SIZE: usize = 1024;
 #[derive(Debug)]
 pub struct PeerSocket {
     stream: TcpStream,
-    buffer: ByteBuffer,
+    read_buffer: ByteBuffer,
+    write_buffer: Vec<u8>,
     line_cache: Vec<u8>
 }
 
@@ -30,7 +31,8 @@ impl PeerSocket {
 
         PeerSocket {
             stream: socket,
-            buffer:  ByteBuffer::new(),
+            read_buffer:  ByteBuffer::new(),
+            write_buffer: vec![],
             line_cache: vec![]
         }
     }
@@ -40,7 +42,8 @@ impl PeerSocket {
         match TcpStream::connect(addr) {
             Ok(r) => Ok(PeerSocket {
                 stream: r,
-                buffer: ByteBuffer::new(),
+                read_buffer: ByteBuffer::new(),
+                write_buffer: vec![],
                 line_cache: vec![]
             }),
             Err(e) => Err(e)
@@ -49,7 +52,16 @@ impl PeerSocket {
 
     #[inline]
     pub fn send_data(&mut self, data: &[u8]) -> STDResult<()> {
-        self.stream.write_all(data)
+        let mut new_data =  data[..].to_vec();
+        self.write_buffer.append(&mut new_data);
+        match self.stream.write(&self.write_buffer[..]) {
+            Ok(size) => {
+                let residue = &self.write_buffer[size..].to_vec();
+                self.write_buffer = residue.to_owned();
+                Ok(())
+            },
+            Err(e) => Err(e)
+        }
     }
 
     #[inline]
@@ -60,18 +72,18 @@ impl PeerSocket {
                 // if the read size is larger than remain_size, read the overflow bytes
                 // into the line cache
                 if size > remain_size {
-                    self.buffer.write(&temp_buf[.. remain_size]);
+                    self.read_buffer.write(&temp_buf[.. remain_size]);
                     let mut vec = temp_buf[remain_size .. size].to_vec();
-                    let ret = match self.buffer.read_to_end(&mut vec) {
+                    let ret = match self.read_buffer.read_to_end(&mut vec) {
                         Ok(r) => Ok(vec.clone()),
                         Err(e) => Err(e)
                     };
-                    self.buffer.write(&vec[..]);
+                    self.read_buffer.write(&vec[..]);
                     ret
                 } else {
-                    self.buffer.write(&temp_buf[..size]);
+                    self.read_buffer.write(&temp_buf[..size]);
                     let mut vec: Vec<u8> = vec![];
-                    match self.buffer.read_to_end(&mut vec) {
+                    match self.read_buffer.read_to_end(&mut vec) {
                         Ok(r) => Ok(vec),
                         Err(e) => Err(e)
                     }
@@ -93,7 +105,7 @@ impl PeerSocket {
         match self.stream.read(&mut temp_buf) {
             Ok(size) => {
                 println!("data chunk recieved: {}!!!", size);
-                self.buffer.write(&temp_buf[..size]);
+                self.read_buffer.write(&temp_buf[..size]);
                 self.fetch_messages_from_buffer(size)
             },
             Err(e) => Err(e)
@@ -107,7 +119,7 @@ impl PeerSocket {
             if cur_size <= 0 {
                 break;
             }
-            let ch = self.buffer.read_u8();
+            let ch = self.read_buffer.read_u8();
             if ch == '\n' as u8 {
                 println!(
                     "msg recieved: {:?}",
@@ -140,7 +152,7 @@ impl PeerSocket {
 
     #[inline]
     fn flush_line_cache(&mut self) {
-        self.buffer.write_all(&self.line_cache[..]);
+        self.read_buffer.write_all(&self.line_cache[..]);
         self.line_cache = vec![];
     }
 
