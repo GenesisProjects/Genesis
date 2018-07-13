@@ -330,15 +330,13 @@ impl P2PProtocol {
         } << SocketMessageArg::Int {
             value: self_block_len as i32
         } << SocketMessageArg::Hash {
-            value: self_last_hash.to_owned()
+            value: self_last_hash.clone()
         };
 
         msg
     }
 
-    pub fn block_info(&self,
-                      block_info: &BlockInfo,
-                      block_hash: Hash) -> SocketMessage {
+    pub fn block_info(&self, block_info: &BlockInfo) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "BLOCK_INFO".to_string(),
             vec![]
@@ -353,7 +351,155 @@ impl P2PProtocol {
         } << SocketMessageArg::Int {
             value: block_info.block_len as i32
         } << SocketMessageArg::Hash {
-            value: block_hash
+            value: block_info.last_block_hash.clone()
+        };
+
+        msg
+    }
+
+    pub fn request_sync_info(&self,
+                      block_info: &BlockInfo) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "REQUEST_SYNC_INFO".to_string(),
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: Account::load().expect("Can not load account")
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
+        } << SocketMessageArg::Int {
+            value: block_info.last_block_num as i32
+        } << SocketMessageArg::Hash {
+            value: block_info.last_block_hash.clone()
+        };
+
+        msg
+    }
+
+    pub fn sync_info(&self, forked_block_info: &BlockInfo, last_block_info: &BlockInfo) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "SYNC_INFO".to_string(),
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: Account::load().expect("Can not load account")
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
+        } << SocketMessageArg::Int {
+            value: forked_block_info.last_block_num as i32
+        } << SocketMessageArg::Hash {
+            value: forked_block_info.last_block_hash.clone()
+        } << SocketMessageArg::Int {
+            value: last_block_info.last_block_num as i32
+        } << SocketMessageArg::Hash {
+            value: last_block_info.last_block_hash.clone()
+        };
+
+        msg
+    }
+
+    pub fn unsuccess_sync_info(&self,
+                               forked_block_info: &BlockInfo) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "UNSECCESS_SYNC_INFO".to_string(),
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: Account::load().expect("Can not load account")
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
+        } << SocketMessageArg::Int {
+            value: forked_block_info.last_block_num as i32
+        } << SocketMessageArg::Hash {
+            value: forked_block_info.last_block_hash.clone()
+        };
+
+        msg
+    }
+
+    pub fn request_transmission(&self,
+                                start_block_num: usize,
+                                end_block_num: usize) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "REQUEST_TRANS".to_string(),
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: Account::load().expect("Can not load account")
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
+        } << SocketMessageArg::Int {
+            value: start_block_num as i32
+        } << SocketMessageArg::Int {
+            value: end_block_num as i32
+        };
+
+        msg
+    }
+
+    pub fn transmission_prepared(&self,
+                                size: usize) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "TRANS_PREPARED".to_string(),
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: Account::load().expect("Can not load account")
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
+        } << SocketMessageArg::Int {
+            value: size as i32
+        };
+
+        msg
+    }
+
+    pub fn transmission_not_ready(&self, reason: String) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "TRANS_NOT_READY".to_string(),
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: Account::load().expect("Can not load account")
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
+        } << SocketMessageArg::String {
+            value: reason.to_owned()
+        };
+
+        msg
+    }
+
+    pub fn transmission_accept(&self) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "TRANS_ACCEPT".to_string(),
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << SocketMessageArg::Account {
+            value: Account::load().expect("Can not load account")
+        } << SocketMessageArg::Timestamp {
+            value: Utc::now()
         };
 
         msg
