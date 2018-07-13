@@ -580,6 +580,10 @@ impl Thread for P2PController {
             let table = PeerTable::new_with_hosts(hosts);
 
             for (_, peer_ref) in &self.peer_list {
+                if peer_ref.borrow().bootstraped() {
+                    continue;
+                }
+                peer_ref.borrow_mut().set_bootstraped();
                 let session_status = peer_ref.borrow().session.status();
                 match session_status {
                     SessionStatus::Init => {

@@ -30,6 +30,7 @@ enum PeerType {
 
 #[derive(Debug)]
 pub struct Peer {
+    bootstraped: bool,
     ip_addr: SocketAddr,
     peer_type: PeerType,
     account: Option<Account>,
@@ -44,6 +45,7 @@ impl Peer {
     #[inline]
     pub fn new(socket: TcpStream, addr: &SocketAddr) -> Self {
         Peer {
+            bootstraped: false,
             ip_addr: addr.clone(),
             peer_type: PeerType::Unknown,
             account: None,
@@ -59,6 +61,7 @@ impl Peer {
     pub fn connect(addr: &SocketAddr) -> Result<Self> {
         Session::connect(addr).and_then(|session| {
             Ok(Peer {
+                bootstraped: false,
                 ip_addr: addr.clone(),
                 peer_type: PeerType::Unknown,
                 account: None,
@@ -79,6 +82,16 @@ impl Peer {
     #[inline]
     pub fn table(&self) -> PeerTable {
         self.session.table()
+    }
+
+    #[inline]
+    pub fn bootstraped(&self) -> bool {
+        self.bootstraped
+    }
+
+    #[inline]
+    pub fn set_bootstraped(&mut self) {
+        self.bootstraped = true;
     }
 
     #[inline]
