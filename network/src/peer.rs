@@ -41,6 +41,7 @@ pub struct Peer {
 }
 
 impl Peer {
+    #[inline]
     pub fn new(socket: TcpStream, addr: &SocketAddr) -> Self {
         Peer {
             ip_addr: addr.clone(),
@@ -54,6 +55,7 @@ impl Peer {
         }
     }
 
+    #[inline]
     pub fn connect(addr: &SocketAddr) -> Result<Self> {
         Session::connect(addr).and_then(|session| {
             Ok(Peer {
@@ -69,39 +71,48 @@ impl Peer {
         })
     }
 
+    #[inline]
     pub fn peer_should_kill(&self) -> bool {
         unimplemented!()
     }
 
+    #[inline]
     pub fn table(&self) -> PeerTable {
         self.session.table()
     }
 
+    #[inline]
     pub fn status(&self) -> SessionStatus {
         self.session.status()
     }
 
+    #[inline]
     pub fn peer_table(&self) -> Vec<(Option<Account>, SocketInfo)> {
         self.table().table
     }
 
+    #[inline]
     pub fn account(&self) -> Option<Account> {
         self.account.clone()
     }
 
+    #[inline]
     pub fn addr(&self) -> SocketAddr {
         self.ip_addr.clone()
     }
 
+    #[inline]
     pub fn credit(&self) -> u32 {
         self.credit
     }
 
+    #[inline]
     pub fn set_token(&mut self, token: Token) {
         self.token = Some(token);
         self.session.set_token(token);
     }
 
+    #[inline]
     pub fn process(&mut self) -> Result<()> {
         match self.session.process() {
             Ok(penalty) => {

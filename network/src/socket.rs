@@ -23,6 +23,7 @@ pub struct PeerSocket {
 }
 
 impl PeerSocket {
+    #[inline]
     pub fn new(mut socket: TcpStream) -> Self {
         // set the socket to nodelay mode
         socket.set_nodelay(true);
@@ -34,6 +35,7 @@ impl PeerSocket {
         }
     }
 
+    #[inline]
     pub fn connect(addr: &SocketAddr) -> STDResult<Self> {
         match TcpStream::connect(addr) {
             Ok(r) => Ok(PeerSocket {
@@ -45,10 +47,12 @@ impl PeerSocket {
         }
     }
 
+    #[inline]
     pub fn send_data(&mut self, data: &[u8]) -> STDResult<()> {
         self.stream.write_all(data)
     }
 
+    #[inline]
     pub fn receive_data(&mut self, remain_size: usize) -> STDResult<Vec<u8>> {
         let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
         match self.stream.read(&mut temp_buf) {
@@ -77,11 +81,13 @@ impl PeerSocket {
         }
     }
 
+    #[inline]
     pub fn send_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
         // println!("data1 {:?}", &msg);
         self.stream.write_all(&msg.encoder()[..])
     }
 
+    #[inline]
     pub fn receive_msgs(&mut self) -> STDResult<Vec<SocketMessage>> {
         let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
         match self.stream.read(&mut temp_buf) {
@@ -132,11 +138,13 @@ impl PeerSocket {
         }).collect::<Vec<SocketMessage>>())
     }
 
+    #[inline]
     fn flush_line_cache(&mut self) {
         self.buffer.write_all(&self.line_cache[..]);
         self.line_cache = vec![];
     }
 
+    #[inline]
     fn clean_line_cache(&mut self) {
         self.line_cache = vec![];
     }
