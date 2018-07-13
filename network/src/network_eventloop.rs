@@ -9,7 +9,8 @@ use std::time::Duration;
 use utils::*;
 
 pub const SERVER_TOKEN: Token = Token(0);
-pub const TIMEOUT_MILISECOND: u64 = 100u64;
+/// The poll will give up cpu to let p2p controller update
+pub const TIMEOUT_MILISECOND: u64 = 3000u64;
 
 lazy_static! {
     pub static ref TOKEN_SEQ: Mutex<usize> = {
