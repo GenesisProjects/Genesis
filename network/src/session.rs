@@ -41,10 +41,10 @@ pub enum TaskType {
 /// ```
 #[derive(Debug)]
 pub struct TaskContext {
-    data_send: usize,
-    data_recv: usize,
-    size_expected: usize,
-    task_type: TaskType
+    pub data_send: usize,
+    pub data_recv: usize,
+    pub size_expected: usize,
+    pub task_type: TaskType
 }
 
 impl TaskContext {
@@ -364,7 +364,10 @@ impl Session {
         self.context.data_recv += len;
         if self.context.data_recv >= self.context.size_expected {
             // encode and store data (transaction/block)
-            unimplemented!();
+            match self.context.task_type {
+                _ => unimplemented!()
+            }
+
             self.status = SessionStatus::Idle;
             self.mode = SessionMode::Command;
             Ok(())
@@ -429,7 +432,6 @@ impl Session {
                                     Message::new(token.0 as u16, "gossip".to_string())
                                 );
                             }
-
                             true
                         },
                         _ => {
