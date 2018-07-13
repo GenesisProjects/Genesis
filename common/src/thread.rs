@@ -5,6 +5,8 @@ use std::time;
 use observe::*;
 use gen_message::Message;
 
+pub const LOOP_PERIOD: u32 = 100u32;
+
 #[derive(Copy, Clone)]
 pub enum ThreadStatus {
     Running,
@@ -45,6 +47,7 @@ pub trait Thread {
                         if !ret {
                             break;
                         }
+                        thread::sleep_ms(LOOP_PERIOD);
                     }
                 },
                 &mut Err(ref e) => {

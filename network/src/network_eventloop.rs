@@ -9,7 +9,7 @@ use std::time::Duration;
 use utils::*;
 
 pub const SERVER_TOKEN: Token = Token(0);
-pub const LOOP_PERIOD_MILISECOND: u64 = 100u64;
+pub const TIMEOUT_MILISECOND: u64 = 100u64;
 
 lazy_static! {
     pub static ref TOKEN_SEQ: Mutex<usize> = {
@@ -100,7 +100,7 @@ impl NetworkEventLoop {
     /// ```
     pub fn next_tick(&mut self) -> Result<usize> {
         //TODO: make loop span configurable
-        self.poll.poll(&mut self.events, Some(Duration::from_millis(LOOP_PERIOD_MILISECOND))).and_then(|events_size| {
+        self.poll.poll(&mut self.events, Some(Duration::from_millis(TIMEOUT_MILISECOND))).and_then(|events_size| {
             self.round += 1;
             Ok(events_size)
         })
