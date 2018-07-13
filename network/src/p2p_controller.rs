@@ -258,17 +258,38 @@ impl P2PController {
 impl Notify for P2PController {
     #[inline]
     fn notify_bootstrap(protocol: P2PProtocol, peer_ref: PeerRef, table: &PeerTable) {
-        peer_ref.borrow_mut().session.send_event(protocol.bootstrap(table));
+        let result = peer_ref.borrow_mut().session.send_event(protocol.bootstrap(table));
+        match result {
+            Err(ref e) if e.kind() == ErrorKind::ConnectionAborted => {
+                // EAGAIN
+                peer_ref.borrow_mut().session.set_status(SessionStatus::Abort);
+            },
+            _ => {}
+        }
     }
 
     #[inline]
     fn notify_gossip(protocol: P2PProtocol, peer_ref: PeerRef, table: &PeerTable) {
-        peer_ref.borrow_mut().session.send_event(protocol.gossip(table));
+        let result = peer_ref.borrow_mut().session.send_event(protocol.gossip(table));
+        match result {
+            Err(ref e) if e.kind() == ErrorKind::ConnectionAborted => {
+                // EAGAIN
+                peer_ref.borrow_mut().session.set_status(SessionStatus::Abort);
+            },
+            _ => {}
+        }
     }
 
     #[inline]
     fn heartbeat(protocol: P2PProtocol, peer_ref: PeerRef) {
-        peer_ref.borrow_mut().session.send_event(protocol.heartbeat());
+        let result = peer_ref.borrow_mut().session.send_event(protocol.heartbeat());
+        match result {
+            Err(ref e) if e.kind() == ErrorKind::ConnectionAborted => {
+                // EAGAIN
+                peer_ref.borrow_mut().session.set_status(SessionStatus::Abort);
+            },
+            _ => {}
+        }
     }
 }
 

@@ -14,6 +14,7 @@ use std::str;
 
 pub const MAX_LINE_CAHCE_LEN: usize = 1024 * 1024 * 4;
 pub const MIO_WINDOW_SIZE: usize = 1024;
+pub const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 16;
 
 #[derive(Debug)]
 pub struct PeerSocket {
@@ -58,7 +59,11 @@ impl PeerSocket {
             Ok(size) => {
                 let residue = &self.write_buffer[size..].to_vec();
                 self.write_buffer = residue.to_owned();
-                Ok(())
+                if self.write_buffer.len() > MAX_WRITE_BUFF_SIZE {
+                    Err(Error::new(ErrorKind::ConnectionAborted, "Buffer overflow"))
+                } else {
+                    Ok(())
+                }
             },
             Err(e) => Err(e)
         }
@@ -96,7 +101,20 @@ impl PeerSocket {
     #[inline]
     pub fn send_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
         // println!("data1 {:?}", &msg);
-        self.stream.write_all(&msg.encoder()[..])
+        let mut new_data =  msg.encoder();
+        self.write_buffer.append(&mut new_data);
+        match self.stream.write(&self.write_buffer[..]) {
+            Ok(size) => {
+                let residue = &self.write_buffer[size..].to_vec();
+                self.write_buffer = residue.to_owned();
+                if self.write_buffer.len() > MAX_WRITE_BUFF_SIZE {
+                    Err(Error::new(ErrorKind::ConnectionAborted, "Buffer overflow"))
+                } else {
+                    Ok(())
+                }
+            },
+            Err(e) => Err(e)
+        }
     }
 
     #[inline]
