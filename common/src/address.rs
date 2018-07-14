@@ -39,7 +39,7 @@ impl Address {
 
     /// load account
     pub fn load() -> Option<Self> {
-        Some(Address {text: "test".to_string()})
+        Some(Address {text: "12345678901234567890123456789012".to_string()})
     }
 }
 
