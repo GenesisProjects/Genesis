@@ -1,0 +1,6 @@
+[package]
+name = "gen-wasm"
+version = "0.1.0"
+authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
+
+[dependencies]
