@@ -8,5 +8,6 @@ members = [
     "network",
     "rlp",
     "role",
-    "util"
+    "util",
+    "wasm"
 ]
