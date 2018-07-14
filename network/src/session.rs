@@ -435,8 +435,8 @@ impl Session {
                             true
                         },
                         _ => {
-                            // print cmd output here
-                            unimplemented!();
+                            // TODO: print cmd output here
+                            println!("Unavailable to process bootstrap right now");
                             false
                         }
                     }
@@ -446,29 +446,20 @@ impl Session {
                 if !self.protocol.verify(&msg) {
                     false
                 } else {
-                    match self.status {
-                        SessionStatus::Init => {
-                            let slice = &args[3 .. ];
-                            let mut hosts: Vec<String> = vec![];
-                            for arg in slice {
-                                match arg {
-                                    &SocketMessageArg::String { ref value } => {
-                                        //TODO: make port configurable
-                                        hosts.push(value.clone())
-                                    }
-                                    _ => ()
-                                };
+                    let slice = &args[3 .. ];
+                    let mut hosts: Vec<String> = vec![];
+                    for arg in slice {
+                        match arg {
+                            &SocketMessageArg::String { ref value } => {
+                                //TODO: make port configurable
+                                hosts.push(value.clone())
                             }
-                            self.table = PeerTable::new_with_hosts(hosts);
-                            self.status = SessionStatus::WaitBlockInfoRequest;
-                            true
-                        },
-                        _ => {
-                            // print cmd output here
-                            unimplemented!();
-                            false
-                        }
+                            _ => ()
+                        };
                     }
+                    self.table = PeerTable::new_with_hosts(hosts);
+                    self.status = SessionStatus::WaitBlockInfoRequest;
+                    true
                 }
             },
             "REJECT" => {
@@ -477,8 +468,7 @@ impl Session {
                 } else {
                     match &args[3] {
                         &SocketMessageArg::String { ref value } => {
-                            // print cmd output here
-                            unimplemented!()
+                            println!("Rejected!");
                         },
                         _ => {
                             return false;

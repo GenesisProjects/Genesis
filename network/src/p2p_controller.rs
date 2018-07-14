@@ -110,7 +110,7 @@ impl P2PController {
 
         //TODO: boostrap peers configurable
         // add bootstrap peers
-        // raw_peers_table.push((Some(Account {text: "12345678901234567890123456789013".to_string()}), SocketAddr::from_str("127.0.0.1:19999").unwrap()));
+        raw_peers_table.push((Some(Account {text: "12345678901234567890123456789013".to_string()}), SocketAddr::from_str("127.0.0.1:19999").unwrap()));
 
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
