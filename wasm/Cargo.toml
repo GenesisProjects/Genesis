@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
+memmap = "0.6.2"

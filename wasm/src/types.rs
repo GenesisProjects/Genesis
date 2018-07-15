@@ -23,9 +23,25 @@ impl WASMType {
             WASMType::I32(_) => 32usize,
             WASMType::U64(_) => 64usize,
             WASMType::I64(_) => 64usize,
-
             WASMType::F32(_) => 32usize,
             WASMType::F64(_) => 64usize
+        }
+    }
+}
+
+impl Into<u8> for WASMType {
+    fn into(self) -> u8 {
+        match self {
+            WASMType::U8(v) => v as u8,
+            WASMType::I8(v) => v as u8,
+            WASMType::U16(v) => v as u8,
+            WASMType::I16(v) => v as u8,
+            WASMType::U32(v) => v as u8,
+            WASMType::I32(v) => v as u8,
+            WASMType::U64(v) => v as u8,
+            WASMType::I64(v) => v as u8,
+            WASMType::F32(v) => v as u8,
+            WASMType::F64(v) => v as u8,
         }
     }
 }
