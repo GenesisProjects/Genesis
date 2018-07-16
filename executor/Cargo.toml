@@ -1,0 +1,6 @@
+[package]
+name = "gen_executor"
+version = "0.1.0"
+authors = ["yue ma <mayueshisb@126.com>"]
+
+[dependencies]
