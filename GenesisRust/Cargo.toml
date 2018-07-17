@@ -11,4 +11,3 @@ db = { version = "0.1.0", path = "../db" }
 gen_message = { version = "0.1.0", path = "../message" }
 gen_utils = { version = "0.1.0", path = "../util" }
 common = { version = "0.1.0", path = "../common" }
-gen_wasm = { version = "0.1.0", path = "../wasm" }

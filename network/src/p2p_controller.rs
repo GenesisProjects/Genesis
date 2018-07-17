@@ -253,6 +253,157 @@ impl P2PController {
             self.add_peer(token, peer.clone());
         }
     }
+
+    /// # update(&mut self, 0)
+   /// **Usage**
+   /// - maintain peerlist, block untrusted peers
+   /// - send heartbeats
+   /// - refresh the waiting list if peers are not enough
+   /// ## Examples
+   /// ```
+   /// ```
+    fn update(&mut self) {
+        if (Utc::now() - self.last_updated).num_milliseconds() < UPDATE_TIMEBASE {
+            return;
+        }
+        self.last_updated = Utc::now();
+
+        // find aborted token in the peer list
+        let aborted_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
+            match pair.1.borrow().status() {
+                SessionStatus::Abort => true,
+                _ => false
+            }
+        }).map(|pair| {
+            pair.0.clone()
+        }).collect();
+
+        // remove all aborted tokens from the peer list
+        for token in aborted_tokens {
+            let result = self.get_peer(token.clone()).unwrap();
+            let addr = result.borrow().addr();
+            self.remove_peer(token);
+        }
+
+        // find all expired token in the peer list
+        let expired_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
+            if pair.1.borrow().session.milliseconds_from_last_update() > EXPIRE {
+                true
+            } else {
+                false
+            }
+        }).map(|pair| {
+            pair.0.clone()
+        }).collect();
+
+        // remove all expired tokens from the peer list
+        for token in expired_tokens {
+            let result = self.get_peer(token.clone()).unwrap();
+            let addr = result.borrow().addr();
+            self.remove_peer(token);
+        }
+
+        // find all connection timeout tokens in the peer list
+        let timeout_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
+            if pair.1.borrow().session.milliseconds_connecting() > CONNECT_TIMEOUT {
+                true
+            } else {
+                false
+            }
+        }).map(|pair| {
+            pair.0.clone()
+        }).collect();
+
+        // remove all connection timeout tokens from the peer list
+        for token in timeout_tokens {
+            let result = self.get_peer(token.clone()).unwrap();
+            let addr = result.borrow().addr();
+            self.remove_peer(token);
+        }
+
+        // find untrusted tokens in the peer list
+        let untrusted_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
+            pair.1.borrow().credit() == 0
+        }).map(|pair| {
+            pair.0.clone()
+        }).collect();
+
+        // remove all untrusted tokens from the peer list
+        for token in untrusted_tokens {
+            let result = self.get_peer(token.clone()).unwrap();
+            let addr = result.borrow().addr();
+            self.remove_peer(token);
+            self.block_list.push(addr);
+            if self.block_list.len() > self.max_blocked_peers {
+                self.block_list.remove(0);
+            }
+        }
+
+        // if the peer table is too small then refresh it.
+        if self.peer_list.len() < self.min_required_peers {
+            if self.waiting_list.len() < self.min_required_peers {
+                self.refresh_waiting_list();
+            }
+            let sockets = self.fetch_peers_from_waiting_list();
+            let peers: Vec<(Token, PeerRef)> = sockets.into_iter()
+                .map(|addr| {
+                    let peer_ref = self.connect(addr).unwrap();
+                    thread::sleep(Duration::from_millis(20));
+                    let ret = (self.eventloop.register_peer(&peer_ref.borrow()), peer_ref.clone());
+                    ret
+                })
+                .filter(|result| {
+                    match &result.0 {
+                        &Ok(_) => true,
+                        &Err(_) => false
+                    }
+                })
+                .map(|result| {
+                    (result.0.unwrap(), result.1)
+                })
+                .collect();
+
+            // register new peers to the eventloop, add into peer list
+            for (ref token, ref peer_ref) in peers {
+                peer_ref.borrow_mut().set_token(token.clone());
+                self.peer_list.insert(token.clone(), peer_ref.clone());
+            }
+
+            // bootstrap all peers at init status
+            let hosts: Vec<String> = self.peer_list.iter()
+                .map(|mut pair| {
+                    pair.1.borrow().addr().to_string()
+                }).collect();
+            let table = PeerTable::new_with_hosts(hosts);
+
+            for (_, peer_ref) in &self.peer_list {
+                if peer_ref.borrow().bootstraped() {
+                    continue;
+                }
+                peer_ref.borrow_mut().set_bootstraped();
+                let session_status = peer_ref.borrow().session.status();
+                match session_status {
+                    SessionStatus::Init => {
+                        Self::notify_bootstrap(
+                            self.protocol.clone(),
+                            peer_ref.clone(),
+                            &table
+                        )
+                    },
+                    _ => {}
+                };
+            }
+        }
+
+        for (_, peer_ref) in &self.peer_list {
+            Self::heartbeat(
+                self.protocol.clone(),
+                peer_ref.clone()
+            )
+        }
+
+        println!("loop: {}, peer_list {:?}", self.eventloop.round, self.peer_list);
+    }
 }
 
 impl Notify for P2PController {
@@ -416,6 +567,7 @@ impl Thread for P2PController {
             ThreadStatus::Stop => false,
             ThreadStatus::Pause => true
         }
+        self.update();
     }
 
     /// # msg_handler(&mut self, 1)
@@ -455,157 +607,6 @@ impl Thread for P2PController {
 
     fn set_status(&mut self, status: ThreadStatus) {
         self.eventloop.status = status;
-    }
-
-    /// # update(&mut self, 0)
-    /// **Usage**
-    /// - maintain peerlist, block untrusted peers
-    /// - send heartbeats
-    /// - refresh the waiting list if peers are not enough
-    /// ## Examples
-    /// ```
-    /// ```
-    fn update(&mut self) {
-        if (Utc::now() - self.last_updated).num_milliseconds() < UPDATE_TIMEBASE {
-            return;
-        }
-        self.last_updated = Utc::now();
-
-        // find aborted token in the peer list
-        let aborted_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
-            match pair.1.borrow().status() {
-                SessionStatus::Abort => true,
-                _ => false
-            }
-        }).map(|pair| {
-            pair.0.clone()
-        }).collect();
-
-        // remove all aborted tokens from the peer list
-        for token in aborted_tokens {
-            let result = self.get_peer(token.clone()).unwrap();
-            let addr = result.borrow().addr();
-            self.remove_peer(token);
-        }
-
-        // find all expired token in the peer list
-        let expired_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
-            if pair.1.borrow().session.milliseconds_from_last_update() > EXPIRE {
-                true
-            } else {
-                false
-            }
-        }).map(|pair| {
-            pair.0.clone()
-        }).collect();
-
-        // remove all expired tokens from the peer list
-        for token in expired_tokens {
-            let result = self.get_peer(token.clone()).unwrap();
-            let addr = result.borrow().addr();
-            self.remove_peer(token);
-        }
-
-        // find all connection timeout tokens in the peer list
-        let timeout_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
-            if pair.1.borrow().session.milliseconds_connecting() > CONNECT_TIMEOUT {
-                true
-            } else {
-                false
-            }
-        }).map(|pair| {
-            pair.0.clone()
-        }).collect();
-
-        // remove all connection timeout tokens from the peer list
-        for token in timeout_tokens {
-            let result = self.get_peer(token.clone()).unwrap();
-            let addr = result.borrow().addr();
-            self.remove_peer(token);
-        }
-
-        // find untrusted tokens in the peer list
-        let untrusted_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
-            pair.1.borrow().credit() == 0
-        }).map(|pair| {
-            pair.0.clone()
-        }).collect();
-
-        // remove all untrusted tokens from the peer list
-        for token in untrusted_tokens {
-            let result = self.get_peer(token.clone()).unwrap();
-            let addr = result.borrow().addr();
-            self.remove_peer(token);
-            self.block_list.push(addr);
-            if self.block_list.len() > self.max_blocked_peers {
-                self.block_list.remove(0);
-            }
-        }
-
-        // if the peer table is too small then refresh it.
-        if self.peer_list.len() < self.min_required_peers {
-            if self.waiting_list.len() < self.min_required_peers {
-                self.refresh_waiting_list();
-            }
-            let sockets = self.fetch_peers_from_waiting_list();
-            let peers: Vec<(Token, PeerRef)> = sockets.into_iter()
-                .map(|addr| {
-                    let peer_ref = self.connect(addr).unwrap();
-                    thread::sleep(Duration::from_millis(20));
-                    let ret = (self.eventloop.register_peer(&peer_ref.borrow()), peer_ref.clone());
-                    ret
-                })
-                .filter(|result| {
-                    match &result.0 {
-                        &Ok(_) => true,
-                        &Err(_) => false
-                    }
-                })
-                .map(|result| {
-                    (result.0.unwrap(), result.1)
-                })
-                .collect();
-
-            // register new peers to the eventloop, add into peer list
-            for (ref token, ref peer_ref) in peers {
-                peer_ref.borrow_mut().set_token(token.clone());
-                self.peer_list.insert(token.clone(), peer_ref.clone());
-            }
-
-            // bootstrap all peers at init status
-            let hosts: Vec<String> = self.peer_list.iter()
-                .map(|mut pair| {
-                    pair.1.borrow().addr().to_string()
-                }).collect();
-            let table = PeerTable::new_with_hosts(hosts);
-
-            for (_, peer_ref) in &self.peer_list {
-                if peer_ref.borrow().bootstraped() {
-                    continue;
-                }
-                peer_ref.borrow_mut().set_bootstraped();
-                let session_status = peer_ref.borrow().session.status();
-                match session_status {
-                    SessionStatus::Init => {
-                        Self::notify_bootstrap(
-                            self.protocol.clone(),
-                            peer_ref.clone(),
-                            &table
-                        )
-                    },
-                    _ => {}
-                };
-            }
-        }
-
-        for (_, peer_ref) in &self.peer_list {
-            Self::heartbeat(
-                self.protocol.clone(),
-                peer_ref.clone()
-            )
-        }
-
-        println!("loop: {}, peer_list {:?}", self.eventloop.round, self.peer_list);
     }
 }
 
