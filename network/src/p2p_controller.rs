@@ -551,6 +551,7 @@ impl Thread for P2PController {
         self.eventloop.register_server(&self.listener);
         // fetch the next tick
         let result = self.eventloop.next_tick();
+        self.update();
         match self.eventloop.status {
             ThreadStatus::Running => {
                 match result {
@@ -567,7 +568,6 @@ impl Thread for P2PController {
             ThreadStatus::Stop => false,
             ThreadStatus::Pause => true
         }
-        self.update();
     }
 
     /// # msg_handler(&mut self, 1)

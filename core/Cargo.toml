@@ -6,9 +6,7 @@ authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 [dependencies]
 common = { version = "0.1.0", path = "../common" }
 db = { version = "0.1.0", path = "../db" }
-rlp = { version = "0.1.0", path = "../rlp" }
-gen_utils = { version = "0.1.0", path = "../util" }
-parity-wasm = "0.27"
-
-
 num = "0.1.30"
+gen_utils = { version = "0.1.0", path = "../util" }
+rlp = { version = "0.1.0", path = "../rlp" }
+wasmi = "0.3.0"

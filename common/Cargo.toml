@@ -7,9 +7,9 @@ authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 log = "0.4"
 rust-crypto = "^0.2"
 rand = "^0.3"
-ring = "0.12.1"
+ring = "0.13.2"
 rust-base58 = "0.0.4"
-untrusted = "0.5.1"
+untrusted = "0.6.2"
 siphasher = "^0.2.2"
 
 rlp = { version = "0.1.0", path = "../rlp" }
