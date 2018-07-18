@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use wasmi::*;
 
 lazy_static! {
-    pub static ref TOKEN_SEQ: Mutex<Kernel> = {
+    pub static ref GEN_KERNEL: Mutex<Kernel> = {
         Mutex::new(Kernel::new())
     };
 }
