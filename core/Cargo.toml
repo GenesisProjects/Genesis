@@ -4,9 +4,12 @@ version = "0.1.0"
 authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
+lazy_static = "1.0.0"
+num = "0.1.30"
+wasmi = "0.3.0"
+parity-wasm = "0.31"
+
 common = { version = "0.1.0", path = "../common" }
 db = { version = "0.1.0", path = "../db" }
-num = "0.1.30"
 gen_utils = { version = "0.1.0", path = "../util" }
 rlp = { version = "0.1.0", path = "../rlp" }
-wasmi = "0.3.0"
