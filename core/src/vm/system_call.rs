@@ -23,6 +23,10 @@ pub struct SystemCall {
 }
 
 impl SystemCall {
+    pub fn new() -> Self {
+        SystemCall {}
+    }
+
     pub fn create(code: &[u8]) {
         unimplemented!()
     }

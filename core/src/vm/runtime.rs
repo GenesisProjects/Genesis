@@ -11,6 +11,14 @@ pub struct Runtime {
 }
 
 impl Runtime {
+    /// # new(&mut self)
+    /// **Usage**
+    /// - Initiate Runtime with a wasm module instance
+    /// **Parameters**
+    /// - 1. ***&[u8](buff)***: the read buffer
+    /// ## Examples
+    /// ```
+    /// ```
     pub fn new(buff: &[u8]) -> Self {
         let module = elements::Module::from_buffer(wasm_buf).unwrap();
         let instance = ModuleInstance::new(

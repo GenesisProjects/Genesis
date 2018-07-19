@@ -24,9 +24,9 @@ impl Externals for Kernel {
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
 
         match index {
-            index::RETURN_FUNC => unimplemented!(),
-            index::CALL_FUNC => unimplemented!(),
-            index::CREATE_FUNC => unimplemented!(),
+            index::RETURN_FUNC => void!(SystemCall::ret()),
+            index::CALL_FUNC => some!(SystemCall::call()),
+            index::CREATE_FUNC => some!(SystemCall::create()),
             _ => panic!("unknown function index {}", index)
         }
     }
@@ -51,5 +51,17 @@ impl ModuleImportResolver for Kernel {
             )
         };
         Ok(func_ref)
+    }
+
+    fn resolve_memory(
+        &self,
+        field_name: &str,
+        descriptor: &MemoryDescriptor,
+    ) -> Result<MemoryRef, Error> {
+        if field_name == "memory" {
+            unimplemented!()
+        } else {
+            Err(Error::Instantiation("Memory imported under unknown name".to_owned()))
+        }
     }
 }
