@@ -1,8 +1,10 @@
 use chrono::*;
 use wasmi::*;
+use parity_wasm::elements::{self, Deserialize};
 
 use super::abi::*;
 use super::redo_log::Pipeline;
+use super::kernel::*;
 
 pub struct Runtime {
     module_instance: Option<ModuleInstance>
@@ -10,7 +12,16 @@ pub struct Runtime {
 
 impl Runtime {
     pub fn new(buff: &[u8]) -> Self {
-        unimplemented!()
+        let module = elements::Module::from_buffer(wasm_buf).unwrap();
+        let instance = ModuleInstance::new(
+            &module,
+            Kernel::new(),
+        ).expect("Failed to instantiate module")
+            .assert_no_start();
+
+        Runtime {
+            module_instance: OK(instance)
+        }
     }
 
     pub fn new_with_contract(name: &'static str) -> Self {
@@ -37,3 +48,4 @@ pub struct RuntimeResult {
     error: Option<Error>
 }
 
+&ImportsBuilder::new().with_resolver("env", &env)
