@@ -1,31 +1,24 @@
-use std::sync::Mutex;
-
+use std::cell::RefCell;
 use wasmi::*;
 
 use super::system_call::*;
-
-lazy_static! {
-    pub static ref GEN_KERNEL: Mutex<Kernel> = {
-        Mutex::new(Kernel::new())
-    };
-}
 
 pub struct Kernel {
 
 }
 
 impl Kernel {
-    pub fn new() -> Self {
+    pub fn bootstrap() -> Self {
         Kernel {}
     }
 }
 
 macro_rules! void {
-	{ $e: expr } => { { $e?; Ok(None) } }
+	{ $e: expr } => { { Ok(None) } }
 }
 
 macro_rules! some {
-	{ $e: expr } => { { Ok(Some($e?)) } }
+	{ $e: expr } => { { Ok(Some($e)) } }
 }
 
 macro_rules! cast {
@@ -35,11 +28,8 @@ macro_rules! cast {
 impl Externals for Kernel {
 
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-
         match index {
-            index::RETURN_FUNC => void!(SystemCall::ret()),
-            index::CALL_FUNC => some!(SystemCall::call()),
-            index::CREATE_FUNC => some!(SystemCall::create()),
+            CALL_INDEX => void!(SystemCall::call()),
             _ => panic!("unknown function index {}", index)
         }
     }
@@ -51,19 +41,20 @@ impl ModuleImportResolver for Kernel {
         field_name: &str,
         _signature: &Signature,
     ) -> Result<FuncRef, Error> {
-        let func_ref = match field_name {
-            "ret" => {
-                FuncInstance::alloc_host(signatures::RETURN, index::RETURN_FUNC)
+        match field_name {
+            "call" => {
+                match SYSTEM_CALL.lock().unwrap().func_ref(CALL_INDEX) {
+                    Some(f) => Ok(f),
+                    None => Err(Error::Function(
+                        format!("function index: {} is not register in the kernel", CALL_INDEX)
+                    ))
+                }
             },
-            "call" => FuncInstance::alloc_host(signatures::CALL, index::CALL_FUNC),
-            "create" => FuncInstance::alloc_host(signatures::CREATE, index::CREATE_FUNC),
-            _ => return Err(
-                Error::Function(
-                    format!("host module doesn't export function with name {}", field_name)
-                )
-            )
-        };
-        Ok(func_ref)
+            _ =>
+                Err(Error::Function(
+                    format!("kernel module doesn't export function with name {}", field_name)
+                ))
+        }
     }
 
     fn resolve_memory(

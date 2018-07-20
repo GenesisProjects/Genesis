@@ -11,27 +11,23 @@ pub enum Argument {
     Uint32(u32),
     Uint64(u64),
     Float32(f32),
-    Float64(f64),
-    String(Vec<u8>),
-    Bool(i8),
-    Hash(Hash),
-    Account(Address)
+    Float64(f64)
 }
 
 #[derive(Clone, Debug)]
-pub struct Function {
+pub struct Selector {
     name: String,
     args: Vec<Argument>,
     returns: Vec<Argument>
 }
 
-impl From<Function> for String {
-    fn from(f: Function) -> Self {
+impl From<Selector> for String {
+    fn from(f: Selector) -> Self {
         unimplemented!()
     }
 }
 
-impl RLPSerialize for Function {
+impl RLPSerialize for Selector {
     fn serialize(&self) -> Result<RLP, RLPError> {
         // [
         //      "test_func",                            # function name

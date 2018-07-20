@@ -1,30 +1,44 @@
-use wasmi::{self, ValueType, Signature};
+use wasmi::*;
 use wasmi::ValueType::*;
+use std::sync::Mutex;
 
-pub mod index {
-    pub const RETURN_FUNC: usize = 10;
-    pub const CALL_FUNC: usize = 20;
-    pub const CREATE_FUNC: usize = 30;
+use std::collections::HashMap;
+
+pub const RETURN_INDEX: usize       = 0x01;
+pub const CALL_INDEX:   usize       = 0x02;
+pub const CREATE_INDEX: usize       = 0x03;
+
+lazy_static! {
+    pub static ref SYSTEM_CALL: Mutex<SystemCall> = {
+        Mutex::new(SystemCall::new())
+    };
 }
 
-pub mod signatures {
-    use wasmi::{self, ValueType};
-    use wasmi::ValueType::*;
-
-    pub const RETURN: wasmi::Signature = wasmi::Signature::new(&[I32, I32], None);
-
-    pub const CALL: wasmi::Signature = wasmi::Signature::new(&[I32, I32], Some(I32));
-
-    pub const CREATE: wasmi::Signature = wasmi::Signature::new(&[I32, I32], Some(I32));
+macro_rules! hashmap {
+    ($( $key: expr => $val: expr ),*) => {{
+         let mut map = ::std::collections::HashMap::new();
+         $( map.insert($key, $val); )*
+         map
+    }}
 }
 
 pub struct SystemCall {
-
+    system_call_table: HashMap<usize, Signature>
 }
 
 impl SystemCall {
     pub fn new() -> Self {
-        SystemCall {}
+        SystemCall {
+            system_call_table: hashmap![
+                CALL_INDEX => Signature::new(&[I32, I32][..], Some(I32))
+            ]
+        }
+    }
+
+    pub fn func_ref(&self, index: usize) -> Option<FuncRef> {
+       self.system_call_table.get(&index).and_then(|sign| {
+           Some(FuncInstance::alloc_host(sign.to_owned(), index))
+       })
     }
 
     pub fn create() {

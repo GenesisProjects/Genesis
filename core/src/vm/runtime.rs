@@ -7,7 +7,7 @@ use super::redo_log::Pipeline;
 use super::kernel::*;
 
 pub struct Runtime {
-    module_instance: Option<ModuleInstance>
+    module_ref: Option<ModuleRef>
 }
 
 impl Runtime {
@@ -20,15 +20,18 @@ impl Runtime {
     /// ```
     /// ```
     pub fn new(buff: &[u8]) -> Self {
-        let module = elements::Module::from_buffer(buff).unwrap();
-        let instance = ModuleInstance::new(
+        let module = Module::from_buffer(buff).unwrap();
+        let mut imports = ImportsBuilder::new();
+        imports.push_resolver("env", &Kernel::bootstrap());
+
+        let module_ref = ModuleInstance::new(
             &module,
-            Kernel::new(),
+            &imports,
         ).expect("Failed to instantiate module")
             .assert_no_start();
 
         Runtime {
-            module_instance: Ok(instance)
+            module_ref: Some(module_ref)
         }
     }
 
@@ -36,7 +39,7 @@ impl Runtime {
         unimplemented!()
     }
 
-    pub fn execute(&mut self, abi: Function) -> RuntimeResult {
+    pub fn execute(&mut self, abi: Selector) -> RuntimeResult {
         unimplemented!()
     }
 
