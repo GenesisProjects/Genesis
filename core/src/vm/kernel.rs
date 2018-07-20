@@ -21,16 +21,6 @@ pub trait KernelRegister {
     fn regist(&self, kernel: &Kernel) -> ModuleRef;
 }
 
-pub struct Kernel {
-
-}
-
-impl Kernel {
-    pub fn new() -> Self {
-        Kernel {}
-    }
-}
-
 impl KernelRegister for Module {
     fn regist(&self, kernel: &Kernel) -> ModuleRef {
         let mut imports = ImportsBuilder::new();
@@ -41,6 +31,16 @@ impl KernelRegister for Module {
             &imports,
         ).expect("Failed to instantiate module")
             .assert_no_start()
+    }
+}
+
+pub struct Kernel {
+
+}
+
+impl Kernel {
+    pub fn new() -> Self {
+        Kernel {}
     }
 }
 
