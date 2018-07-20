@@ -33,10 +33,6 @@ impl Runtime {
     pub fn execute(&mut self, abi: Selector) -> RuntimeResult {
         unimplemented!()
     }
-
-    pub fn commit(&mut self, pipeline: &Pipeline) -> Result<(), Error> {
-        unimplemented!()
-    }
 }
 
 pub struct RuntimeResult {

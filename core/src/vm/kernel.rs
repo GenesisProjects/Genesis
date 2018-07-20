@@ -1,9 +1,15 @@
 use std::cell::RefCell;
+use std::collections::LinkedList;
+
 use wasmi::*;
 
+use super::abi::Selector;
 use super::gen_vm::GenVM;
-
 use super::system_call::*;
+use super::runtime::*;
+use super::contract::Contract;
+use common::address::Address;
+use account::Account;
 
 macro_rules! void {
 	{ $e: expr } => { { Ok(None) } }
@@ -35,12 +41,42 @@ impl KernelRegister for Module {
 }
 
 pub struct Kernel {
+    runtimes: LinkedList<Runtime>,
+    last_return_val: Option<RuntimeResult>,
 
+    //account: Account,
+    //tx: Transaction
+    contract_info: Contract
 }
 
 impl Kernel {
     pub fn new() -> Self {
-        Kernel {}
+        unimplemented!();
+    }
+
+    fn commit(&mut self) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+
+    pub fn ext_call(&mut self, selector: Selector, account_addr: Address) -> Result<Runtime, Error> {
+        unimplemented!()
+    }
+
+    fn push_runtime(&mut self, runtime: Runtime) -> Result<usize, Error> {
+        unimplemented!()
+    }
+
+    fn pop_runtime(&mut self) -> Result<Runtime, Error> {
+        unimplemented!()
+    }
+
+    fn excecute_top_runtime(&mut self, selector: Selector) -> RuntimeResult {
+        unimplemented!()
+    }
+
+    fn stack_depth(&self) -> usize {
+        unimplemented!()
     }
 }
 
@@ -85,5 +121,11 @@ impl ModuleImportResolver for Kernel {
         } else {
             Err(Error::Instantiation("Memory imported under unknown name".to_owned()))
         }
+    }
+}
+
+impl Drop for Kernel {
+    fn drop(&mut self) {
+        self.commit();
     }
 }

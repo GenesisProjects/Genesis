@@ -2,15 +2,17 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use chrono::*;
+use wasmi::Signature;
 
 use common::address::Address;
 use rlp::RLPSerialize;
 use rlp::types::{RLPError, RLP};
 
 pub struct Contract {
-    groups: HashMap<String, Vec<Address>>,
     create: DateTime<Utc>,
-    expire: DateTime<Utc>
+    expire: DateTime<Utc>,
+
+    abi_table: Vec<Signature>
 }
 
 impl RLPSerialize for Contract {
