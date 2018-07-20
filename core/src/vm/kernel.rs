@@ -21,10 +21,22 @@ impl Kernel {
 }
 
 impl Externals for Kernel {
+    macro_rules! void {
+		{ $e: expr } => { { $e?; Ok(None) } }
+	}
+
+    macro_rules! some {
+		{ $e: expr } => { { Ok(Some($e?)) } }
+	}
+
+    macro_rules! cast {
+		{ $e: expr } => { { Ok(Some($e)) } }
+	}
+
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
 
         match index {
-            index::RETURN_FUNC => void!(SystemCall::ret()),
+            index::RETURN_FUNC => match SystemCall::ret() {},
             index::CALL_FUNC => some!(SystemCall::call()),
             index::CREATE_FUNC => some!(SystemCall::create()),
             _ => panic!("unknown function index {}", index)
