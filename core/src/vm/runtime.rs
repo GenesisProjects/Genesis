@@ -20,7 +20,7 @@ impl Runtime {
     /// ```
     /// ```
     pub fn new(buff: &[u8]) -> Self {
-        let module = elements::Module::from_buffer(wasm_buf).unwrap();
+        let module = elements::Module::from_buffer(buff).unwrap();
         let instance = ModuleInstance::new(
             &module,
             Kernel::new(),
@@ -28,7 +28,7 @@ impl Runtime {
             .assert_no_start();
 
         Runtime {
-            module_instance: OK(instance)
+            module_instance: Ok(instance)
         }
     }
 
@@ -55,5 +55,3 @@ pub struct RuntimeResult {
     end: DateTime<Utc>,
     error: Option<Error>
 }
-
-&ImportsBuilder::new().with_resolver("env", &env)

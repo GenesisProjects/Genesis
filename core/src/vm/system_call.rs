@@ -27,7 +27,7 @@ impl SystemCall {
         SystemCall {}
     }
 
-    pub fn create(code: &[u8]) {
+    pub fn create() {
         unimplemented!()
     }
 

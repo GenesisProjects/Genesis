@@ -20,18 +20,19 @@ impl Kernel {
     }
 }
 
+macro_rules! void {
+	{ $e: expr } => { { $e?; Ok(None) } }
+}
+
+macro_rules! some {
+	{ $e: expr } => { { Ok(Some($e?)) } }
+}
+
+macro_rules! cast {
+	{ $e: expr } => { { Ok(Some($e)) } }
+}
+
 impl Externals for Kernel {
-    macro_rules! void {
-		{ $e: expr } => { { $e?; Ok(None) } }
-	}
-
-    macro_rules! some {
-		{ $e: expr } => { { Ok(Some($e?)) } }
-	}
-
-    macro_rules! cast {
-		{ $e: expr } => { { Ok(Some($e)) } }
-	}
 
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
 
@@ -57,7 +58,7 @@ impl ModuleImportResolver for Kernel {
             "call" => FuncInstance::alloc_host(signatures::CALL, index::CALL_FUNC),
             "create" => FuncInstance::alloc_host(signatures::CREATE, index::CREATE_FUNC),
             _ => return Err(
-                InterpreterError::Function(
+                Error::Function(
                     format!("host module doesn't export function with name {}", field_name)
                 )
             )

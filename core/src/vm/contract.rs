@@ -27,7 +27,7 @@ impl<'a> RLPSerialize for Contract<'a> {
     }
 }
 
-impl Contract {
+impl<'a> Contract<'a> {
     #[inline]
     pub fn get_account(&self) -> AccountRef {
         self.account
