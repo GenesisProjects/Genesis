@@ -24,11 +24,11 @@ macro_rules! cast {
 }
 
 pub trait KernelRegister {
-    fn regist(&self, kernel: &Kernel) -> ModuleRef;
+    fn register(&self, kernel: &Kernel) -> ModuleRef;
 }
 
 impl KernelRegister for Module {
-    fn regist(&self, kernel: &Kernel) -> ModuleRef {
+    fn register(&self, kernel: &Kernel) -> ModuleRef {
         let mut imports = ImportsBuilder::new();
         imports.push_resolver("kenel", kernel);
 

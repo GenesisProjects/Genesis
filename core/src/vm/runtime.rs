@@ -22,7 +22,7 @@ impl Runtime {
     pub fn new(kenel_ref: &Kernel, buff: &[u8]) -> Self {
         let module = Module::from_buffer(buff).unwrap();
         Runtime {
-            module_ref: Some(module.regist(kenel_ref))
+            module_ref: Some(module.register(kenel_ref))
         }
     }
 
