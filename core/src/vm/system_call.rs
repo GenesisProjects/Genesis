@@ -22,6 +22,20 @@ macro_rules! hashmap {
     }}
 }
 
+pub trait Api {
+    fn create() {
+        unimplemented!()
+    }
+
+    fn call() {
+        unimplemented!()
+    }
+
+    fn ret() {
+        unimplemented!()
+    }
+}
+
 pub struct SystemCall {
     system_call_table: HashMap<usize, Signature>
 }
@@ -40,16 +54,8 @@ impl SystemCall {
            Some(FuncInstance::alloc_host(sign.to_owned(), index))
        })
     }
+}
 
-    pub fn create() {
-        unimplemented!()
-    }
+impl Api for SystemCall {
 
-    pub fn call() {
-        unimplemented!()
-    }
-
-    pub fn ret() {
-        unimplemented!()
-    }
 }

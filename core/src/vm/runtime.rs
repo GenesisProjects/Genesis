@@ -19,23 +19,14 @@ impl Runtime {
     /// ## Examples
     /// ```
     /// ```
-    pub fn new(buff: &[u8]) -> Self {
+    pub fn new(kenel_ref: &Kernel, buff: &[u8]) -> Self {
         let module = Module::from_buffer(buff).unwrap();
-        let mut imports = ImportsBuilder::new();
-        imports.push_resolver("env", &Kernel::bootstrap());
-
-        let module_ref = ModuleInstance::new(
-            &module,
-            &imports,
-        ).expect("Failed to instantiate module")
-            .assert_no_start();
-
         Runtime {
-            module_ref: Some(module_ref)
+            module_ref: Some(module.regist(kenel_ref))
         }
     }
 
-    pub fn new_with_contract(name: &'static str) -> Self {
+    pub fn new_with_contract(kenel_ref: &Kernel, name: &'static str) -> Self {
         unimplemented!()
     }
 

@@ -1,17 +1,9 @@
 use std::cell::RefCell;
 use wasmi::*;
 
+use super::gen_vm::GenVM;
+
 use super::system_call::*;
-
-pub struct Kernel {
-
-}
-
-impl Kernel {
-    pub fn bootstrap() -> Self {
-        Kernel {}
-    }
-}
 
 macro_rules! void {
 	{ $e: expr } => { { Ok(None) } }
@@ -25,8 +17,34 @@ macro_rules! cast {
 	{ $e: expr } => { { Ok(Some($e)) } }
 }
 
-impl Externals for Kernel {
+pub trait KernelRegister {
+    fn regist(&self, kernel: &Kernel) -> ModuleRef;
+}
 
+pub struct Kernel {
+
+}
+
+impl Kernel {
+    pub fn new() -> Self {
+        Kernel {}
+    }
+}
+
+impl KernelRegister for Module {
+    fn regist(&self, kernel: &Kernel) -> ModuleRef {
+        let mut imports = ImportsBuilder::new();
+        imports.push_resolver("kenel", kernel);
+
+        ModuleInstance::new(
+            self,
+            &imports,
+        ).expect("Failed to instantiate module")
+            .assert_no_start()
+    }
+}
+
+impl Externals for Kernel {
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
         match index {
             CALL_INDEX => void!(SystemCall::call()),
