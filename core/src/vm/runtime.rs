@@ -19,10 +19,10 @@ impl Runtime {
     /// ## Examples
     /// ```
     /// ```
-    pub fn new(kenel_ref: &Kernel, buff: &[u8]) -> Self {
+    pub fn new(kernel_ref: &Kernel, buff: &[u8]) -> Self {
         let module = Module::from_buffer(buff).unwrap();
         Runtime {
-            module_ref: Some(module.register(kenel_ref))
+            module_ref: Some(module.register(kernel_ref))
         }
     }
 
@@ -30,8 +30,12 @@ impl Runtime {
         unimplemented!()
     }
 
-    pub fn execute(&mut self, abi: Selector) -> RuntimeResult {
-        unimplemented!()
+    pub fn execute(&mut self, kenel_ref: &mut Kernel, abi: Selector) -> RuntimeResult {
+        let returned = self.module_ref.unwrap().invoke_export(
+            method,
+            &[],
+            &mut kenel_ref
+        )?;
     }
 }
 
