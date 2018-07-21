@@ -2,12 +2,14 @@ use chrono::*;
 use wasmi::*;
 use parity_wasm::elements::{self, Deserialize};
 
-use super::abi::*;
+use super::selector::*;
 use super::redo_log::Pipeline;
 use super::kernel::*;
 
 pub struct Runtime {
-    module_ref: Option<ModuleRef>
+    depth: usize,
+    module_ref: Option<ModuleRef>,
+    input_balance: u64
 }
 
 impl Runtime {
@@ -19,23 +21,49 @@ impl Runtime {
     /// ## Examples
     /// ```
     /// ```
-    pub fn new(kernel_ref: &Kernel, buff: &[u8]) -> Self {
+    pub fn new(
+        depth: usize,
+        kernel_ref: &Kernel,
+        buff: &[u8],
+        input_balance: u64
+    ) -> Self {
         let module = Module::from_buffer(buff).unwrap();
         Runtime {
-            module_ref: Some(module.register(kernel_ref))
+            depth: depth,
+            module_ref: Some(module.register(kernel_ref)),
+            input_balance: input_balance
         }
     }
 
-    pub fn new_with_contract(kenel_ref: &Kernel, name: &'static str) -> Self {
-        unimplemented!()
+    pub fn new_with_local_contract(
+        depth: usize,
+        kernel_ref: &Kernel,
+        path: &'static str,
+        input_balance: usize
+    ) -> Self {
+       unimplemented!()
     }
 
-    pub fn execute(&mut self, kenel_ref: &mut Kernel, abi: Selector) -> RuntimeResult {
-        let returned = self.module_ref.unwrap().invoke_export(
-            method,
-            &[],
-            &mut kenel_ref
-        )?;
+    pub fn execute(
+        &mut self,
+        kenel_ref: &mut Kernel,
+        selector: Selector,
+        time_limit: usize
+    ) -> RuntimeResult {
+        match self.module_ref {
+            Some(ref module_ref) => {
+                let ret = module_ref.invoke_export(
+                    &selector.name()[..],
+                    &selector.args(),
+                    kenel_ref
+                ).unwrap();
+                unimplemented!()
+            },
+            None => {
+                unimplemented!()
+            }
+        }
+        unimplemented!()
     }
 }
 

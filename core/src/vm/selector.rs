@@ -1,8 +1,12 @@
+use action::Action;
+
 use common::hash::Hash;
 use common::address::Address;
+
 use rlp::RLPSerialize;
 use rlp::types::{RLPError, RLP};
 
+use wasmi::*;
 
 #[derive(Clone, Debug)]
 pub enum Argument {
@@ -21,8 +25,18 @@ pub struct Selector {
     returns: Vec<Argument>
 }
 
-impl From<Selector> for String {
-    fn from(f: Selector) -> Self {
+impl Selector {
+    pub fn name(&self) -> String {
+        self.name.to_owned()
+    }
+
+    pub fn args(&self) -> Vec<RuntimeValue> {
+        unimplemented!()
+    }
+}
+
+impl From<Action> for Selector {
+    fn from(f: Action) -> Self {
         unimplemented!()
     }
 }

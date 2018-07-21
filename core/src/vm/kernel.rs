@@ -1,9 +1,9 @@
 use std::cell::RefCell;
-use std::collections::LinkedList;
+use std::collections::{LinkedList, HashMap};
 
 use wasmi::*;
 
-use super::abi::Selector;
+use super::selector::Selector;
 use super::gen_vm::GenVM;
 use super::system_call::*;
 use super::runtime::*;
@@ -21,6 +21,10 @@ macro_rules! some {
 
 macro_rules! cast {
 	{ $e: expr } => { { Ok(Some($e)) } }
+}
+
+pub struct KernelCache {
+
 }
 
 pub trait KernelRegister {
@@ -42,24 +46,27 @@ impl KernelRegister for Module {
 
 pub struct Kernel {
     runtimes: LinkedList<Runtime>,
-    last_return_val: Option<RuntimeResult>,
+    final_result: Option<RuntimeResult>,
 
-    //account: Account,
-    //tx: Transaction
-    contract_info: Contract
+    contract_info: Contract,
+    cache: KernelCache
 }
 
 impl Kernel {
-    pub fn new() -> Self {
+    pub fn new(init_runtime: Runtime) -> Self {
         unimplemented!();
     }
 
-    fn commit(&mut self) -> Result<(), Error> {
+    pub fn fork_runtime(
+        &mut self,
+        parent: &Runtime,
+        child: &runtime,
+        selector: Selector,
+        addr: Address) -> Result<(), Error> {
         unimplemented!()
     }
 
-
-    pub fn ext_call(&mut self, selector: Selector, account_addr: Address) -> Result<Runtime, Error> {
+    fn merge_ret_result(&mut self, ret: &RuntimeResult) -> Result<(), Error> {
         unimplemented!()
     }
 
@@ -76,6 +83,14 @@ impl Kernel {
     }
 
     fn stack_depth(&self) -> usize {
+        unimplemented!()
+    }
+
+    fn load_contract_account(&mut self, account_addr: Address) -> Result<Account, Error> {
+        unimplemented!()
+    }
+
+    fn load_code(&mut self, account_ref: &Account, code_buff: &mut [u8]) -> Result<(), Error> {
         unimplemented!()
     }
 }
@@ -126,6 +141,6 @@ impl ModuleImportResolver for Kernel {
 
 impl Drop for Kernel {
     fn drop(&mut self) {
-        self.commit();
+
     }
 }

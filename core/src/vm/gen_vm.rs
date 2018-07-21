@@ -1,23 +1,31 @@
-use super::abi::Selector;
+use super::selector::Selector;
 use super::kernel::Kernel;
 use super::runtime::*;
 
-use wasmi::*;
-
 use account::Account;
-use transaction::Transaction;
+use action::Action;
 use common::address::Address;
+
+use wasmi::*;
 
 pub struct GenVM {
     kernel: Kernel,
 }
 
 impl GenVM {
-    pub fn load_contract_account(&mut self, account_addr: Address) -> Result<Runtime, Error> {
+    pub fn new_with_action(action: Action, contract: Address) -> Result<Self, Error> {
         unimplemented!()
     }
 
-    pub fn bootstrap(&mut self, tx: &Transaction) {
+    pub fn launch(&mut self) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    pub fn commit_result(&self, action: &mut Action) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn init_kernel(&mut self) {
         unimplemented!()
     }
 }
