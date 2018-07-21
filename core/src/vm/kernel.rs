@@ -60,7 +60,6 @@ impl Kernel {
     pub fn fork_runtime(
         &mut self,
         parent: &Runtime,
-        child: &runtime,
         selector: Selector,
         addr: Address) -> Result<(), Error> {
         unimplemented!()
