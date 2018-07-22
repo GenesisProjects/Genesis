@@ -31,7 +31,16 @@ impl Selector {
     }
 
     pub fn args(&self) -> Vec<RuntimeValue> {
-        unimplemented!()
+        self.args.clone().into_iter().map(|arg| {
+            match arg {
+                Argument::Int32(val) => RuntimeValue::from(val),
+                Argument::Int64(val) => RuntimeValue::from(val),
+                Argument::Uint32(val) => RuntimeValue::from(val),
+                Argument::Uint64(val) => RuntimeValue::from(val),
+                Argument::Float32(val) => RuntimeValue::F32(val.into()),
+                Argument::Float64(val) => RuntimeValue::F64(val.into())
+            }
+        }).collect()
     }
 }
 

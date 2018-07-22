@@ -135,7 +135,7 @@ impl Kernel {
     fn pop_runtime(&mut self) -> Result<usize, Error> {
         match self.runtimes.pop() {
             Some(val) => Ok(self.runtimes.len()),
-            None => Err(Error::Validation(format!("no elements in runtimes")))
+            None => Err(Error::Validation("no elements in runtimes".into()))
         }
     }
 
