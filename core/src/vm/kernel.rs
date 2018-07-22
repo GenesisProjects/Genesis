@@ -26,6 +26,7 @@ macro_rules! cast {
 	{ $e: expr } => { { Ok(Some($e)) } }
 }
 
+#[derive(Clone)]
 pub struct KernelCache {
     memory: HashMap<Hash, CHUNK>
 }
@@ -110,6 +111,10 @@ impl Kernel {
 
     pub fn top_runtime_mut<'a>(&'a mut self) -> &'a mut Runtime{
         self.runtimes.last_mut().unwrap()
+    }
+
+    pub fn cache(&self) -> KernelCache {
+        self.cache.clone()
     }
 
     fn merge_ret_result(&mut self, ret: RuntimeResult) -> Result<(), Error> {

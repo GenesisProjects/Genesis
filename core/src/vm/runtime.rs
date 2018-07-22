@@ -58,15 +58,22 @@ impl Runtime {
     ) -> RuntimeResult {
         match self.module_ref {
             Some(ref module_ref) => {
-                let ret = module_ref.invoke_export(
+                match module_ref.invoke_export(
                     &selector.name()[..],
                     &selector.args(),
                     kenel_ref
-                ).unwrap();
-                unimplemented!()
+                ) {
+                    Ok(ret) => {
+                        RuntimeResult::new_with_ret(ret)
+                    },
+                    Err(e) => {
+                        RuntimeResult::new_with_err(e)
+                    }
+                }
+
             },
             None => {
-                unimplemented!()
+                RuntimeResult::new_with_err(Error::Validation("ModuleRef is none".into()))
             }
         }
     }
@@ -94,5 +101,11 @@ pub struct RuntimeResult {
 }
 
 impl RuntimeResult {
+    pub fn new_with_ret(ret: Option<RuntimeValue>) -> Self {
+        unimplemented!()
+    }
 
+    pub fn new_with_err(err: Error) -> Self {
+        unimplemented!()
+    }
 }
