@@ -128,11 +128,15 @@ impl Kernel {
     }
 
     fn push_runtime(&mut self, runtime: Runtime) -> Result<usize, Error> {
-        unimplemented!()
+        self.runtimes.push(runtime);
+        Ok(self.runtimes.len())
     }
 
     fn pop_runtime(&mut self) -> Result<usize, Error> {
-        unimplemented!()
+        match self.runtimes.pop() {
+            Some(val) => Ok(self.runtimes.len()),
+            None => Err(Error::Validation(format!("no elements in runtimes")))
+        }
     }
 
     fn execute_top_runtime(&mut self, selector: Selector) -> RuntimeResult {
