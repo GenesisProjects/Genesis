@@ -3,7 +3,7 @@ use wasmi::*;
 use parity_wasm::elements::{self, Deserialize};
 
 use super::selector::*;
-use super::kernel::*;
+use super::system_call::*;
 
 use account::Account;
 use transaction::Transaction;
@@ -27,7 +27,7 @@ impl Runtime {
     pub fn new(
         account: Account,
         depth: usize,
-        kernel_ref: &Kernel,
+        syscall_ref: &SystemCall,
         buff: &[u8],
         input_balance: u64
     ) -> Self {
@@ -35,7 +35,7 @@ impl Runtime {
         Runtime {
             account: account,
             depth: depth,
-            module_ref: Some(module.register(kernel_ref)),
+            module_ref: Some(module.register(syscall_ref)),
             balance: input_balance
         }
     }
@@ -43,7 +43,7 @@ impl Runtime {
     pub fn new_with_local_contract(
         account: Account,
         depth: usize,
-        kernel_ref: &Kernel,
+        sys_call_ref: &SystemCall,
         path: &'static str,
         input_balance: usize
     ) -> Self {
@@ -52,7 +52,7 @@ impl Runtime {
 
     pub fn execute(
         &mut self,
-        kenel_ref: &mut Kernel,
+        sys_call_ref: &mut SystemCall,
         selector: Selector,
         time_limit: usize
     ) -> RuntimeResult {
@@ -61,7 +61,7 @@ impl Runtime {
                 match module_ref.invoke_export(
                     &selector.name()[..],
                     &selector.args(),
-                    kenel_ref
+                    sys_call_ref
                 ) {
                     Ok(ret) => {
                         RuntimeResult::new_with_ret(ret)

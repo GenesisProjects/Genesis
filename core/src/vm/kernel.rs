@@ -14,18 +14,6 @@ use account::Account;
 
 pub type CHUNK = [u8; 32];
 
-macro_rules! void {
-	{ $e: expr } => { { Ok(None) } }
-}
-
-macro_rules! some {
-	{ $e: expr } => { { Ok(Some($e)) } }
-}
-
-macro_rules! cast {
-	{ $e: expr } => { { Ok(Some($e)) } }
-}
-
 #[derive(Clone)]
 pub struct KernelCache {
     memory: HashMap<Hash, CHUNK>
@@ -36,23 +24,6 @@ impl KernelCache {
         KernelCache {
             memory: HashMap::new()
         }
-    }
-}
-
-pub trait KernelRegister {
-    fn register(&self, kernel: &Kernel) -> ModuleRef;
-}
-
-impl KernelRegister for Module {
-    fn register(&self, kernel: &Kernel) -> ModuleRef {
-        let mut imports = ImportsBuilder::new();
-        imports.push_resolver("kenel", kernel);
-
-        ModuleInstance::new(
-            self,
-            &imports,
-        ).expect("Failed to instantiate module")
-            .assert_no_start()
     }
 }
 
@@ -128,7 +99,7 @@ impl Kernel {
                 let init_runtime = Runtime::new(
                     account,
                     0usize,
-                    self,
+                    &SYSTEM_CALL.lock().unwrap(),
                     &code[..],
                     input_balance
                 );
@@ -147,7 +118,7 @@ impl Kernel {
                 let child_runtime = Runtime::new(
                     account,
                     parent.depth() + 1,
-                    self,
+                    &SYSTEM_CALL.lock().unwrap(),
                     &code[..],
                     input_balance
                 );
@@ -178,50 +149,6 @@ impl Kernel {
 
     fn load_code(account: &Account, code_buff: &mut [u8]) -> Result<(), Error> {
         unimplemented!()
-    }
-}
-
-impl Externals for Kernel {
-    fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-        match index {
-            CALL_INDEX => void!(SystemCall::call()),
-            _ => panic!("unknown function index {}", index)
-        }
-    }
-}
-
-impl ModuleImportResolver for Kernel {
-    fn resolve_func(
-        &self,
-        field_name: &str,
-        _signature: &Signature,
-    ) -> Result<FuncRef, Error> {
-        match field_name {
-            "call" => {
-                match SYSTEM_CALL.lock().unwrap().func_ref(CALL_INDEX) {
-                    Some(f) => Ok(f),
-                    None => Err(Error::Function(
-                        format!("function index: {} is not register in the kernel", CALL_INDEX)
-                    ))
-                }
-            },
-            _ =>
-                Err(Error::Function(
-                    format!("kernel module doesn't export function with name {}", field_name)
-                ))
-        }
-    }
-
-    fn resolve_memory(
-        &self,
-        field_name: &str,
-        descriptor: &MemoryDescriptor,
-    ) -> Result<MemoryRef, Error> {
-        if field_name == "memory" {
-            unimplemented!()
-        } else {
-            Err(Error::Instantiation("Memory imported under unknown name".to_owned()))
-        }
     }
 }
 
