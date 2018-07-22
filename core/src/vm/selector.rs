@@ -56,12 +56,12 @@ impl RLPSerialize for Selector {
     }
 }
 
-pub trait ABICodec {
+pub trait SelectorCodec {
     fn decode(input: &[u8]) -> Self;
     fn encode<'a>(&self, buff: &mut[u8]);
 }
 
-impl<T> ABICodec for T where T: RLPSerialize {
+impl<T> SelectorCodec for T where T: RLPSerialize {
     fn decode(input: &[u8]) -> T {
         unimplemented!()
     }

@@ -13,8 +13,9 @@ pub struct GenVM {
 }
 
 impl GenVM {
-    pub fn new_with_action(action: Action, contract: Address) -> Result<Self, Error> {
-        match Kernel::new(action, contract) {
+    pub fn new(action: &Action, contract: Address) -> Result<Self, Error> {
+        let input = GenVM::get_input_balance(action).unwrap();
+        match Kernel::new(contract, input) {
             Ok(kernel) => Ok(
                 GenVM {
                     kernel: kernel
@@ -24,11 +25,17 @@ impl GenVM {
         }
     }
 
-    pub fn launch(&mut self) -> Result<(), Error> {
+    pub fn launch<'a, 'b>(&'a mut self, action: &'b Action) -> &'a Option<RuntimeResult> {
+        let selector: Selector = Selector::from(action.clone());
+        self.kernel.run(selector)
+    }
+
+    pub fn commit_result(&self, action: &mut Action, result: RuntimeResult) -> Result<(), Error> {
         unimplemented!()
     }
 
-    pub fn commit_result(&self, action: &mut Action) -> Result<(), Error> {
+    fn get_input_balance(action: &Action) -> Result<u64, Error> {
         unimplemented!()
     }
+
 }

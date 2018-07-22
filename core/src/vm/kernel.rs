@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::{LinkedList, HashMap};
+use std::collections::HashMap;
 
 use wasmi::*;
 
@@ -56,40 +56,33 @@ impl KernelRegister for Module {
 }
 
 pub struct Kernel {
-    runtimes: LinkedList<Runtime>,
+    runtimes: Vec<Runtime>,
     final_result: Option<RuntimeResult>,
-
     cache: KernelCache
 }
 
 impl Kernel {
-    pub fn new(action: Action, addr: Address) -> Result<Self, Error> {
+    pub fn new(addr: Address, input_balance: u64) -> Result<Self, Error> {
         let mut kernel = Kernel {
-            runtimes: LinkedList::new(),
+            runtimes: Vec::new(),
             final_result: None,
-
             cache: KernelCache::new()
         };
 
-        let mut code: Vec<u8> = vec![];
-        Kernel::load_contract_account(addr).and_then(|account| {
-            Kernel::load_code(&account, &mut code[..]).and_then(|_| {
-                Kernel::get_input_balance(&action).and_then(|input_balance| {
-                    let selector: Selector = Selector::from(action);
-                    let init_runtime = Runtime::new(
-                        account,
-                        0usize,
-                        &kernel,
-                        &code[..], input_balance
-                    );
+        let runtime_result = kernel.init_base_runtime(addr, input_balance);
+        match runtime_result {
+            Ok(runtime) => {
+                kernel.push_runtime(runtime);
+                Ok(kernel)
+            },
+            Err(e) => Err(e)
+        }
+    }
 
-                    match kernel.push_runtime(init_runtime) {
-                        Ok(_) => Ok(kernel),
-                        Err(e) => Err(e)
-                    }
-                })
-            })
-        })
+    pub fn run<'a>(&'a mut self, selector: Selector) -> &'a Option<RuntimeResult> {
+        let result = self.execute_top_runtime(selector);
+        self.merge_ret_result(result);
+        self.final_result()
     }
 
     pub fn fork_runtime(
@@ -115,24 +108,26 @@ impl Kernel {
         &self.final_result
     }
 
+    pub fn top_runtime_mut<'a>(&'a mut self) -> &'a mut Runtime{
+        self.runtimes.last_mut().unwrap()
+    }
+
     fn merge_ret_result(&mut self, ret: RuntimeResult) -> Result<(), Error> {
         unimplemented!()
     }
 
-    fn init_runtime_with_action(&self, addr: Address, action: Action) -> Result<Runtime, Error> {
+    fn init_base_runtime(&self, addr: Address, input_balance: u64) -> Result<Runtime, Error> {
         let mut code: Vec<u8> = vec![];
         Kernel::load_contract_account(addr).and_then(|account| {
             Kernel::load_code(&account, &mut code[..]).and_then(|_| {
-                Kernel::get_input_balance(&action).and_then(|input_balance| {
-                    let selector: Selector = Selector::from(action);
-                    let init_runtime = Runtime::new(
-                        account,
-                        0usize,
-                        self,
-                        &code[..], input_balance
-                    );
-                    Ok(init_runtime)
-                })
+                let init_runtime = Runtime::new(
+                    account,
+                    0usize,
+                    self,
+                    &code[..],
+                    input_balance
+                );
+                Ok(init_runtime)
             })
         })
     }
@@ -173,10 +168,6 @@ impl Kernel {
     }
 
     fn load_contract_account(account_addr: Address) -> Result<Account, Error> {
-        unimplemented!()
-    }
-
-    fn get_input_balance(action: &Action) -> Result<u64, Error> {
         unimplemented!()
     }
 
