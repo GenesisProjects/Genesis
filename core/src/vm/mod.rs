@@ -1,4 +1,3 @@
-pub mod contract;
 pub mod gen_vm;
 pub mod kernel;
 pub mod redo_log;

@@ -14,7 +14,14 @@ pub struct GenVM {
 
 impl GenVM {
     pub fn new_with_action(action: Action, contract: Address) -> Result<Self, Error> {
-        unimplemented!()
+        match Kernel::new(action, contract) {
+            Ok(kernel) => Ok(
+                GenVM {
+                    kernel: kernel
+                }
+            ),
+            Err(e) => Err(e)
+        }
     }
 
     pub fn launch(&mut self) -> Result<(), Error> {

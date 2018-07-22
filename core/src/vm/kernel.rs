@@ -7,9 +7,12 @@ use super::selector::Selector;
 use super::gen_vm::GenVM;
 use super::system_call::*;
 use super::runtime::*;
-use super::contract::Contract;
 use common::address::Address;
+use common::hash::Hash;
 use account::Account;
+use action::Action;
+
+pub type CHUNK = [u8; 32];
 
 macro_rules! void {
 	{ $e: expr } => { { Ok(None) } }
@@ -24,7 +27,15 @@ macro_rules! cast {
 }
 
 pub struct KernelCache {
+    memory: HashMap<Hash, CHUNK>
+}
 
+impl KernelCache {
+    pub fn new() -> Self {
+        KernelCache {
+            memory: HashMap::new()
+        }
+    }
 }
 
 pub trait KernelRegister {
@@ -45,16 +56,38 @@ impl KernelRegister for Module {
 }
 
 pub struct Kernel {
+    account: Option<Account>,
     runtimes: LinkedList<Runtime>,
     final_result: Option<RuntimeResult>,
 
-    contract_info: Contract,
     cache: KernelCache
 }
 
 impl Kernel {
-    pub fn new(init_runtime: Runtime) -> Self {
-        unimplemented!();
+    pub fn new(action: Action, addr: Address) -> Result<Self, Error> {
+        let mut kernel = Kernel {
+            account: None,
+            runtimes: LinkedList::new(),
+            final_result: None,
+
+            cache: KernelCache::new()
+        };
+        let mut code: Vec<u8> = vec![];
+
+        Kernel::load_contract_account(addr).and_then(|account| {
+            Kernel::load_code(&account, &mut code[..]).and_then(|_| {
+                Kernel::get_input_balance(&action).and_then(|input_balance| {
+                    let selector: Selector = Selector::from(action);
+                    let init_runtime = Runtime::new(0usize, &kernal, &code[..], input_balance);
+                    kernel.account = Some(account);
+
+                    match kernel.push_runtime(init_runtime) {
+                        Ok(_) => Ok(kernel),
+                        Err(e) => Err(e)
+                    }
+                })
+            })
+        })
     }
 
     pub fn fork_runtime(
@@ -85,11 +118,15 @@ impl Kernel {
         unimplemented!()
     }
 
-    fn load_contract_account(&mut self, account_addr: Address) -> Result<Account, Error> {
+    fn load_contract_account(account_addr: Address) -> Result<Account, Error> {
         unimplemented!()
     }
 
-    fn load_code(&mut self, account_ref: &Account, code_buff: &mut [u8]) -> Result<(), Error> {
+    fn get_input_balance(action: &Action) -> Result<u64, Error> {
+        unimplemented!()
+    }
+
+    fn load_code(account: &Account, code_buff: &mut [u8]) -> Result<(), Error> {
         unimplemented!()
     }
 }
