@@ -140,11 +140,12 @@ impl Kernel {
     }
 
     fn execute_top_runtime(&mut self, selector: Selector) -> RuntimeResult {
-        unimplemented!()
+        let runtime = self.top_runtime_mut();
+        runtime.execute(&mut SYSTEM_CALL.lock().unwrap(), selector, 30usize)
     }
 
     fn stack_depth(&self) -> usize {
-        unimplemented!()
+        self.runtimes.len()
     }
 
     fn load_contract_account(account_addr: Address) -> Result<Account, Error> {
