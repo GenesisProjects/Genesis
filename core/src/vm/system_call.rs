@@ -8,12 +8,6 @@ pub const RETURN_INDEX: usize       = 0x01;
 pub const CALL_INDEX:   usize       = 0x02;
 pub const CREATE_INDEX: usize       = 0x03;
 
-lazy_static! {
-    pub static ref SYSTEM_CALL: Mutex<SystemCall> = {
-        Mutex::new(SystemCall::new())
-    };
-}
-
 macro_rules! hashmap {
     ($( $key: expr => $val: expr ),*) => {{
          let mut map = ::std::collections::HashMap::new();
