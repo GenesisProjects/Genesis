@@ -3,13 +3,16 @@ use wasmi::*;
 use parity_wasm::elements::{self, Deserialize};
 
 use super::selector::*;
-use super::redo_log::Pipeline;
 use super::kernel::*;
 
+use account::Account;
+use transaction::Transaction;
+
 pub struct Runtime {
+    account: Account,
     depth: usize,
     module_ref: Option<ModuleRef>,
-    input_balance: u64
+    balance: u64
 }
 
 impl Runtime {
@@ -22,6 +25,7 @@ impl Runtime {
     /// ```
     /// ```
     pub fn new(
+        account: Account,
         depth: usize,
         kernel_ref: &Kernel,
         buff: &[u8],
@@ -29,13 +33,15 @@ impl Runtime {
     ) -> Self {
         let module = Module::from_buffer(buff).unwrap();
         Runtime {
+            account: account,
             depth: depth,
             module_ref: Some(module.register(kernel_ref)),
-            input_balance: input_balance
+            balance: input_balance
         }
     }
 
     pub fn new_with_local_contract(
+        account: Account,
         depth: usize,
         kernel_ref: &Kernel,
         path: &'static str,
@@ -63,17 +69,30 @@ impl Runtime {
                 unimplemented!()
             }
         }
-        unimplemented!()
+    }
+
+    pub fn depth(&self) -> usize {
+        self.depth
+    }
+
+    pub fn input_balance(&self) -> u64 {
+        self.balance
+    }
+
+    pub fn acount_ref<'a>(&'a self) -> &'a Account {
+        &self.account
     }
 }
 
 pub struct RuntimeResult {
     return_val: Option<Argument>,
-    pipeline: Pipeline,
     success: bool,
     total_storage_alloc: usize,
     total_storage_free: usize,
-    start: DateTime<Utc>,
-    end: DateTime<Utc>,
-    error: Option<Error>
+    error: Option<Error>,
+    txs: Vec<Transaction>
+}
+
+impl RuntimeResult {
+
 }

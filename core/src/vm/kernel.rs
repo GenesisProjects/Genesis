@@ -9,8 +9,8 @@ use super::system_call::*;
 use super::runtime::*;
 use common::address::Address;
 use common::hash::Hash;
-use account::Account;
 use action::Action;
+use account::Account;
 
 pub type CHUNK = [u8; 32];
 
@@ -56,7 +56,6 @@ impl KernelRegister for Module {
 }
 
 pub struct Kernel {
-    account: Option<Account>,
     runtimes: LinkedList<Runtime>,
     final_result: Option<RuntimeResult>,
 
@@ -66,20 +65,23 @@ pub struct Kernel {
 impl Kernel {
     pub fn new(action: Action, addr: Address) -> Result<Self, Error> {
         let mut kernel = Kernel {
-            account: None,
             runtimes: LinkedList::new(),
             final_result: None,
 
             cache: KernelCache::new()
         };
-        let mut code: Vec<u8> = vec![];
 
+        let mut code: Vec<u8> = vec![];
         Kernel::load_contract_account(addr).and_then(|account| {
             Kernel::load_code(&account, &mut code[..]).and_then(|_| {
                 Kernel::get_input_balance(&action).and_then(|input_balance| {
                     let selector: Selector = Selector::from(action);
-                    let init_runtime = Runtime::new(0usize, &kernal, &code[..], input_balance);
-                    kernel.account = Some(account);
+                    let init_runtime = Runtime::new(
+                        account,
+                        0usize,
+                        &kernel,
+                        &code[..], input_balance
+                    );
 
                     match kernel.push_runtime(init_runtime) {
                         Ok(_) => Ok(kernel),
@@ -92,25 +94,77 @@ impl Kernel {
 
     pub fn fork_runtime(
         &mut self,
+        input_balance: u64,
         parent: &Runtime,
         selector: Selector,
         addr: Address) -> Result<(), Error> {
+        self.init_runtime_with_parent(parent, addr, input_balance).and_then(|runtime| {
+            match self.push_runtime(runtime) {
+                Ok(size) => {
+                    let ret =  self.execute_top_runtime(selector);
+                    self.pop_runtime();
+                    self.merge_ret_result(ret);
+                    Ok(())
+                },
+                Err(e) => Err(e)
+            }
+        })
+    }
+
+    pub fn final_result<'a>(&'a self) -> &'a Option<RuntimeResult> {
+        &self.final_result
+    }
+
+    fn merge_ret_result(&mut self, ret: RuntimeResult) -> Result<(), Error> {
         unimplemented!()
     }
 
-    fn merge_ret_result(&mut self, ret: &RuntimeResult) -> Result<(), Error> {
-        unimplemented!()
+    fn init_runtime_with_action(&self, addr: Address, action: Action) -> Result<Runtime, Error> {
+        let mut code: Vec<u8> = vec![];
+        Kernel::load_contract_account(addr).and_then(|account| {
+            Kernel::load_code(&account, &mut code[..]).and_then(|_| {
+                Kernel::get_input_balance(&action).and_then(|input_balance| {
+                    let selector: Selector = Selector::from(action);
+                    let init_runtime = Runtime::new(
+                        account,
+                        0usize,
+                        self,
+                        &code[..], input_balance
+                    );
+                    Ok(init_runtime)
+                })
+            })
+        })
+    }
+
+    fn init_runtime_with_parent(&self, parent: &Runtime, addr: Address, input_balance: u64) -> Result<Runtime, Error> {
+        if input_balance > parent.input_balance() {
+            return Err(Error::Validation("Insufficient balance".into()));
+        }
+        let mut code: Vec<u8> = vec![];
+        Kernel::load_contract_account(addr).and_then(|account| {
+            Kernel::load_code(&account, &mut code[..]).and_then(|_| {
+                let child_runtime = Runtime::new(
+                    account,
+                    parent.depth() + 1,
+                    self,
+                    &code[..],
+                    input_balance
+                );
+                Ok(child_runtime)
+            })
+        })
     }
 
     fn push_runtime(&mut self, runtime: Runtime) -> Result<usize, Error> {
         unimplemented!()
     }
 
-    fn pop_runtime(&mut self) -> Result<Runtime, Error> {
+    fn pop_runtime(&mut self) -> Result<usize, Error> {
         unimplemented!()
     }
 
-    fn excecute_top_runtime(&mut self, selector: Selector) -> RuntimeResult {
+    fn execute_top_runtime(&mut self, selector: Selector) -> RuntimeResult {
         unimplemented!()
     }
 

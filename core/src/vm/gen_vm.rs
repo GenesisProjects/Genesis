@@ -31,8 +31,4 @@ impl GenVM {
     pub fn commit_result(&self, action: &mut Action) -> Result<(), Error> {
         unimplemented!()
     }
-
-    fn init_kernel(&mut self) {
-        unimplemented!()
-    }
 }
