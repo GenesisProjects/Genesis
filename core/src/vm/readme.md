@@ -53,11 +53,32 @@ Current capacity of the storage.
 ---------------------
 
 ### Call:
-**2. fn call(addr: u256, input_balnace: u64, selector: ptr) -> u64**
+**1. fn call(addr: u256, input_balnace: u64, selector: ptr) -> u256**
 
 usage:
 
 Call another contract. 
+
+---------------------
+
+### Transaction:
+**1. fn transfer(to_addr: u256, balance: u64) -> bool**
+
+usage:
+
+Send balance to another account. If have no enough balance, return false.
+
+**2. fn send_action(addr: u256, input_balnace: u64, selector: ptr) -> bool**
+
+usage:
+
+Send an action to another contract. If have no enough balance, return false.
+
+**3. fn transaction_result(addr: u256) -> u256**
+
+usage:
+
+Get the result of previous executed transaction.
 
 ---------------------
 
