@@ -99,7 +99,7 @@ impl Kernel {
                 let init_runtime = Runtime::new(
                     account,
                     0usize,
-                    &SystemCall::new(),
+                    &SysCallResolver::new(16),
                     &code[..],
                     input_balance
                 );
@@ -118,7 +118,7 @@ impl Kernel {
                 let child_runtime = Runtime::new(
                     account,
                     parent.depth() + 1,
-                    &SystemCall::new(),
+                    &SysCallResolver::new(16),
                     &code[..],
                     input_balance
                 );
@@ -141,7 +141,7 @@ impl Kernel {
 
     fn execute_top_runtime(&mut self, selector: Selector) -> RuntimeResult {
         let runtime = self.top_runtime_mut();
-        runtime.execute(&mut SystemCall::new(), selector, 30usize)
+        runtime.execute(&mut SystemCall{}, selector, 30usize)
     }
 
     fn stack_depth(&self) -> usize {

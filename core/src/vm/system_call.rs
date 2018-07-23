@@ -43,37 +43,27 @@ pub trait Api {
 }
 
 pub struct SystemCall {
-    system_call_table: HashMap<usize, Signature>
+
 }
 
 impl SystemCall {
-    pub fn new() -> Self {
-        SystemCall {
-            system_call_table: hashmap![
-                CALL_INDEX => Signature::new(&[I32, I32][..], Some(I32))
-            ]
-        }
-    }
 
-    pub fn func_ref(&self, index: usize) -> Option<FuncRef> {
-       self.system_call_table.get(&index).and_then(|sign| {
-           Some(FuncInstance::alloc_host(sign.to_owned(), index))
-       })
-    }
 }
 
 impl Api for SystemCall {
-
+    fn call() {
+        unimplemented!()
+    }
 }
 
 pub trait SysCallRegister {
-    fn register(&self, kernel: &SystemCall) -> ModuleRef;
+    fn register(&self, sys_resolver: &SysCallResolver) -> ModuleRef;
 }
 
 impl SysCallRegister for Module {
-    fn register(&self, sys_call: &SystemCall) -> ModuleRef {
+    fn register(&self, sys_resolver: &SysCallResolver) -> ModuleRef {
         let mut imports = ImportsBuilder::new();
-        imports.push_resolver("sys_call", sys_call);
+        imports.push_resolver("sys_resolver", sys_resolver);
 
         ModuleInstance::new(
             self,
@@ -86,13 +76,61 @@ impl SysCallRegister for Module {
 impl Externals for SystemCall {
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
         match index {
-            CALL_INDEX => void!(SystemCall::call()),
+            CALL_INDEX => void!(self.call()),
             _ => panic!("unknown function index {}", index)
         }
     }
 }
 
-impl ModuleImportResolver for SystemCall {
+/// # SysCallResolver
+/// **Usage**
+/// - WASMI Import resolver
+/// **Member**
+/// - 1. ***max_memory***:      instance of [u32]
+#[derive(Default)]
+pub struct SysCallResolver {
+    max_mem: u32,
+    system_call_table: HashMap<usize, Signature>
+}
+
+impl SysCallResolver {
+    /// # new(2)
+    /// **Usage**
+    /// - create new SysCallResolver
+    /// **Parameters**
+    /// - 1. ***u32(max_memory)***: the max memory siz
+    /// **Return**
+    /// - 1. ***Self***
+    /// ## Examples
+    /// ```
+    /// ```
+    pub fn new(max_memory: u32) -> SysCallResolver {
+        SysCallResolver {
+            max_mem: max_memory,
+            system_call_table: hashmap![
+                CALL_INDEX => Signature::new(&[I32, I32][..], Some(I32))
+            ]
+        }
+    }
+
+    /// # func_ref
+    /// **Usage**
+    /// - Generate FuncRef for WASMI based on external functions
+    /// **Parameters**
+    /// - 1. ***usize(index)***: external function index
+    /// **Return**
+    /// - 1. ***Option<FuncRef>***
+    /// ## Examples
+    /// ```
+    /// ```
+    pub fn func_ref(&self, index: usize) -> Option<FuncRef> {
+        self.system_call_table.get(&index).and_then(|sign| {
+            Some(FuncInstance::alloc_host(sign.to_owned(), index))
+        })
+    }
+}
+
+impl ModuleImportResolver for SysCallResolver {
     fn resolve_func(
         &self,
         field_name: &str,
@@ -100,7 +138,7 @@ impl ModuleImportResolver for SystemCall {
     ) -> Result<FuncRef, Error> {
         match field_name {
             "call" => {
-                match SYSTEM_CALL.lock().unwrap().func_ref(CALL_INDEX) {
+                match self.func_ref(CALL_INDEX) {
                     Some(f) => Ok(f),
                     None => Err(Error::Function(
                         format!("function index: {} is not register in the kernel", CALL_INDEX)

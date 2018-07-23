@@ -27,7 +27,7 @@ impl Runtime {
     pub fn new(
         account: Account,
         depth: usize,
-        syscall_ref: &SystemCall,
+        sys_resolver: &SysCallResolver,
         buff: &[u8],
         input_balance: u64
     ) -> Self {
@@ -35,7 +35,7 @@ impl Runtime {
         Runtime {
             account: account,
             depth: depth,
-            module_ref: Some(module.register(syscall_ref)),
+            module_ref: Some(module.register(sys_resolver)),
             balance: input_balance
         }
     }
