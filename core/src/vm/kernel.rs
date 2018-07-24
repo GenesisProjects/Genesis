@@ -1,16 +1,14 @@
-use std::cell::RefCell;
-use std::collections::HashMap;
-
-use wasmi::*;
-
-use super::selector::Selector;
-use super::gen_vm::GenVM;
-use super::system_call::*;
-use super::runtime::*;
+use account::Account;
+use action::Action;
 use common::address::Address;
 use common::hash::Hash;
-use action::Action;
-use account::Account;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use super::gen_vm::GenVM;
+use super::runtime::*;
+use super::selector::Selector;
+use super::system_call::*;
+use wasmi::*;
 
 pub type CHUNK = [u8; 32];
 
@@ -30,7 +28,7 @@ impl KernelCache {
 pub struct Kernel {
     runtimes: Vec<Runtime>,
     final_result: Option<RuntimeResult>,
-    cache: KernelCache
+    cache: KernelCache,
 }
 
 impl Kernel {
@@ -38,7 +36,7 @@ impl Kernel {
         let mut kernel = Kernel {
             runtimes: Vec::new(),
             final_result: None,
-            cache: KernelCache::new()
+            cache: KernelCache::new(),
         };
 
         let runtime_result = kernel.init_base_runtime(addr, input_balance);
@@ -46,13 +44,13 @@ impl Kernel {
             Ok(runtime) => {
                 kernel.push_runtime(runtime);
                 Ok(kernel)
-            },
+            }
             Err(e) => Err(e)
         }
     }
 
-    pub fn run<'a>(&'a mut self, selector: Selector) -> &'a Option<RuntimeResult> {
-        let result = self.execute_top_runtime(selector);
+    pub fn run<'a>(&'a mut self, selector: Selector, system_call: &'a mut SystemCall) -> &'a Option<RuntimeResult> {
+        let result = self.execute_top_runtime(selector, system_call);
         self.merge_ret_result(result);
         self.final_result()
     }
@@ -62,15 +60,16 @@ impl Kernel {
         input_balance: u64,
         parent: &Runtime,
         selector: Selector,
-        addr: Address) -> Result<(), Error> {
+        addr: Address,
+        system_call: &mut SystemCall) -> Result<(), Error> {
         self.init_runtime_with_parent(parent, addr, input_balance).and_then(|runtime| {
             match self.push_runtime(runtime) {
                 Ok(size) => {
-                    let ret =  self.execute_top_runtime(selector);
+                    let ret = self.execute_top_runtime(selector, system_call);
                     self.pop_runtime();
                     self.merge_ret_result(ret);
                     Ok(())
-                },
+                }
                 Err(e) => Err(e)
             }
         })
@@ -80,7 +79,7 @@ impl Kernel {
         &self.final_result
     }
 
-    pub fn top_runtime_mut<'a>(&'a mut self) -> &'a mut Runtime{
+    pub fn top_runtime_mut<'a>(&'a mut self) -> &'a mut Runtime {
         self.runtimes.last_mut().unwrap()
     }
 
@@ -101,7 +100,7 @@ impl Kernel {
                     0usize,
                     &SysCallResolver::new(16),
                     &code[..],
-                    input_balance
+                    input_balance,
                 );
                 Ok(init_runtime)
             })
@@ -120,7 +119,7 @@ impl Kernel {
                     parent.depth() + 1,
                     &SysCallResolver::new(16),
                     &code[..],
-                    input_balance
+                    input_balance,
                 );
                 Ok(child_runtime)
             })
@@ -139,9 +138,38 @@ impl Kernel {
         }
     }
 
-    fn execute_top_runtime(&mut self, selector: Selector) -> RuntimeResult {
+    fn execute_top_runtime(&mut self, selector: Selector, system_call: &mut SystemCall) -> RuntimeResult {
         let runtime = self.top_runtime_mut();
-        runtime.execute(&mut SystemCall{}, selector, 30usize)
+
+       Self::execute(runtime, system_call, selector, 30usize)
+    }
+
+    pub fn execute(
+        runtime: &mut Runtime,
+        sys_call_ref: &mut SystemCall,
+        selector: Selector,
+        time_limit: usize
+    ) -> RuntimeResult {
+        match runtime.module_ref() {
+            Some(module_ref) => {
+                match module_ref.invoke_export(
+                    &selector.name()[..],
+                    &selector.args(),
+                    sys_call_ref
+                ) {
+                    Ok(ret) => {
+                        RuntimeResult::new_with_ret(ret)
+                    },
+                    Err(e) => {
+                        RuntimeResult::new_with_err(e)
+                    }
+                }
+
+            },
+            None => {
+                RuntimeResult::new_with_err(Error::Validation("ModuleRef is none".into()))
+            }
+        }
     }
 
     fn stack_depth(&self) -> usize {
@@ -158,7 +186,5 @@ impl Kernel {
 }
 
 impl Drop for Kernel {
-    fn drop(&mut self) {
-
-    }
+    fn drop(&mut self) {}
 }

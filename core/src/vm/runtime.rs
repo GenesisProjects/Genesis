@@ -50,34 +50,6 @@ impl Runtime {
        unimplemented!()
     }
 
-    pub fn execute(
-        &mut self,
-        sys_call_ref: &mut SystemCall,
-        selector: Selector,
-        time_limit: usize
-    ) -> RuntimeResult {
-        match self.module_ref {
-            Some(ref module_ref) => {
-                match module_ref.invoke_export(
-                    &selector.name()[..],
-                    &selector.args(),
-                    sys_call_ref
-                ) {
-                    Ok(ret) => {
-                        RuntimeResult::new_with_ret(ret)
-                    },
-                    Err(e) => {
-                        RuntimeResult::new_with_err(e)
-                    }
-                }
-
-            },
-            None => {
-                RuntimeResult::new_with_err(Error::Validation("ModuleRef is none".into()))
-            }
-        }
-    }
-
     pub fn depth(&self) -> usize {
         self.depth
     }
@@ -86,8 +58,12 @@ impl Runtime {
         self.balance
     }
 
-    pub fn acount_ref<'a>(&'a self) -> &'a Account {
+    pub fn account_ref<'a>(&'a self) -> &'a Account {
         &self.account
+    }
+
+    pub fn module_ref(&self) -> Option<ModuleRef> {
+        self.module_ref.clone()
     }
 }
 

@@ -1,8 +1,12 @@
 use wasmi::*;
 use wasmi::ValueType::*;
-use std::sync::Mutex;
 
+use std::sync::Mutex;
 use std::collections::HashMap;
+
+use super::kernel::Kernel;
+use super::selector::Selector;
+use super::runtime::RuntimeResult;
 
 pub const RETURN_INDEX: usize       = 0x01;
 pub const CALL_INDEX:   usize       = 0x02;
@@ -42,15 +46,27 @@ pub trait Api {
     }
 }
 
-pub struct SystemCall {
-
+pub struct SystemCall<'a> {
+    kernel: Option<&'a mut Kernel>
 }
 
-impl SystemCall {
+impl <'a> SystemCall<'a> {
+    pub fn new() -> Self {
+        SystemCall {
+            kernel: None
+        }
+    }
 
+    pub fn init_with_kernel(&'a mut self, kernel: &'a mut Kernel){
+        self.kernel = Some(kernel);
+    }
+
+    pub fn run(&'a mut self, selector: Selector) -> &'a Option<RuntimeResult> {
+        self.kernel.unwrap().run(selector, self)
+    }
 }
 
-impl Api for SystemCall {
+impl <'a> Api for SystemCall<'a> {
     fn call() {
         unimplemented!()
     }
@@ -73,7 +89,7 @@ impl SysCallRegister for Module {
     }
 }
 
-impl Externals for SystemCall {
+impl <'a> Externals for SystemCall<'a> {
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
         match index {
             CALL_INDEX => void!(self.call()),
@@ -89,7 +105,6 @@ impl Externals for SystemCall {
 /// - 1. ***max_memory***:      instance of [u32]
 #[derive(Default)]
 pub struct SysCallResolver {
-    max_mem: u32,
     system_call_table: HashMap<usize, Signature>
 }
 
@@ -97,8 +112,6 @@ impl SysCallResolver {
     /// # new(2)
     /// **Usage**
     /// - create new SysCallResolver
-    /// **Parameters**
-    /// - 1. ***u32(max_memory)***: the max memory siz
     /// **Return**
     /// - 1. ***Self***
     /// ## Examples
@@ -106,7 +119,6 @@ impl SysCallResolver {
     /// ```
     pub fn new(max_memory: u32) -> SysCallResolver {
         SysCallResolver {
-            max_mem: max_memory,
             system_call_table: hashmap![
                 CALL_INDEX => Signature::new(&[I32, I32][..], Some(I32))
             ]
@@ -149,18 +161,6 @@ impl ModuleImportResolver for SysCallResolver {
                 Err(Error::Function(
                     format!("kernel module doesn't export function with name {}", field_name)
                 ))
-        }
-    }
-
-    fn resolve_memory(
-        &self,
-        field_name: &str,
-        descriptor: &MemoryDescriptor,
-    ) -> Result<MemoryRef, Error> {
-        if field_name == "memory" {
-            unimplemented!()
-        } else {
-            Err(Error::Instantiation("Memory imported under unknown name".to_owned()))
         }
     }
 }
