@@ -31,7 +31,7 @@ impl <'a> GenVM<'a> {
 
     pub fn launch<'b>(&'a mut self, action: &'b Action) -> &'a Option<RuntimeResult> {
         let selector: Selector = Selector::from(action.clone());
-        self.system_call.run(selector)
+        self.kernel.run(selector, &mut self.system_call)
     }
 
     pub fn commit_result(&self, action: &mut Action, result: RuntimeResult) -> Result<(), Error> {

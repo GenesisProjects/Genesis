@@ -61,9 +61,6 @@ impl <'a> SystemCall<'a> {
         self.kernel = Some(kernel);
     }
 
-    pub fn run(&'a mut self, selector: Selector) -> &'a Option<RuntimeResult> {
-        self.kernel.unwrap().run(selector, self)
-    }
 }
 
 impl <'a> Api for SystemCall<'a> {
