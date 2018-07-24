@@ -41,7 +41,9 @@ impl <'a> GenVM<'a> {
     }
 
     fn get_input_balance(action: &Action) -> Result<u64, Error> {
-        unimplemented!()
+        //unimplemented!()
+        //TODO: test
+        Ok(100)
     }
 
 }

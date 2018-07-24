@@ -94,7 +94,7 @@ impl Kernel {
     fn init_base_runtime(&self, addr: Address, input_balance: u64) -> Result<Runtime, Error> {
         let mut code: Vec<u8> = vec![];
         Kernel::load_contract_account(addr).and_then(|account| {
-            Kernel::load_code(&account, &mut code[..]).and_then(|_| {
+            Kernel::load_code(&account, &mut code).and_then(|_| {
                 let init_runtime = Runtime::new(
                     account,
                     0usize,
@@ -113,7 +113,7 @@ impl Kernel {
         }
         let mut code: Vec<u8> = vec![];
         Kernel::load_contract_account(addr).and_then(|account| {
-            Kernel::load_code(&account, &mut code[..]).and_then(|_| {
+            Kernel::load_code(&account, &mut code).and_then(|_| {
                 let child_runtime = Runtime::new(
                     account,
                     parent.depth() + 1,
@@ -177,11 +177,19 @@ impl Kernel {
     }
 
     fn load_contract_account(account_addr: Address) -> Result<Account, Error> {
-        unimplemented!()
+        //unimplemented!()
+
+        //TODO: test
+        Ok(Account {})
     }
 
-    fn load_code(account: &Account, code_buff: &mut [u8]) -> Result<(), Error> {
-        unimplemented!()
+    fn load_code(account: &Account, code_buff: &mut Vec<u8>) -> Result<(), Error> {
+        //unimplemented!()
+
+        //TODO: test
+        let mut vec = "(module\n(table 0 anyfunc)\n(memory $0 1)\n(export \"memory\" (memory $0))\n(export \"_Z4testv\" (func $_Z4testv))\n(func $_Z4testv (; 0 ;)))".to_string().into_bytes();
+        code_buff.append(&mut vec);
+        Ok(())
     }
 }
 
