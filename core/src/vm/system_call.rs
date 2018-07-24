@@ -33,17 +33,7 @@ macro_rules! cast {
 }
 
 pub trait Api {
-    fn create() {
-        unimplemented!()
-    }
-
-    fn call() {
-        unimplemented!()
-    }
-
-    fn ret() {
-        unimplemented!()
-    }
+    fn call(&self, addr: u32, abi: u32);
 }
 
 pub struct SystemCall<'a> {
@@ -64,8 +54,8 @@ impl <'a> SystemCall<'a> {
 }
 
 impl <'a> Api for SystemCall<'a> {
-    fn call() {
-        unimplemented!()
+    fn call(&self, addr: u32, abi: u32) {
+        println!("test123");
     }
 }
 
@@ -76,7 +66,7 @@ pub trait SysCallRegister {
 impl SysCallRegister for Module {
     fn register(&self, sys_resolver: &SysCallResolver) -> ModuleRef {
         let mut imports = ImportsBuilder::new();
-        imports.push_resolver("sys_resolver", sys_resolver);
+        imports.push_resolver("env", sys_resolver);
 
         ModuleInstance::new(
             self,
@@ -89,7 +79,7 @@ impl SysCallRegister for Module {
 impl <'a> Externals for SystemCall<'a> {
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
         match index {
-            CALL_INDEX => void!(self.call()),
+            CALL_INDEX => void!(self.call(args)),
             _ => panic!("unknown function index {}", index)
         }
     }
@@ -117,7 +107,7 @@ impl SysCallResolver {
     pub fn new(max_memory: u32) -> SysCallResolver {
         SysCallResolver {
             system_call_table: hashmap![
-                CALL_INDEX => Signature::new(&[I32, I32][..], Some(I32))
+                CALL_INDEX => Signature::new(&[I32, I32][..], None)
             ]
         }
     }
@@ -146,7 +136,7 @@ impl ModuleImportResolver for SysCallResolver {
         _signature: &Signature,
     ) -> Result<FuncRef, Error> {
         match field_name {
-            "call" => {
+            "_Z4callPcS_" => {
                 match self.func_ref(CALL_INDEX) {
                     Some(f) => Ok(f),
                     None => Err(Error::Function(
