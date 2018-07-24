@@ -17,17 +17,18 @@ pub struct GenVM<'a> {
 impl <'a> GenVM<'a> {
     pub fn new(action: &Action, contract: Address) -> Result<Self, Error> {
         let input = GenVM::get_input_balance(action).unwrap();
-        match Kernel::new(contract, input) {
-            Ok(kernel) => {
-                let mut vm = GenVM {
-                    system_call: SystemCall::new(),
-                    kernel: kernel
-                };
-                vm.system_call.init_with_kernel(&mut vm.kernel);
-                Ok(vm)
-            },
-            Err(e) => Err(e)
-        }
+        let mut system_call = SystemCall::new();
+        Kernel::new(contract, input).and_then(|mut kernel| {
+            let mut vm = GenVM {
+                system_call: system_call,
+                kernel: kernel
+            };
+            Ok(vm)
+        })
+    }
+
+    pub fn init(&'a mut self) {
+        self.system_call.init_with_kernel(&mut self.kernel);
     }
 
     pub fn launch<'b>(&'a mut self, action: &'b Action) -> &'a Option<RuntimeResult> {
