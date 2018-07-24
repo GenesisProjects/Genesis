@@ -136,7 +136,7 @@ impl ModuleImportResolver for SysCallResolver {
         _signature: &Signature,
     ) -> Result<FuncRef, Error> {
         match field_name {
-            "_Z4callPcS_" => {
+            "call" => {
                 match self.func_ref(CALL_INDEX) {
                     Some(f) => Ok(f),
                     None => Err(Error::Function(
