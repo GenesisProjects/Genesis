@@ -23,6 +23,7 @@ impl <'a> GenVM<'a> {
                     system_call: SystemCall::new(),
                     kernel: kernel
                 };
+                vm.system_call.init_with_kernel(&mut vm.kernel);
                 Ok(vm)
             },
             Err(e) => Err(e)
