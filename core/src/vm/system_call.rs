@@ -33,7 +33,11 @@ macro_rules! cast {
 }
 
 pub trait Api {
-    fn call(&self, addr: u32, abi: u32);
+    fn call(&self, addr: u32, abi: u32) -> Result<(), Error>;
+
+    fn storage_read(&mut self, args: RuntimeArgs) -> Result<(), Error>;
+
+    fn storage_write(&mut self, args: RuntimeArgs) -> Result<(), Error>;
 }
 
 pub struct SystemCall<'a> {
@@ -54,8 +58,21 @@ impl <'a> SystemCall<'a> {
 }
 
 impl <'a> Api for SystemCall<'a> {
-    fn call(&self, addr: u32, abi: u32) {
+    fn call(&self, addr: u32, abi: u32) -> Result<(), Error> {
         println!("test123");
+        Ok(())
+    }
+
+    /// Read from the storage
+    fn storage_read(&mut self, args: RuntimeArgs) -> Result<(), Error>
+    {
+        unimplemented!()
+    }
+
+    /// Write to storage
+    fn storage_write(&mut self, args: RuntimeArgs) -> Result<(), Error>
+    {
+        unimplemented!()
     }
 }
 
@@ -78,6 +95,7 @@ impl SysCallRegister for Module {
 
 impl <'a> Externals for SystemCall<'a> {
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+        println!("test1231");
         match index {
             CALL_INDEX => void!(self.call(args)),
             _ => panic!("unknown function index {}", index)
