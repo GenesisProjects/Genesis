@@ -8,9 +8,6 @@ use action::Action;
 use common::address::Address;
 use wasmi::*;
 
-use std::fs::File;
-use std::io::prelude::*;
-
 pub struct GenVM{
     system_call: SystemCall,
     kernel: KernelRef
@@ -68,8 +65,8 @@ impl GenVM {
 
     fn init_base_runtime(&self, addr: Address, input_balance: u64) -> Result<Runtime, Error> {
         let mut code: Vec<u8> = vec![];
-        GenVM::load_contract_account(addr).and_then(|account| {
-            GenVM::load_code(&account, &mut code).and_then(|_| {
+        Kernel::load_contract_account(addr).and_then(|account| {
+            Kernel::load_code(&account, &mut code).and_then(|_| {
                 let init_runtime = Runtime::new(
                     account,
                     0usize,
@@ -81,23 +78,4 @@ impl GenVM {
             })
         })
     }
-
-    pub fn load_contract_account(account_addr: Address) -> Result<Account, Error> {
-        //unimplemented!()
-
-        //TODO: test
-        Ok(Account {})
-    }
-
-    pub fn load_code(account: &Account, code_buff: &mut Vec<u8>) -> Result<(), Error> {
-        //unimplemented!()
-
-        //TODO: test
-        let mut f = File::open("./test_contract/test.wasm").expect("file not found");
-        let mut contents = String::new();
-        f.read_to_end(code_buff)
-            .expect("something went wrong reading the file");
-        Ok(())
-    }
-
 }

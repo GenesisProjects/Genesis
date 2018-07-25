@@ -4,7 +4,7 @@ use wasmi::ValueType::*;
 use std::sync::Mutex;
 use std::collections::HashMap;
 
-use super::kernel::KernelRef;
+use super::kernel::{Kernel, KernelRef};
 use super::selector::Selector;
 use super::runtime::Runtime;
 use super::gen_vm::GenVM;
@@ -50,8 +50,8 @@ impl SystemCall {
             return Err(Error::Validation("Insufficient balance".into()));
         }
         let mut code: Vec<u8> = vec![];
-        GenVM::load_contract_account(addr).and_then(|account| {
-            GenVM::load_code(&account, &mut code).and_then(|_| {
+        Kernel::load_contract_account(addr).and_then(|account| {
+            Kernel::load_code(&account, &mut code).and_then(|_| {
                 let child_runtime = Runtime::new(
                     account,
                     parent.depth() + 1,
