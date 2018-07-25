@@ -20,22 +20,10 @@ macro_rules! hashmap {
     }}
 }
 
-macro_rules! void {
-	{ $e: expr } => { { Ok(None) } }
-}
-
-macro_rules! some {
-	{ $e: expr } => { { Ok(Some($e)) } }
-}
-
-macro_rules! cast {
-	{ $e: expr } => { { Ok(Some($e)) } }
-}
-
 pub trait Api {
-    fn call(&self, addr: u32, abi: u32) -> Result<(), Error>;
+    fn call(&self, addr: u32, abi: u32) -> RuntimeValue;
 
-    fn test(&self) -> Result<(), Error>;
+    fn test(&self);
 
     fn storage_read(&mut self, args: RuntimeArgs) -> Result<(), Error>;
 
@@ -55,14 +43,14 @@ impl SystemCall {
 }
 
 impl Api for SystemCall {
-    fn call(&self, addr: u32, abi: u32) -> Result<(), Error> {
+    fn call(&self, addr: u32, abi: u32) -> RuntimeValue {
         println!("test123");
-        Ok(())
+        RuntimeValue::I32(0)
     }
 
-    fn test(&self) -> Result<(), Error> {
+    fn test(&self){
         println!("test12311");
-        Ok(())
+
     }
 
     /// Read from the storage
@@ -98,8 +86,9 @@ impl SysCallRegister for Module {
 impl Externals for SystemCall{
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
         match index {
-            CALL_INDEX => void!(self.call(args)),
-            TEST_INDEX => void!(self.test()),
+            CALL_INDEX => {
+                Ok(Some(self.call(args.nth(0), args.nth(1))))
+            },
             _ => panic!("unknown function index {}", index)
         }
     }
