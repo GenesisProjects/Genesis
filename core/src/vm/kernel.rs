@@ -46,22 +46,4 @@ impl Kernel {
         &self.cache
     }
 
-    /*fn init_runtime_with_parent(&self, parent: &Runtime, addr: Address, input_balance: u64) -> Result<Runtime, Error> {
-        if input_balance > parent.input_balance() {
-            return Err(Error::Validation("Insufficient balance".into()));
-        }
-        let mut code: Vec<u8> = vec![];
-        Kernel::load_contract_account(addr).and_then(|account| {
-            Kernel::load_code(&account, &mut code).and_then(|_| {
-                let child_runtime = Runtime::new(
-                    account,
-                    parent.depth() + 1,
-                    &SysCallResolver::new(),
-                    &code[..],
-                    input_balance,
-                );
-                Ok(child_runtime)
-            })
-        })
-    }*/
 }

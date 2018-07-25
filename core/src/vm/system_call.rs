@@ -6,6 +6,10 @@ use std::collections::HashMap;
 
 use super::kernel::KernelRef;
 use super::selector::Selector;
+use super::runtime::Runtime;
+use super::gen_vm::GenVM;
+
+use common::address::Address;
 
 pub const RETURN_INDEX: usize       = 0x01;
 pub const CALL_INDEX:   usize       = 0x02;
@@ -39,6 +43,25 @@ impl SystemCall {
         SystemCall {
             kernel: kernel
         }
+    }
+
+    fn init_runtime_with_parent(&self, parent: &Runtime, addr: Address, input_balance: u64) -> Result<Runtime, Error> {
+        if input_balance > parent.input_balance() {
+            return Err(Error::Validation("Insufficient balance".into()));
+        }
+        let mut code: Vec<u8> = vec![];
+        GenVM::load_contract_account(addr).and_then(|account| {
+            GenVM::load_code(&account, &mut code).and_then(|_| {
+                let child_runtime = Runtime::new(
+                    account,
+                    parent.depth() + 1,
+                    &SysCallResolver::new(),
+                    &code[..],
+                    input_balance,
+                );
+                Ok(child_runtime)
+            })
+        })
     }
 }
 

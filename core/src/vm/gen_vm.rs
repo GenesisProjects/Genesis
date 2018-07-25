@@ -82,14 +82,14 @@ impl GenVM {
         })
     }
 
-    fn load_contract_account(account_addr: Address) -> Result<Account, Error> {
+    pub fn load_contract_account(account_addr: Address) -> Result<Account, Error> {
         //unimplemented!()
 
         //TODO: test
         Ok(Account {})
     }
 
-    fn load_code(account: &Account, code_buff: &mut Vec<u8>) -> Result<(), Error> {
+    pub fn load_code(account: &Account, code_buff: &mut Vec<u8>) -> Result<(), Error> {
         //unimplemented!()
 
         //TODO: test
