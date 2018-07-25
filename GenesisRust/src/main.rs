@@ -9,7 +9,11 @@ fn main() {
     let test_action = Action {};
     let test_addr = Address::load().unwrap();
     let mut vm = GenVM::new(&test_action, test_addr).unwrap();
-    vm.init();
+
+
+    let mut action = Action{};
+    vm.launch(&mut action);
+
     loop {
 
     }

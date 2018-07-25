@@ -98,7 +98,7 @@ impl Kernel {
                 let init_runtime = Runtime::new(
                     account,
                     0usize,
-                    &SysCallResolver::new(16),
+                    &SysCallResolver::new(),
                     &code[..],
                     input_balance,
                 );
@@ -117,7 +117,7 @@ impl Kernel {
                 let child_runtime = Runtime::new(
                     account,
                     parent.depth() + 1,
-                    &SysCallResolver::new(16),
+                    &SysCallResolver::new(),
                     &code[..],
                     input_balance,
                 );

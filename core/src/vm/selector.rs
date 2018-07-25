@@ -46,7 +46,13 @@ impl Selector {
 
 impl From<Action> for Selector {
     fn from(f: Action) -> Self {
-        unimplemented!()
+        //TODO: test
+        //unimplemented!()
+        Selector{
+            name: "test".to_string(),
+            args: vec![],
+            returns: vec![]
+        }
     }
 }
 

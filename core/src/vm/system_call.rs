@@ -130,7 +130,7 @@ impl SysCallResolver {
     /// ## Examples
     /// ```
     /// ```
-    pub fn new(max_memory: u32) -> SysCallResolver {
+    pub fn new() -> SysCallResolver {
         SysCallResolver {
             system_call_table: hashmap![
                 CALL_INDEX => Signature::new(&[I32, I32][..], None),
