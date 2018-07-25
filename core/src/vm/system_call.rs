@@ -127,7 +127,7 @@ impl SysCallResolver {
     pub fn new() -> SysCallResolver {
         SysCallResolver {
             system_call_table: hashmap![
-                CALL_INDEX => Signature::new(&[I32, I32][..], None),
+                CALL_INDEX => Signature::new(&[I32, I32][..], Some(I32)),
                 TEST_INDEX => Signature::new(&[][..], None)
             ]
         }
