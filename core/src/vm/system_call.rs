@@ -45,6 +45,7 @@ impl SystemCall {
 impl Api for SystemCall {
     fn call(&self, addr: u32, abi: u32) -> RuntimeValue {
         println!("test123");
+        self.kernel.borrow_mut();
         RuntimeValue::I32(0)
     }
 
