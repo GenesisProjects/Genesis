@@ -4,9 +4,8 @@ use wasmi::ValueType::*;
 use std::sync::Mutex;
 use std::collections::HashMap;
 
-use super::kernel::Kernel;
+use super::kernel::KernelRef;
 use super::selector::Selector;
-use super::runtime::RuntimeResult;
 
 pub const RETURN_INDEX: usize       = 0x01;
 pub const CALL_INDEX:   usize       = 0x02;
@@ -43,24 +42,19 @@ pub trait Api {
     fn storage_write(&mut self, args: RuntimeArgs) -> Result<(), Error>;
 }
 
-pub struct SystemCall<'a> {
-    kernel: Option<&'a mut Kernel>
+pub struct SystemCall {
+    kernel: KernelRef
 }
 
-impl <'a> SystemCall<'a> {
-    pub fn new() -> Self {
+impl SystemCall {
+    pub fn new_with_kernel(kernel: KernelRef) -> Self {
         SystemCall {
-            kernel: None
+            kernel: kernel
         }
     }
-
-    pub fn init_with_kernel(&'a mut self, kernel: &'a mut Kernel){
-        self.kernel = Some(kernel);
-    }
-
 }
 
-impl <'a> Api for SystemCall<'a> {
+impl Api for SystemCall {
     fn call(&self, addr: u32, abi: u32) -> Result<(), Error> {
         println!("test123");
         Ok(())
@@ -101,7 +95,7 @@ impl SysCallRegister for Module {
     }
 }
 
-impl <'a> Externals for SystemCall<'a> {
+impl Externals for SystemCall{
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
         match index {
             CALL_INDEX => void!(self.call(args)),

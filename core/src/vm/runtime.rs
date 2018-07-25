@@ -43,7 +43,7 @@ impl Runtime {
     pub fn new_with_local_contract(
         account: Account,
         depth: usize,
-        sys_call_ref: &SystemCall,
+        sys_resolver: &SysCallResolver,
         path: &'static str,
         input_balance: usize
     ) -> Self {
@@ -72,16 +72,11 @@ pub struct RuntimeResult {
     success: bool,
     total_storage_alloc: usize,
     total_storage_free: usize,
-    error: Option<Error>,
     txs: Vec<Transaction>
 }
 
 impl RuntimeResult {
     pub fn new_with_ret(ret: Option<RuntimeValue>) -> Self {
-        unimplemented!()
-    }
-
-    pub fn new_with_err(err: Error) -> Self {
         unimplemented!()
     }
 }

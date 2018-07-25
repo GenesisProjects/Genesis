@@ -12,6 +12,7 @@ fn main() {
 
 
     let mut action = Action{};
+   
     vm.launch(&mut action);
 
     loop {

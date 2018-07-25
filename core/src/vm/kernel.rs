@@ -3,14 +3,19 @@ use action::Action;
 use common::address::Address;
 use common::hash::Hash;
 use std::cell::RefCell;
+use std::rc::Rc;
 use std::collections::HashMap;
+
 use super::gen_vm::GenVM;
 use super::runtime::*;
 use super::selector::Selector;
 use super::system_call::*;
+
 use wasmi::*;
 
 pub type CHUNK = [u8; 32];
+
+pub type KernelRef = Rc<RefCell<Kernel>>;
 
 #[derive(Clone)]
 pub struct KernelCache {
@@ -27,12 +32,12 @@ impl KernelCache {
 
 pub struct Kernel {
     runtimes: Vec<Runtime>,
-    final_result: Option<RuntimeResult>,
+    final_result: Option<Result<RuntimeResult, Error>>,
     cache: KernelCache,
 }
 
 impl Kernel {
-    pub fn new(addr: Address, input_balance: u64) -> Result<Self, Error> {
+    pub fn new(addr: Address, input_balance: u64) -> Result<KernelRef, Error> {
         let mut kernel = Kernel {
             runtimes: Vec::new(),
             final_result: None,
@@ -43,16 +48,14 @@ impl Kernel {
         match runtime_result {
             Ok(runtime) => {
                 kernel.push_runtime(runtime);
-                Ok(kernel)
+                Ok(Rc::new(RefCell::new(kernel)))
             }
             Err(e) => Err(e)
         }
     }
 
-    pub fn run<'a>(&'a mut self, selector: Selector, system_call: &'a mut SystemCall) -> &'a Option<RuntimeResult> {
-        let result = self.execute_top_runtime(selector, system_call);
-        self.merge_ret_result(result);
-        self.final_result()
+    pub fn run(&mut self, selector: Selector, system_call: &mut SystemCall) -> Result<RuntimeResult, Error> {
+        self.execute_top_runtime(selector, system_call)
     }
 
     pub fn fork_runtime(
@@ -75,8 +78,8 @@ impl Kernel {
         })
     }
 
-    pub fn final_result<'a>(&'a self) -> &'a Option<RuntimeResult> {
-        &self.final_result
+    pub fn final_result(self) -> Result<RuntimeResult, Error> {
+        self.final_result.unwrap()
     }
 
     pub fn top_runtime_mut<'a>(&'a mut self) -> &'a mut Runtime {
@@ -87,7 +90,7 @@ impl Kernel {
         self.cache.clone()
     }
 
-    fn merge_ret_result(&mut self, ret: RuntimeResult) -> Result<(), Error> {
+    fn merge_ret_result(&mut self, ret: Result<RuntimeResult, Error>) -> Result<RuntimeResult, Error> {
         unimplemented!()
     }
 
@@ -138,10 +141,9 @@ impl Kernel {
         }
     }
 
-    fn execute_top_runtime(&mut self, selector: Selector, system_call: &mut SystemCall) -> RuntimeResult {
+    fn execute_top_runtime(&mut self, selector: Selector, system_call: &mut SystemCall) -> Result<RuntimeResult, Error> {
         let runtime = self.top_runtime_mut();
-
-       Self::execute(runtime, system_call, selector, 30usize)
+        Self::execute(runtime, system_call, selector, 30usize)
     }
 
     pub fn execute(
@@ -149,7 +151,7 @@ impl Kernel {
         sys_call_ref: &mut SystemCall,
         selector: Selector,
         time_limit: usize
-    ) -> RuntimeResult {
+    ) -> Result<RuntimeResult, Error> {
         match runtime.module_ref() {
             Some(module_ref) => {
                 match module_ref.invoke_export(
@@ -158,16 +160,13 @@ impl Kernel {
                     sys_call_ref
                 ) {
                     Ok(ret) => {
-                        RuntimeResult::new_with_ret(ret)
+                        Ok(RuntimeResult::new_with_ret(ret))
                     },
-                    Err(e) => {
-                        RuntimeResult::new_with_err(e)
-                    }
+                    Err(e) => Err(e)
                 }
-
             },
             None => {
-                RuntimeResult::new_with_err(Error::Validation("ModuleRef is none".into()))
+                Err(Error::Validation("No module ref".into()))
             }
         }
     }
@@ -192,8 +191,4 @@ impl Kernel {
         code_buff.append(&mut vec);
         Ok(())
     }
-}
-
-impl Drop for Kernel {
-    fn drop(&mut self) {}
 }
