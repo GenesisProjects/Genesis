@@ -11,6 +11,7 @@ use super::runtime::RuntimeResult;
 pub const RETURN_INDEX: usize       = 0x01;
 pub const CALL_INDEX:   usize       = 0x02;
 pub const CREATE_INDEX: usize       = 0x03;
+pub const TEST_INDEX: usize         = 0x04;
 
 macro_rules! hashmap {
     ($( $key: expr => $val: expr ),*) => {{
@@ -34,6 +35,8 @@ macro_rules! cast {
 
 pub trait Api {
     fn call(&self, addr: u32, abi: u32) -> Result<(), Error>;
+
+    fn test(&self) -> Result<(), Error>;
 
     fn storage_read(&mut self, args: RuntimeArgs) -> Result<(), Error>;
 
@@ -60,6 +63,11 @@ impl <'a> SystemCall<'a> {
 impl <'a> Api for SystemCall<'a> {
     fn call(&self, addr: u32, abi: u32) -> Result<(), Error> {
         println!("test123");
+        Ok(())
+    }
+
+    fn test(&self) -> Result<(), Error> {
+        println!("test12311");
         Ok(())
     }
 
@@ -95,9 +103,9 @@ impl SysCallRegister for Module {
 
 impl <'a> Externals for SystemCall<'a> {
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-        println!("test1231");
         match index {
             CALL_INDEX => void!(self.call(args)),
+            TEST_INDEX => void!(self.test()),
             _ => panic!("unknown function index {}", index)
         }
     }
@@ -125,7 +133,8 @@ impl SysCallResolver {
     pub fn new(max_memory: u32) -> SysCallResolver {
         SysCallResolver {
             system_call_table: hashmap![
-                CALL_INDEX => Signature::new(&[I32, I32][..], None)
+                CALL_INDEX => Signature::new(&[I32, I32][..], None),
+                TEST_INDEX => Signature::new(&[][..], None)
             ]
         }
     }
@@ -159,6 +168,14 @@ impl ModuleImportResolver for SysCallResolver {
                     Some(f) => Ok(f),
                     None => Err(Error::Function(
                         format!("function index: {} is not register in the kernel", CALL_INDEX)
+                    ))
+                }
+            },
+            "test" => {
+                match self.func_ref(TEST_INDEX) {
+                    Some(f) => Ok(f),
+                    None => Err(Error::Function(
+                        format!("function index: {} is not register in the kernel", TEST_INDEX)
                     ))
                 }
             },
