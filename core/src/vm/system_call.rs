@@ -132,6 +132,9 @@ impl Api for SystemCall {
                         // pop stack
                         self.kernel.borrow_mut().pop_runtime();
 
+                        // merge result
+                        self.kernel.borrow_mut().merge_result(&result);
+
                         result
                     })
                 },

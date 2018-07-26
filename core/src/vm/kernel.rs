@@ -36,14 +36,16 @@ impl KernelCache {
 
 pub struct Kernel {
     cache: KernelCache,
-    stack: Vec<(RuntimeContextRef, MemoryRef, ModuleRef)>
+    stack: Vec<(RuntimeContextRef, MemoryRef, ModuleRef)>,
+    result: Option<Result<RuntimeResult, Error>>
 }
 
 impl Kernel {
     pub fn new() -> KernelRef {
         Rc::new(RefCell::new(Kernel {
             cache: KernelCache::new(),
-            stack: vec![]
+            stack: vec![],
+            result: None
         }))
     }
 
@@ -88,6 +90,10 @@ impl Kernel {
         f.read_to_end(code_buff)
             .expect("something went wrong reading the file");
         Ok(())
+    }
+
+    pub fn merge_result(&mut self, new_result: &Result<RuntimeResult, Error>) {
+        unimplemented!()
     }
 
 }

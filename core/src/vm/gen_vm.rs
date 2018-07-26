@@ -29,13 +29,22 @@ impl GenVM {
             action.addr.clone(),
             action.balance
         ).and_then(|mut runtime| {
+            // push stack
             self.kernel.borrow_mut().push_runtime(
                 runtime.context(),
                 runtime.memory_ref().unwrap(),
                 runtime.module_ref().unwrap()
             );
+
+            // exececute
             let result = self.execute(&mut runtime, selector, 1000);
+
+            // pop stack
             self.kernel.borrow_mut().pop_runtime();
+
+            // merge result
+            self.kernel.borrow_mut().merge_result(&result);
+
             result
         })
     }
