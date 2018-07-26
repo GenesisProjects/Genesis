@@ -108,34 +108,37 @@ impl Api for SystemCall {
                         top_context.borrow_mut().balance -= input_balance;
 
                         // push stack
-                        self.kernel.borrow_mut().push_runtime(
+                        if self.kernel.borrow_mut().push_runtime(
                             new_runtime.context(),
                             new_runtime.memory_ref().unwrap(),
                             new_runtime.module_ref().unwrap()
-                        );
-                        //TODO: decode from memory
-                        let selector = Selector::new(
-                            "test_1".into(),
-                            vec![],
-                            vec![]
-                        );
-                        //TODO: end decode from memory
+                        ) {
+                            //TODO: decode from memory
+                            let selector = Selector::new(
+                                "test_1".into(),
+                                vec![],
+                                vec![]
+                            );
+                            //TODO: end decode from memory
 
-                        // begin excution
-                        let result = self.execute(new_runtime.module_ref().unwrap(), selector, 1000);
+                            // begin excution
+                            let result = self.execute(new_runtime.module_ref().unwrap(), selector, 1000);
 
-                        // add remain balance back to top context
-                        let new_top_context = self.kernel.borrow().top_context();
-                        let remain_balance = new_top_context.borrow_mut().balance;
-                        top_context.borrow_mut().balance += remain_balance;
+                            // add remain balance back to top context
+                            let new_top_context = self.kernel.borrow().top_context();
+                            let remain_balance = new_top_context.borrow_mut().balance;
+                            top_context.borrow_mut().balance += remain_balance;
 
-                        // pop stack
-                        self.kernel.borrow_mut().pop_runtime();
+                            // pop stack
+                            self.kernel.borrow_mut().pop_runtime();
 
-                        // merge result
-                        self.kernel.borrow_mut().merge_result(&result);
+                            // merge result
+                            self.kernel.borrow_mut().merge_result(&result);
 
-                        result
+                            result
+                        } else {
+                            Err(Error::Validation("Stack overflow".into()))
+                        }
                     })
                 },
                 Err(_) => Err(Error::Validation("Invalid Address".into()))
