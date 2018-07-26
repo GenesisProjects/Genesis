@@ -4,6 +4,8 @@ use wasmi::ModuleInstance;
 use parity_wasm::elements::{self, Deserialize};
 
 use std::ops::Deref;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 use super::selector::*;
 use super::system_call::*;
@@ -11,11 +13,30 @@ use super::system_call::*;
 use account::Account;
 use transaction::Transaction;
 
-pub struct Runtime {
+#[derive(Clone)]
+pub struct RuntimeContext {
     account: Account,
     depth: usize,
-    module_ref: Option<ModuleRef>,
     balance: u64
+}
+
+impl RuntimeContext {
+    pub fn new(
+        account: Account,
+        depth: usize,
+        input_balance: u64
+    ) -> Self {
+        RuntimeContext {
+            account: account,
+            depth: depth,
+            balance: input_balance
+        }
+    }
+}
+
+pub struct Runtime {
+    context: RuntimeContext,
+    module_ref: Option<ModuleRef>
 }
 
 impl Runtime {
@@ -37,10 +58,8 @@ impl Runtime {
         let module = Module::from_buffer(buff).unwrap();
 
         Runtime {
-            account: account,
-            depth: depth,
+            context: RuntimeContext::new(account, depth, input_balance),
             module_ref: Some(module.register(sys_resolver)),
-            balance: input_balance
         }
     }
 
@@ -54,16 +73,20 @@ impl Runtime {
        unimplemented!()
     }
 
+    pub fn context(&self) -> RuntimeContext {
+        self.context.clone()
+    }
+
     pub fn depth(&self) -> usize {
-        self.depth
+        self.context.depth
     }
 
     pub fn input_balance(&self) -> u64 {
-        self.balance
+        self.context.balance
     }
 
     pub fn account_ref<'a>(&'a self) -> &'a Account {
-        &self.account
+        &self.context.account
     }
 
     pub fn module_ref(&self) -> Option<ModuleRef> {
