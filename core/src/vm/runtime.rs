@@ -1,6 +1,9 @@
 use chrono::*;
 use wasmi::*;
+use wasmi::ModuleInstance;
 use parity_wasm::elements::{self, Deserialize};
+
+use std::ops::Deref;
 
 use super::selector::*;
 use super::system_call::*;
@@ -32,6 +35,7 @@ impl Runtime {
         input_balance: u64
     ) -> Self {
         let module = Module::from_buffer(buff).unwrap();
+
         Runtime {
             account: account,
             depth: depth,
@@ -64,6 +68,16 @@ impl Runtime {
 
     pub fn module_ref(&self) -> Option<ModuleRef> {
         self.module_ref.clone()
+    }
+
+    pub fn memory_ref(&self) -> Option<MemoryRef> {
+        let module_ref = self.module_ref().unwrap();
+        module_ref.export_by_name("memory").and_then(|ext| {
+            match ext {
+                ExternVal::Memory(mem_ref) => Some(mem_ref),
+                _ => None
+            }
+        })
     }
 }
 
