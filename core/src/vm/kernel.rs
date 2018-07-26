@@ -78,7 +78,9 @@ impl Kernel {
         //unimplemented!()
 
         //TODO: test
-        Ok(Account {})
+        Ok(Account {
+            balance: 0u32
+        })
     }
 
     pub fn load_code(account: &Account, code_buff: &mut Vec<u8>) -> Result<(), Error> {

@@ -27,7 +27,11 @@ macro_rules! hashmap {
 pub trait Api {
     fn call(&mut self, addr: u32, abi: u32, input_balance: u32) -> RuntimeValue;
 
+    fn create(&mut self, abi: u32, input_balance: u32) -> RuntimeValue;
+
     fn test(&self);
+
+    fn get_balance(&mut self, addr: u32) -> RuntimeValue;
 
     fn storage_read(&mut self, args: RuntimeArgs) -> Result<(), Error>;
 
@@ -151,9 +155,30 @@ impl Api for SystemCall {
         }
     }
 
+    fn create(&mut self, abi: u32, input_balance: u32) -> RuntimeValue {
+
+    }
+
     fn test(&self){
         println!("test12311");
+    }
 
+    fn get_balance(&mut self, addr: u32) -> RuntimeValue {
+        let result = self.memory_load(addr, 32).and_then(|vec| {
+            match Address::try_from(vec) {
+                Ok(addr) => {
+                    Kernel::load_contract_account(addr).and_then(|account| {
+                        Ok(RuntimeResult::new_with_ret(Ok(RuntimeValue::I32(account.balance() as i32))))
+                    });
+                },
+                Err(_) => Err(Error::Validation("Invalid Address".into()))
+            }
+        });
+
+        match result {
+            Ok(r) => r.return_val().unwrap(),
+            Err(_) => RuntimeValue::I32(0)
+        }
     }
 
     // Read from the storage
