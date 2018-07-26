@@ -1,7 +1,7 @@
 use account::Account;
 use action::Action;
 use common::address::Address;
-use common::hash::Hash;
+use common::hash::*;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -78,9 +78,7 @@ impl Kernel {
         //unimplemented!()
 
         //TODO: test
-        Ok(Account {
-            balance: 0u32
-        })
+        Ok(Account::new())
     }
 
     pub fn load_code(account: &Account, code_buff: &mut Vec<u8>) -> Result<(), Error> {

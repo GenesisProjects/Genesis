@@ -3,6 +3,7 @@ use wasmi::ValueType::*;
 
 use std::sync::Mutex;
 use std::collections::HashMap;
+use common::hash::Hash;
 
 use super::kernel::{Kernel, KernelRef};
 use super::selector::Selector;
@@ -31,11 +32,13 @@ pub trait Api {
 
     fn test(&self);
 
-    fn get_balance(&mut self, addr: u32) -> RuntimeValue;
+    fn get_account_balance(&mut self, addr: u32) -> RuntimeValue;
 
-    fn storage_read(&mut self, args: RuntimeArgs) -> Result<(), Error>;
+    fn get_current_input(&mut self) -> RuntimeValue;
 
-    fn storage_write(&mut self, args: RuntimeArgs) -> Result<(), Error>;
+    fn storage_read(&mut self, addr: u32, key: u32, offset: u32) -> Result<(), Error>;
+
+    fn storage_write(&mut self, addr: u32) -> Result<(), Error>;
 }
 
 pub struct SystemCall {
@@ -73,6 +76,14 @@ impl SystemCall {
         let kernel_ref = self.kernel.borrow();
         let memory_ref = kernel_ref.top_memory();
         memory_ref.get(offset, size)
+    }
+
+    // Set data to memory
+    fn memory_set(&self, offset: u32, val: &[u8]) -> Result<(), Error> {
+        let kernel_ref = self.kernel.borrow();
+        let memory_ref = kernel_ref.top_memory();
+        memory_ref.set(offset, val);
+        Ok(())
     }
 
     // excecute code
@@ -156,41 +167,66 @@ impl Api for SystemCall {
     }
 
     fn create(&mut self, abi: u32, input_balance: u32) -> RuntimeValue {
-
+        unimplemented!()
     }
 
     fn test(&self){
         println!("test12311");
     }
 
-    fn get_balance(&mut self, addr: u32) -> RuntimeValue {
+    // get account balance with provided addr
+    fn get_account_balance(&mut self, addr: u32) -> RuntimeValue {
         let result = self.memory_load(addr, 32).and_then(|vec| {
             match Address::try_from(vec) {
                 Ok(addr) => {
                     Kernel::load_contract_account(addr).and_then(|account| {
-                        Ok(RuntimeResult::new_with_ret(Ok(RuntimeValue::I32(account.balance() as i32))))
-                    });
+                        Ok(RuntimeValue::I32(account.balance() as i32))
+                    })
                 },
                 Err(_) => Err(Error::Validation("Invalid Address".into()))
             }
         });
 
         match result {
-            Ok(r) => r.return_val().unwrap(),
+            Ok(r) => r,
             Err(_) => RuntimeValue::I32(0)
         }
     }
 
+    // get current input of executed contract
+    fn get_current_input(&mut self) -> RuntimeValue {
+        let kernel_ref = self.kernel.borrow();
+        let context_ref = kernel_ref.top_context();
+        let current_input = context_ref.borrow().balance as i32;
+        RuntimeValue::I32(current_input)
+    }
+
     // Read from the storage
-    fn storage_read(&mut self, args: RuntimeArgs) -> Result<(), Error>
+    fn storage_read(&mut self, addr: u32, key: u32, offset: u32) -> Result<(), Error>
     {
-        unimplemented!()
+        self.memory_load(addr, 32).and_then(|vec| {
+            match Address::try_from(vec) {
+                Ok(addr) => {
+                    Kernel::load_contract_account(addr).and_then(|account| {
+                        self.memory_load(key, 32).and_then(|vec| {
+                            let mut key: Hash = [0u8; 32];
+                            let vec = &vec[..key.len()];
+                            key.copy_from_slice(vec);
+                            let val = account.storage_val(key);
+                            self.memory_set(offset, &val[..]);
+                            Ok(())
+                        })
+                    })
+                },
+                Err(_) => Err(Error::Validation("Invalid Address".into()))
+            }
+        })
     }
 
     // Write to storage
-    fn storage_write(&mut self, args: RuntimeArgs) -> Result<(), Error>
+    fn storage_write(&mut self, addr: u32) -> Result<(), Error>
     {
-        unimplemented!()
+        Ok(())
     }
 }
 
