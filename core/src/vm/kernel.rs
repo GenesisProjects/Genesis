@@ -17,8 +17,9 @@ use super::system_call::*;
 use wasmi::*;
 
 pub type CHUNK = [u8; 32];
-
 pub type KernelRef = Rc<RefCell<Kernel>>;
+
+pub const MAX_STACK_SIZE: usize = 16usize;
 
 #[derive(Clone)]
 pub struct KernelCache {
@@ -35,13 +36,36 @@ impl KernelCache {
 
 pub struct Kernel {
     cache: KernelCache,
+    stack: Vec<(RuntimeContextRef, MemoryRef, ModuleRef)>
 }
 
 impl Kernel {
     pub fn new() -> KernelRef {
         Rc::new(RefCell::new(Kernel {
             cache: KernelCache::new(),
+            stack: vec![]
         }))
+    }
+
+    pub fn push_runtime(&mut self, context: RuntimeContextRef, memory: MemoryRef, module: ModuleRef) -> bool {
+        if self.stack.len() > MAX_STACK_SIZE {
+            false
+        } else {
+            self.stack.push((context, memory, module));
+            true
+        }
+    }
+
+    pub fn pop_runtime(&mut self) {
+        self.stack.pop();
+    }
+
+    pub fn top_context(&self) -> RuntimeContextRef {
+        self.stack.last().unwrap().0.clone()
+    }
+
+    pub fn top_memory(&self) -> MemoryRef {
+        self.stack.last().unwrap().1.clone()
     }
 
     pub fn cache<'a>(&'a self) -> &'a KernelCache {

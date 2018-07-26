@@ -13,29 +13,31 @@ use super::system_call::*;
 use account::Account;
 use transaction::Transaction;
 
+pub type RuntimeContextRef = Rc<RefCell<RuntimeContext>>;
+
 #[derive(Clone)]
 pub struct RuntimeContext {
-    account: Account,
-    depth: usize,
-    balance: u64
+    pub account: Account,
+    pub depth: usize,
+    pub balance: u32
 }
 
 impl RuntimeContext {
     pub fn new(
         account: Account,
         depth: usize,
-        input_balance: u64
-    ) -> Self {
-        RuntimeContext {
+        input_balance: u32
+    ) -> RuntimeContextRef {
+        Rc::new(RefCell::new(RuntimeContext {
             account: account,
             depth: depth,
             balance: input_balance
-        }
+        }))
     }
 }
 
 pub struct Runtime {
-    context: RuntimeContext,
+    context: RuntimeContextRef,
     module_ref: Option<ModuleRef>
 }
 
@@ -53,7 +55,7 @@ impl Runtime {
         depth: usize,
         sys_resolver: &SysCallResolver,
         buff: &[u8],
-        input_balance: u64
+        input_balance: u32
     ) -> Self {
         let module = Module::from_buffer(buff).unwrap();
 
@@ -73,20 +75,21 @@ impl Runtime {
        unimplemented!()
     }
 
-    pub fn context(&self) -> RuntimeContext {
+    pub fn context(&self) -> RuntimeContextRef {
         self.context.clone()
     }
 
     pub fn depth(&self) -> usize {
-        self.context.depth
+        self.context.borrow().depth
     }
 
-    pub fn input_balance(&self) -> u64 {
-        self.context.balance
+    pub fn input_balance(&self) -> u32 {
+        self.context.borrow().balance
     }
 
-    pub fn account_ref<'a>(&'a self) -> &'a Account {
-        &self.context.account
+    pub fn account(&self) -> Account {
+        let context = self.context.borrow();
+        context.account.clone()
     }
 
     pub fn module_ref(&self) -> Option<ModuleRef> {
@@ -105,7 +108,7 @@ impl Runtime {
 }
 
 pub struct RuntimeResult {
-    return_val: Option<Argument>,
+    return_val: Option<RuntimeValue>,
     success: bool,
     total_storage_alloc: usize,
     total_storage_free: usize,
@@ -115,5 +118,9 @@ pub struct RuntimeResult {
 impl RuntimeResult {
     pub fn new_with_ret(ret: Option<RuntimeValue>) -> Self {
         unimplemented!()
+    }
+
+    pub fn return_val(&self) -> Option<RuntimeValue> {
+        self.return_val.clone()
     }
 }

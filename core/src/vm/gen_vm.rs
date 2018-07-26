@@ -10,7 +10,7 @@ use wasmi::*;
 
 pub struct GenVM{
     system_call: SystemCall,
-    kernel: KernelRef
+    kernel: KernelRef,
 }
 
 impl GenVM {
@@ -28,9 +28,15 @@ impl GenVM {
         self.init_base_runtime(
             action.addr.clone(),
             action.balance
-        )
-            .and_then(|mut runtime| {
-            self.execute(&mut runtime, selector, 1000)
+        ).and_then(|mut runtime| {
+            self.kernel.borrow_mut().push_runtime(
+                runtime.context(),
+                runtime.memory_ref().unwrap(),
+                runtime.module_ref().unwrap()
+            );
+            let result = self.execute(&mut runtime, selector, 1000);
+            self.kernel.borrow_mut().pop_runtime();
+            result
         })
     }
 
@@ -63,7 +69,7 @@ impl GenVM {
         }
     }
 
-    fn init_base_runtime(&self, addr: Address, input_balance: u64) -> Result<Runtime, Error> {
+    fn init_base_runtime(&self, addr: Address, input_balance: u32) -> Result<Runtime, Error> {
         let mut code: Vec<u8> = vec![];
         Kernel::load_contract_account(addr).and_then(|account| {
             Kernel::load_code(&account, &mut code).and_then(|_| {

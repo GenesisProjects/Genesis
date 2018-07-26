@@ -12,14 +12,6 @@ pub struct Address {
     pub text: String
 }
 
-impl From<PublicKey> for Address {
-    fn from(v: PublicKey) -> Self {
-        Address {
-            text: v.to_base58()
-        }
-    }
-}
-
 impl Address {
     /// Convert to key
     pub fn to_key(&self) -> Option<PublicKey> {
@@ -40,6 +32,22 @@ impl Address {
     /// load account
     pub fn load() -> Option<Self> {
         Some(Address {text: "12345678901234567890123456789012".to_string()})
+    }
+
+    /// load vec
+    pub fn try_from(value: Vec<u8>) -> Result<Self, ()> {
+        match String::from_utf8(value) {
+            Ok(r) => Ok(Address {text: r}),
+            Err(e) => Err(())
+        }
+    }
+}
+
+impl From<PublicKey> for Address {
+    fn from(v: PublicKey) -> Self {
+        Address {
+            text: v.to_base58()
+        }
     }
 }
 

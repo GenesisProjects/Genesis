@@ -26,6 +26,14 @@ pub struct Selector {
 }
 
 impl Selector {
+    pub fn new(name: String, args: Vec<Argument>, returns: Vec<Argument>) -> Self {
+        Selector {
+            name: name,
+            args: args,
+            returns: returns
+        }
+    }
+
     pub fn name(&self) -> String {
         self.name.to_owned()
     }
