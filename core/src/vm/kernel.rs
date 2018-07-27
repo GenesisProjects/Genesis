@@ -36,7 +36,7 @@ impl KernelCache {
 
 pub struct Kernel {
     cache: KernelCache,
-    stack: Vec<(RuntimeContextRef, MemoryRef, ModuleRef)>,
+    stack: Vec<(RuntimeContextRef, Option<MemoryRef>, ModuleRef)>,
     result: Option<Result<RuntimeResult, Error>>
 }
 
@@ -49,7 +49,7 @@ impl Kernel {
         }))
     }
 
-    pub fn push_runtime(&mut self, context: RuntimeContextRef, memory: MemoryRef, module: ModuleRef) -> bool {
+    pub fn push_runtime(&mut self, context: RuntimeContextRef, memory: Option<MemoryRef>, module: ModuleRef) -> bool {
         if self.stack.len() > MAX_STACK_SIZE {
             false
         } else {
@@ -66,7 +66,7 @@ impl Kernel {
         self.stack.last().unwrap().0.clone()
     }
 
-    pub fn top_memory(&self) -> MemoryRef {
+    pub fn top_memory(&self) -> Option<MemoryRef> {
         self.stack.last().unwrap().1.clone()
     }
 

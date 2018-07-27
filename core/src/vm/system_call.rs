@@ -75,15 +75,21 @@ impl SystemCall {
     fn memory_load(&self, offset: u32, size: usize) -> Result<Vec<u8>, Error> {
         let kernel_ref = self.kernel.borrow();
         let memory_ref = kernel_ref.top_memory();
-        memory_ref.get(offset, size)
+        match memory_ref {
+            Some(memory_ref) => memory_ref.get(offset, size),
+            None => Err(Error::Validation("Can not access memory".into()))
+        }
+
     }
 
     // Set data to memory
     fn memory_set(&self, offset: u32, val: &[u8]) -> Result<(), Error> {
         let kernel_ref = self.kernel.borrow();
         let memory_ref = kernel_ref.top_memory();
-        memory_ref.set(offset, val);
-        Ok(())
+        match memory_ref {
+            Some(memory_ref) => memory_ref.set(offset, val),
+            None => Err(Error::Validation("Can not access memory".into()))
+        }
     }
 
     // excecute code
@@ -125,7 +131,7 @@ impl Api for SystemCall {
                         // push stack
                         if self.kernel.borrow_mut().push_runtime(
                             new_runtime.context(),
-                            new_runtime.memory_ref().unwrap(),
+                            new_runtime.memory_ref(),
                             new_runtime.module_ref().unwrap()
                         ) {
                             //TODO: decode from memory

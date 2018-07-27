@@ -32,7 +32,7 @@ impl GenVM {
             // push stack
             self.kernel.borrow_mut().push_runtime(
                 runtime.context(),
-                runtime.memory_ref().unwrap(),
+                runtime.memory_ref(),
                 runtime.module_ref().unwrap()
             );
 
