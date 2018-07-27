@@ -18,7 +18,7 @@ pub struct GenVM{
 
 impl GenVM {
     pub fn new(action: &Action, contract: Address) -> Result<Self, Error> {
-        let kernel_ref = Kernel::new();
+        let kernel_ref = Kernel::new(contract);
         let mut vm = GenVM {
             system_call: SystemCall::new_with_kernel(kernel_ref.clone()),
             kernel: kernel_ref.clone()

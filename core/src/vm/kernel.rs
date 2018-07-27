@@ -23,13 +23,15 @@ pub type KernelRef = Rc<RefCell<Kernel>>;
 
 pub struct Kernel {
     stack: Vec<(RuntimeContextRef, Option<MemoryRef>, ModuleRef, StorageCache)>,
+    address: Address,
     result: Option<Result<RuntimeResult, Error>>
 }
 
 impl Kernel {
-    pub fn new() -> KernelRef {
+    pub fn new(address: Address) -> KernelRef {
         Rc::new(RefCell::new(Kernel {
             stack: vec![],
+            address: address,
             result: None
         }))
     }
@@ -75,6 +77,10 @@ impl Kernel {
     #[inline]
     pub fn top_cache_mut<'a>(&'a mut self) -> &'a mut StorageCache {
         &mut self.stack.last_mut().unwrap().3
+    }
+
+    pub fn address(&self) -> Address {
+        self.address.clone()
     }
 
     #[inline]
