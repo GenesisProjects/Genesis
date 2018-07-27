@@ -38,20 +38,16 @@ pub struct Storage {
     account_addr: Address,
 }
 
-impl DBManagerOP for Storage {
-    fn put<T: RLPSerialize>(&self, value: &T) -> Hash {
+impl Storage {
+    pub fn get(&self, key: Hash) -> Option<T> {
         unimplemented!()
     }
 
-    fn delete(&self, key: &Vec<u8>) {
+    pub fn delete(&mut self, key: Hash) {
         unimplemented!()
     }
 
-    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {
-        unimplemented!()
-    }
-
-    fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T> {
+    pub fn update(&mut self, key: Hash, chunk: CHUNK) {
         unimplemented!()
     }
 }
