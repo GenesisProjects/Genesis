@@ -39,16 +39,19 @@ pub struct Storage {
 }
 
 impl Storage {
-    pub fn get(&self, key: Hash) -> Option<T> {
-        unimplemented!()
+    pub fn get(&self, key: Hash) -> Option<CHUNK> {
+        let vec = (&key[..]).to_vec();
+        self.trie.get(&vec)
     }
 
     pub fn delete(&mut self, key: Hash) {
-        unimplemented!()
+        let vec = (&key[..]).to_vec();
+        self.trie.delete(&vec)
     }
 
     pub fn update(&mut self, key: Hash, chunk: CHUNK) {
-        unimplemented!()
+        let vec = (&key[..]).to_vec();
+        self.trie.update(&vec, &chunk)
     }
 }
 
