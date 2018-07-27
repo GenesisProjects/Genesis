@@ -110,8 +110,6 @@ impl Runtime {
 pub struct RuntimeResult {
     return_val: Option<RuntimeValue>,
     success: bool,
-    total_storage_alloc: usize,
-    total_storage_free: usize,
     txs: Vec<Transaction>
 }
 

@@ -3,6 +3,8 @@ use wasmi::ValueType::*;
 
 use std::sync::Mutex;
 use std::collections::HashMap;
+
+use common::address::Address;
 use common::hash::Hash;
 
 use super::kernel::{Kernel, KernelRef};
@@ -10,7 +12,7 @@ use super::selector::Selector;
 use super::runtime::*;
 use super::gen_vm::GenVM;
 
-use common::address::Address;
+use storage::StorageCache;
 
 pub const RETURN_INDEX: usize       = 0x01;
 pub const CALL_INDEX:   usize       = 0x02;
@@ -132,7 +134,8 @@ impl Api for SystemCall {
                         if self.kernel.borrow_mut().push_runtime(
                             new_runtime.context(),
                             new_runtime.memory_ref(),
-                            new_runtime.module_ref().unwrap()
+                            new_runtime.module_ref().unwrap(),
+                            StorageCache::new()
                         ) {
                             //TODO: decode from memory
                             let selector = Selector::new(

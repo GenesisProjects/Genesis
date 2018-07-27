@@ -5,7 +5,10 @@ use super::system_call::{SystemCall, SysCallResolver};
 
 use account::Account;
 use action::Action;
+use storage::StorageCache;
+
 use common::address::Address;
+
 use wasmi::*;
 
 pub struct GenVM{
@@ -33,7 +36,8 @@ impl GenVM {
             self.kernel.borrow_mut().push_runtime(
                 runtime.context(),
                 runtime.memory_ref(),
-                runtime.module_ref().unwrap()
+                runtime.module_ref().unwrap(),
+                StorageCache::new()
             );
 
             // exececute
