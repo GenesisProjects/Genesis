@@ -70,7 +70,7 @@ impl StorageCache {
         }
     }
 
-    pub fn commit(self, to: &mut Storage) -> Result<Hash, StorageError> {
+    pub fn sync(self, to: &mut Storage) -> Result<Hash, StorageError> {
         unimplemented!()
     }
 
