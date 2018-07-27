@@ -30,4 +30,9 @@ impl Account {
     pub fn storage(&self) -> Storage  {
         unimplemented!()
     }
+
+    /// set the value of the trie's storage with provided `key`.
+    pub fn set_storage(&self, key: Hash, val: &[u8])  {
+        unimplemented!()
+    }
 }

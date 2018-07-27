@@ -34,9 +34,9 @@ pub trait Api {
 
     fn get_current_input(&mut self) -> RuntimeValue;
 
-    fn storage_read(&mut self, addr: u32, key: u32, offset: u32) -> Result<(), Error>;
+    fn read_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>;
 
-    fn storage_write(&mut self, addr: u32) -> Result<(), Error>;
+    fn write_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>;
 }
 
 pub struct SystemCall {
@@ -206,40 +206,43 @@ impl Api for SystemCall {
     }
 
     // Read from the storage
-    fn storage_read(&mut self, addr: u32, key: u32, offset: u32) -> Result<(), Error> {
-        self.memory_load(addr, 32).and_then(|vec| {
-            match Address::try_from(vec) {
-                Ok(addr) => {
-                    Kernel::load_contract_account(addr)
-                        .and_then(|account| {
-                            self.memory_load(key, 32).and_then(|vec| {
-                                let mut key: Hash = [0u8; 32];
-                                let vec = &vec[..key.len()];
-                                key.copy_from_slice(vec);
-                                let storage = account.storage();
-                                match self.kernel
-                                    .borrow_mut()
-                                    .top_cache_mut()
-                                    .read(&key, &storage) {
-                                    Ok(chunk) => {
-                                        self.memory_set(offset, &chunk[..])
-                                    },
-                                    Err(e) => {
-                                        Err(Error::Validation("Can not read storage".into()))
-                                    }
-                                }
-                            })
-                        })
+    fn read_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>
+    {
+        Kernel::load_contract_account(self.kernel.borrow().address()).and_then(|account| {
+            self.memory_load(key, 32).and_then(|vec| {
+                let mut key: Hash = [0u8; 32];
+                let vec = &vec[..key.len()];
+                key.copy_from_slice(vec);
+                let storage = account.storage();
+                match self.kernel
+                    .borrow_mut()
+                    .top_cache_mut()
+                    .read(&key, &storage) {
+                    Ok(chunk) => {
+                        self.memory_set(offset, &chunk[..])
+                    },
+                    Err(e) => {
+                        Err(Error::Validation("Can not read storage".into()))
+                    }
                 }
-                Err(_) => Err(Error::Validation("Invalid Address".into()))
-            }
+            })
         })
     }
 
     // Write to storage
-    fn storage_write(&mut self, addr: u32) -> Result<(), Error>
+    fn write_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>
     {
-        Ok(())
+        self.memory_load(offset, 32).and_then(|val_vec| {
+            self.memory_load(key, 32).and_then(|key_vec| {
+                Kernel::load_contract_account(self.kernel.borrow().address()).and_then(|account| {
+                    let mut key: Hash = [0u8; 32];
+                    let key_vec = &key_vec[..key.len()];
+                    key.copy_from_slice(key_vec);
+                    account.set_storage(key, &val_vec[..]);
+                    Ok(())
+                })
+            })
+        })
     }
 }
 
