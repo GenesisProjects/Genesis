@@ -7,13 +7,13 @@ use std::cmp::min;
 use std::marker::PhantomData;
 use std::sync::Mutex;
 
-pub struct Trie<'a, T: RLPSerialize + Clone> {
+pub struct Trie<T: RLPSerialize + Clone> {
     root: TrieKey,
-    db: &'a Mutex<DBManager>,
+    db: &'static Mutex<DBManager>,
     phantom: PhantomData<T>
 }
 
-impl<'a, T> Trie<'a, T> where T: RLPSerialize + Clone {
+impl<T> Trie<T> where T: RLPSerialize + Clone {
     pub fn get(&self, path: &Vec<u8>) -> Option<T> {
         get_helper(&self.root, &vec2nibble(path), self.db)
     }
@@ -26,8 +26,8 @@ impl<'a, T> Trie<'a, T> where T: RLPSerialize + Clone {
         self.root = update_helper(&self.root, &vec2nibble(path), v, self.db);
     }
 
-    pub fn new(db: &'a Mutex<DBManager>) -> Trie<'a, T> {
-        Trie::<'a, T>{ root: zero_hash!(), db: db, phantom: PhantomData }
+    pub fn new(db: &'static Mutex<DBManager>) -> Trie<T> {
+        Trie::<T>{ root: zero_hash!(), db: db, phantom: PhantomData }
     }
 }
 

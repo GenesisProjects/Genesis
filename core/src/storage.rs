@@ -1,20 +1,40 @@
-use common::hash::*;
+use super::mpt::trie::Trie;
+
 use common::address::Address;
-
+use common::hash::*;
 use db::manager::*;
-
 use rlp::RLPSerialize;
+use rlp::types::*;
 
 use std::collections::HashMap;
+use std::ops::Deref;
 
-pub type CHUNK = [u8; 32];
+#[derive(Clone)]
+pub struct CHUNK([u8; 32]);
+
+impl Deref for CHUNK {
+    type Target = [u8; 32];
+    fn deref(&self) -> &[u8; 32] {
+        &self.0
+    }
+}
+
+impl RLPSerialize for CHUNK {
+    fn serialize(&self) -> Result<RLP, RLPError> {
+        unimplemented!()
+    }
+
+    fn deserialize(rlp: &RLP) ->  Result<Self, RLPError> {
+        unimplemented!()
+    }
+}
 
 pub enum StorageError {
 
 }
 
 pub struct Storage {
-    root: Hash,
+    trie: Trie<CHUNK>,
     account_addr: Address,
 }
 
