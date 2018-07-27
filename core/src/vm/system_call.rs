@@ -1,23 +1,19 @@
+use common::address::Address;
+use common::hash::Hash;
+use std::collections::HashMap;
+use std::sync::Mutex;
+use storage::StorageCache;
+use super::gen_vm::GenVM;
+use super::kernel::{Kernel, KernelRef};
+use super::runtime::*;
+use super::selector::Selector;
 use wasmi::*;
 use wasmi::ValueType::*;
 
-use std::sync::Mutex;
-use std::collections::HashMap;
-
-use common::address::Address;
-use common::hash::Hash;
-
-use super::kernel::{Kernel, KernelRef};
-use super::selector::Selector;
-use super::runtime::*;
-use super::gen_vm::GenVM;
-
-use storage::StorageCache;
-
-pub const RETURN_INDEX: usize       = 0x01;
-pub const CALL_INDEX:   usize       = 0x02;
-pub const CREATE_INDEX: usize       = 0x03;
-pub const TEST_INDEX: usize         = 0x04;
+pub const RETURN_INDEX: usize = 0x01;
+pub const CALL_INDEX: usize = 0x02;
+pub const CREATE_INDEX: usize = 0x03;
+pub const TEST_INDEX: usize = 0x04;
 
 macro_rules! hashmap {
     ($( $key: expr => $val: expr ),*) => {{
@@ -81,7 +77,6 @@ impl SystemCall {
             Some(memory_ref) => memory_ref.get(offset, size),
             None => Err(Error::Validation("Can not access memory".into()))
         }
-
     }
 
     // Set data to memory
@@ -99,16 +94,16 @@ impl SystemCall {
         &mut self,
         module_ref: ModuleRef,
         selector: Selector,
-        time_limit: usize
+        time_limit: usize,
     ) -> Result<RuntimeResult, Error> {
         match module_ref.invoke_export(
             &selector.name()[..],
             &selector.args(),
-            self
+            self,
         ) {
             Ok(ret) => {
                 Ok(RuntimeResult::new_with_ret(ret))
-            },
+            }
             Err(e) => Err(e)
         }
     }
@@ -124,7 +119,7 @@ impl Api for SystemCall {
                     (
                         parent,
                         addr,
-                        input_balance
+                        input_balance,
                     ).and_then(|new_runtime| {
                         // sub balance from top context
                         let top_context = self.kernel.borrow().top_context();
@@ -135,13 +130,13 @@ impl Api for SystemCall {
                             new_runtime.context(),
                             new_runtime.memory_ref(),
                             new_runtime.module_ref().unwrap(),
-                            StorageCache::new()
+                            StorageCache::new(),
                         ) {
                             //TODO: decode from memory
                             let selector = Selector::new(
                                 "test_1".into(),
                                 vec![],
-                                vec![]
+                                vec![],
                             );
                             //TODO: end decode from memory
 
@@ -164,7 +159,7 @@ impl Api for SystemCall {
                             Err(Error::Validation("Stack overflow".into()))
                         }
                     })
-                },
+                }
                 Err(_) => Err(Error::Validation("Invalid Address".into()))
             }
         });
@@ -179,7 +174,7 @@ impl Api for SystemCall {
         unimplemented!()
     }
 
-    fn test(&self){
+    fn test(&self) {
         println!("test12311");
     }
 
@@ -191,7 +186,7 @@ impl Api for SystemCall {
                     Kernel::load_contract_account(addr).and_then(|account| {
                         Ok(RuntimeValue::I32(account.balance() as i32))
                     })
-                },
+                }
                 Err(_) => Err(Error::Validation("Invalid Address".into()))
             }
         });
@@ -211,22 +206,31 @@ impl Api for SystemCall {
     }
 
     // Read from the storage
-    fn storage_read(&mut self, addr: u32, key: u32, offset: u32) -> Result<(), Error>
-    {
+    fn storage_read(&mut self, addr: u32, key: u32, offset: u32) -> Result<(), Error> {
         self.memory_load(addr, 32).and_then(|vec| {
             match Address::try_from(vec) {
                 Ok(addr) => {
-                    Kernel::load_contract_account(addr).and_then(|account| {
-                        self.memory_load(key, 32).and_then(|vec| {
-                            let mut key: Hash = [0u8; 32];
-                            let vec = &vec[..key.len()];
-                            key.copy_from_slice(vec);
-                            let val = account.storage_val(key);
-                            self.memory_set(offset, &val[..]);
-                            Ok(())
+                    Kernel::load_contract_account(addr)
+                        .and_then(|account| {
+                            self.memory_load(key, 32).and_then(|vec| {
+                                let mut key: Hash = [0u8; 32];
+                                let vec = &vec[..key.len()];
+                                key.copy_from_slice(vec);
+                                let storage = account.storage();
+                                match self.kernel
+                                    .borrow_mut()
+                                    .top_cache_mut()
+                                    .read(&key, &storage) {
+                                    Ok(chunk) => {
+                                        self.memory_set(offset, &chunk[..])
+                                    },
+                                    Err(e) => {
+                                        Err(Error::Validation("Can not read storage".into()))
+                                    }
+                                }
+                            })
                         })
-                    })
-                },
+                }
                 Err(_) => Err(Error::Validation("Invalid Address".into()))
             }
         })
@@ -256,12 +260,12 @@ impl SysCallRegister for Module {
     }
 }
 
-impl Externals for SystemCall{
+impl Externals for SystemCall {
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
         match index {
             CALL_INDEX => {
                 Ok(Some(self.call(args.nth(0), args.nth(1), args.nth(2))))
-            },
+            }
             _ => panic!("unknown function index {}", index)
         }
     }
@@ -326,7 +330,7 @@ impl ModuleImportResolver for SysCallResolver {
                         format!("function index: {} is not register in the kernel", CALL_INDEX)
                     ))
                 }
-            },
+            }
             "test" => {
                 match self.func_ref(TEST_INDEX) {
                     Some(f) => Ok(f),
@@ -334,7 +338,7 @@ impl ModuleImportResolver for SysCallResolver {
                         format!("function index: {} is not register in the kernel", TEST_INDEX)
                     ))
                 }
-            },
+            }
             _ =>
                 Err(Error::Function(
                     format!("kernel module doesn't export function with name {}", field_name)

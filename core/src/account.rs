@@ -1,8 +1,12 @@
 use rlp::RLPSerialize;
+
 use common::hash::*;
-use super::mpt::trie::*;
 
 use std::io::*;
+
+use storage::Storage;
+
+use super::mpt::trie::*;
 
 #[derive(Debug, Clone)]
 pub struct Account {
@@ -22,8 +26,8 @@ impl Account {
     /// return the balance associated with this account.
     pub fn balance(&self) -> u32 { self.balance }
 
-    /// Get the value of the trie's storage with provided `key`.
-    pub fn storage_val(&self, key: Hash) -> Vec<u8>  {
+    /// Get the storage of the account
+    pub fn storage(&self) -> Storage  {
         unimplemented!()
     }
 }
