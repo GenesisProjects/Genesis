@@ -1,8 +1,3 @@
-use chrono::*;
-use wasmi::*;
-use wasmi::ModuleInstance;
-use parity_wasm::elements::{self, Deserialize};
-
 use std::ops::Deref;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -11,7 +6,11 @@ use super::selector::*;
 use super::system_call::*;
 
 use account::Account;
+use chrono::*;
+use parity_wasm::elements::Deserialize;
 use transaction::Transaction;
+use wasmi::*;
+use wasmi::ModuleInstance;
 
 pub type RuntimeContextRef = Rc<RefCell<RuntimeContext>>;
 
@@ -57,8 +56,8 @@ impl Runtime {
         buff: &[u8],
         input_balance: u32
     ) -> Self {
-        let module = Module::from_buffer(buff).unwrap();
-
+        let mut module = Module::from_buffer(buff).unwrap();
+        module = Self::inject_instruction_meter(module);
         Runtime {
             context: RuntimeContext::new(account, depth, input_balance),
             module_ref: Some(module.register(sys_resolver)),
@@ -104,6 +103,10 @@ impl Runtime {
                 _ => None
             }
         })
+    }
+
+    fn inject_instruction_meter(module: Module) -> Module {
+       unimplemented!()
     }
 }
 
