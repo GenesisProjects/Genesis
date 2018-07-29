@@ -71,21 +71,7 @@ impl RLPSerialize for Selector {
         //      [["i32"],["100"],["string"],["abc"]     # inputs
         //      [["bool"]]                              # outputs
         // ]
-        let name_rlp = RLPSerialize::serialize(&self.name).unwrap_or(RLP::RLPEmpty);
-
-        let mut args_rlp: Vec<RLP> = vec![];
-        for arg in self.args {
-            let arg_item = RLPSerialize::serialize(&arg).unwrap_or(RLP::RLPEmpty);
-            args_rlp.append(&mut vec![arg_item]);
-        }
-
-        let mut returns_rlp: Vec<RLP> = vec![];
-        for ret in self.returns {
-            let ret_item = RLPSerialize::serialize(&ret).unwrap_or(RLP::RLPEmpty);
-            returns_rlp.append(&mut vec![ret_item]);
-        }
-
-        Ok(RLP::RLPList { list: vec![name_rlp, args_rlp, returns_rlp] })
+        unimplemented!()
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
