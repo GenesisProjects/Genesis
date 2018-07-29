@@ -169,7 +169,7 @@ impl Api for SystemCall {
 
         match result {
             Ok(r) => r.return_val().unwrap(),
-            Err(_) => RuntimeValue::I32(0)
+            Err(_) => RuntimeValue::I32(-1i32)
         }
     }
 
