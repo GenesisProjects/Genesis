@@ -4,8 +4,6 @@ use num::bigint::BigInt;
 use rlp::RLPSerialize;
 use rlp::types::*;
 
-use log::Log;
-
 pub mod nounce {
     /// A BlockNonce is a 64-bit hash which proves (combined with the
     /// mix-hash) that a sufficient amount of computation has been carried
@@ -37,11 +35,11 @@ pub struct Block {
 
 impl RLPSerialize for Block {
     fn serialize(&self) -> Result<RLP, RLPError> {
-        Err(RLPError::RLPErrorUnknown)
+        unimplemented!()
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        Err(RLPError::RLPErrorUnknown)
+        unimplemented!()
     }
 }
 

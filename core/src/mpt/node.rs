@@ -1,8 +1,6 @@
 use common::hash::*;
 use rlp::RLPSerialize;
 use rlp::types::*;
-use rlp::encoder::*;
-use rlp::decoder::*;
 
 pub type TrieKey = Hash;
 pub type EncodedPath = Vec<u8>;
@@ -53,7 +51,7 @@ pub fn nibble2vec(nibbles: &Vec<u8>) -> Vec<u8> {
 #[inline]
 pub fn vec2nibble(vec: &Vec<u8>) -> Vec<u8> {
     let mut output: Vec<u8> = vec![];
-    for i in (0usize .. vec.len()) {
+    for i in 0usize .. vec.len() {
         let byte: u8 = vec[i];
         output.append(&mut vec![ byte / MAX_NIBBLE_VALUE, byte % MAX_NIBBLE_VALUE]);
     }
@@ -62,7 +60,7 @@ pub fn vec2nibble(vec: &Vec<u8>) -> Vec<u8> {
 
 #[inline]
 pub fn encode_path(nibbles: &Vec<u8>, terminated: bool) -> EncodedPath {
-    let is_odd = (nibbles.len() % 2 != 0);
+    let is_odd = nibbles.len() % 2 != 0;
     if !is_odd && !terminated {
         let mut tmp = vec![0u8, 0u8];
         tmp.append(&mut nibbles.clone());
@@ -168,9 +166,6 @@ impl<T: RLPSerialize + Clone> RLPSerialize for TrieNode<T> {
                             RLP::RLPItem(r)
                         ];
                         Ok(RLP::RLPList(list))
-                    }
-                    _ => {
-                        Err(RLPError::RLPErrorUnknown)
                     }
                 }
             },

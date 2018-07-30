@@ -1,12 +1,5 @@
-use rlp::RLPSerialize;
-
 use common::hash::*;
-
-use std::io::*;
-
 use storage::Storage;
-
-use super::mpt::trie::*;
 
 #[derive(Debug, Clone)]
 pub struct Account {

@@ -10,9 +10,7 @@ pub mod session;
 pub mod utils;
 
 pub extern crate bytebuffer;
-#[macro_use]
 pub extern crate common;
-#[macro_use]
 pub extern crate chrono;
 pub extern crate futures;
 pub extern crate gen_core;

@@ -3,7 +3,6 @@ use super::kernel::{Kernel, KernelRef};
 use super::runtime::*;
 use super::system_call::{SystemCall, SysCallResolver};
 
-use account::Account;
 use action::Action;
 use storage::StorageCache;
 

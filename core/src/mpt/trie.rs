@@ -108,14 +108,14 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mute
         },
         Some(TrieNode::ExtensionNode { ref encoded_path, ref key }) => {
             // decode the path for the node
-            let (ref cur_path, terminated) = decode_path(encoded_path);
-            let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+            let (ref cur_path, _terminated) = decode_path(encoded_path);
+            let (_shared_path, _remain_cur_path, remain_path) = cmp_path(cur_path, path);
             get_helper(key, &remain_path, db)
         },
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
             // decode the path for the node
-            let (ref cur_path, terminated) = decode_path(encoded_path);
-            let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+            let (ref cur_path, _terminated) = decode_path(encoded_path);
+            let (_shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             if remain_cur_path.len() == 0 && remain_path.len() == 0 {
                 Some(value.to_owned())
             } else { None }
@@ -146,10 +146,10 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &M
                 mpt_db_replace!(node, new_branch_node, db)
             }
         },
-        Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
+        Some(TrieNode::LeafNode::<T> { ref encoded_path, value: _ }) => {
             // decode the path for the node
-            let (ref cur_path, terminated) = decode_path(encoded_path);
-            let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+            let (ref cur_path, _terminated) = decode_path(encoded_path);
+            let (_shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             if remain_cur_path.len() == 0 && remain_path.len() == 0 {
                 mpt_db_delete!(node, db);
                 zero_hash!()
@@ -161,8 +161,8 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &M
         },
         Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
             // decode the path for the node
-            let (ref cur_path, terminated) = decode_path(encoded_path);
-            let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+            let (ref cur_path, _terminated) = decode_path(encoded_path);
+            let (_shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
             if remain_cur_path.len() != 0 {
                 let mut ret_node: TrieKey = zero_hash!();
                 ret_node.copy_from_slice(&node[0 .. HASH_LEN]);
@@ -199,10 +199,10 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T,
                 mpt_db_replace!(node, new_branch_node, db)
             }
         },
-        Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
+        Some(TrieNode::LeafNode::<T> { encoded_path: _, value: _ }) => {
             update_kv_node_helper(node, path, v, db)
         },
-        Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
+        Some(TrieNode::ExtensionNode::<T> { encoded_path: _, key: _ }) => {
             update_kv_node_helper(node, path, v, db)
         },
         None => {

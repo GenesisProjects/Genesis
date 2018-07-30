@@ -1,11 +1,9 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
 
 use common::address::Address;
 use common::hash::Hash;
 use storage::StorageCache;
 
-use super::gen_vm::GenVM;
 use super::kernel::{Kernel, KernelRef};
 use super::runtime::*;
 use super::selector::Selector;

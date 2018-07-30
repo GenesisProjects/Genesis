@@ -1,14 +1,10 @@
 extern crate common;
 extern crate rlp;
 
-use self::common::hash::{ SerializableAndSHA256Hashable, Hash };
-
+use self::common::hash::Hash;
 use self::rlp::RLPSerialize;
-use self::rlp::encoder::SHARED_ENCODER;
-use self::rlp::decoder::Decoder;
 
 use std::sync::Mutex;
-use std::collections::HashMap;
 
 pub enum DBResult {
     DBConnectSuccess,
@@ -43,7 +39,7 @@ pub struct DBManager {
 }
 
 impl DBManager {
-    pub fn connect(&self,config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError> {
+    pub fn connect(&self, config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError> {
         unimplemented!()
     }
 

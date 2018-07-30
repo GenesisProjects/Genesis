@@ -1,19 +1,14 @@
 use account::Account;
-use action::Action;
 use storage::StorageCache;
 
 use common::address::Address;
-use common::hash::*;
 
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::fs::File;
 use std::io::prelude::*;
 
-use super::gen_vm::GenVM;
 use super::runtime::*;
-use super::selector::Selector;
-use super::system_call::*;
 
 use wasmi::*;
 
@@ -52,7 +47,7 @@ impl Kernel {
                     context,
                     memory,
                     module,
-                    StorageCache::new()
+                    cache
                 )
             );
             true

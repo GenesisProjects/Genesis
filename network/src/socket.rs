@@ -6,10 +6,7 @@ use message::defines::*;
 
 use std::io::Result as STDResult;
 use std::io::{Read, Write, Error, ErrorKind};
-use std::mem;
 use std::net::{Shutdown, SocketAddr};
-use std::time::Instant;
-use std::rc::Rc;
 use std::str;
 
 pub const MAX_LINE_CAHCE_LEN: usize = 1024 * 1024 * 4;
@@ -26,9 +23,9 @@ pub struct PeerSocket {
 
 impl PeerSocket {
     #[inline]
-    pub fn new(mut socket: TcpStream) -> Self {
+    pub fn new(socket: TcpStream) -> Self {
         // set the socket to nodelay mode
-        socket.set_nodelay(true);
+        socket.set_nodelay(true).unwrap();
 
         PeerSocket {
             stream: socket,
@@ -77,19 +74,19 @@ impl PeerSocket {
                 // if the read size is larger than remain_size, read the overflow bytes
                 // into the line cache
                 if size > remain_size {
-                    self.read_buffer.write(&temp_buf[.. remain_size]);
+                    self.read_buffer.write(&temp_buf[.. remain_size])?;
                     let mut vec = temp_buf[remain_size .. size].to_vec();
                     let ret = match self.read_buffer.read_to_end(&mut vec) {
-                        Ok(r) => Ok(vec.clone()),
+                        Ok(_) => Ok(vec.clone()),
                         Err(e) => Err(e)
                     };
-                    self.read_buffer.write(&vec[..]);
+                    self.read_buffer.write(&vec[..])?;
                     ret
                 } else {
-                    self.read_buffer.write(&temp_buf[..size]);
+                    self.read_buffer.write(&temp_buf[..size])?;
                     let mut vec: Vec<u8> = vec![];
                     match self.read_buffer.read_to_end(&mut vec) {
-                        Ok(r) => Ok(vec),
+                        Ok(_) => Ok(vec),
                         Err(e) => Err(e)
                     }
                 }
@@ -123,7 +120,7 @@ impl PeerSocket {
         match self.stream.read(&mut temp_buf) {
             Ok(size) => {
                 println!("data chunk recieved: {}!!!", size);
-                self.read_buffer.write(&temp_buf[..size]);
+                self.read_buffer.write(&temp_buf[..size]).unwrap();
                 self.fetch_messages_from_buffer(size)
             },
             Err(e) => Err(e)
@@ -163,14 +160,14 @@ impl PeerSocket {
             let line_str = str::from_utf8(&line);
             match line_str {
                 Ok(r) => SocketMessage::decoder(r),
-                Err(e) => SocketMessage::exception("cannot parse input string as utf8 encoded")
+                Err(_) => SocketMessage::exception("cannot parse input string as utf8 encoded")
             }
         }).collect::<Vec<SocketMessage>>())
     }
 
     #[inline]
     fn flush_line_cache(&mut self) {
-        self.read_buffer.write_all(&self.line_cache[..]);
+       self.read_buffer.write_all(&self.line_cache[..]).unwrap();
         self.line_cache = vec![];
     }
 
@@ -197,6 +194,6 @@ impl Evented for PeerSocket {
 
 impl Drop for PeerSocket {
     fn drop(&mut self) {
-        let _ = self.stream.shutdown(Shutdown::Both);
+        self.stream.shutdown(Shutdown::Both).unwrap();
     }
 }

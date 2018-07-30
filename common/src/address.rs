@@ -38,7 +38,7 @@ impl Address {
     pub fn try_from(value: Vec<u8>) -> Result<Self, ()> {
         match String::from_utf8(value) {
             Ok(r) => Ok(Address {text: r}),
-            Err(e) => Err(())
+            Err(_) => Err(())
         }
     }
 }

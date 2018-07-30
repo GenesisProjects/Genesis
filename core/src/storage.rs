@@ -2,7 +2,6 @@ use super::mpt::trie::Trie;
 
 use common::address::Address;
 use common::hash::*;
-use db::manager::*;
 use rlp::RLPSerialize;
 use rlp::types::*;
 

@@ -1,6 +1,5 @@
 use common::hash::*;
 use common::address::*;
-use num::bigint::BigInt;
 use rlp::RLPSerialize;
 use rlp::types::*;
 use log::Log;

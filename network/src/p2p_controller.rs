@@ -1,11 +1,9 @@
+use chrono::*;
 use nat::*;
 use network_eventloop::*;
 use peer::*;
 use message::protocol::*;
 use session::*;
-use utils::*;
-
-use chrono::*;
 
 use common::address::Address as Account;
 use common::gen_message::*;
@@ -18,14 +16,12 @@ use mio::net::{TcpListener, TcpStream};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::*;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 use std::sync::{Mutex, Arc, Condvar};
 use std::net::*;
 use std::str::FromStr;
 use std::time::Duration;
 use std::thread;
-
-use gen_utils::log_writer::LOGGER;
 
 pub const UPDATE_TIMEBASE: i64 = 3000;
 pub const CONNECT_TIMEOUT: i64 = 3000;
@@ -118,7 +114,7 @@ impl P2PController {
 
         // filter out self
         raw_peers_table = raw_peers_table.into_iter().filter(|&(ref addr, _)| {
-            if let Some(ref account) = (*addr) {
+            if let Some(ref account) = *addr {
                 account.clone() != self.account
             } else {
                 true
@@ -126,15 +122,15 @@ impl P2PController {
         }).collect();
 
         // filter out in current peer list
-        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref account, ref addr)| !self.socket_exist(addr)).collect();
+        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref _account, ref addr)| !self.socket_exist(addr)).collect();
 
         // filter out in block list
-        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref account, ref addr)| !self.socket_blocked(addr)).collect();
+        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref _account, ref addr)| !self.socket_blocked(addr)).collect();
         raw_peers_table
     }
 
     fn socket_exist(&self, addr: &SocketAddr) -> bool {
-        match self.peer_list.iter().find(|&(token, peer_ref)| {
+        match self.peer_list.iter().find(|&(_token, peer_ref)| {
             peer_ref.borrow().addr() == *addr
         }) {
             Some(_) => true,
@@ -159,7 +155,7 @@ impl P2PController {
     fn refresh_waiting_list(&mut self) {
         self.waiting_list = self.search_peers()
             .into_iter()
-            .map(|(ref account, ref addr)| {
+            .map(|(ref _account, ref addr)| {
                 addr.clone()
             }).collect();
     }
@@ -190,7 +186,7 @@ impl P2PController {
         }
     }
 
-    fn ban_peer(&mut self, addr: &SocketAddr, loops: usize) {
+    fn ban_peer(&mut self, addr: &SocketAddr) {
         while self.block_list.len() > self.max_blocked_peers {
             self.block_list.remove(0);
         }
@@ -232,16 +228,16 @@ impl P2PController {
                         }
                     }
                 },
-                PEER_TOKEN => {
+                peer_token => {
                     // process peer event
                     // println!("peer event: token {:?}, {:?}, {}",PEER_TOKEN, event, self.eventloop.round);
-                    self.get_peer(PEER_TOKEN).and_then(|ref mut peer_ref| {
+                    self.get_peer(peer_token).and_then(|ref mut peer_ref| {
                         peer_ref.borrow_mut().session.set_connect(true);
                         let result = peer_ref.borrow_mut().process();
                         match result {
                             Ok(_) => {},
-                            Err(e) => {
-                                self.eventloop.reregister_peer(PEER_TOKEN.clone(), &peer_ref.borrow_mut());
+                            Err(_) => {
+                                self.eventloop.reregister_peer(peer_token.clone(), &peer_ref.borrow_mut());
                             }
                         }
                         Some(true)
@@ -281,7 +277,7 @@ impl P2PController {
         // remove all aborted tokens from the peer list
         for token in aborted_tokens {
             let result = self.get_peer(token.clone()).unwrap();
-            let addr = result.borrow().addr();
+            let _addr = result.borrow().addr();
             self.remove_peer(token);
         }
 
@@ -299,7 +295,7 @@ impl P2PController {
         // remove all expired tokens from the peer list
         for token in expired_tokens {
             let result = self.get_peer(token.clone()).unwrap();
-            let addr = result.borrow().addr();
+            let _addr = result.borrow().addr();
             self.remove_peer(token);
         }
 
@@ -317,7 +313,7 @@ impl P2PController {
         // remove all connection timeout tokens from the peer list
         for token in timeout_tokens {
             let result = self.get_peer(token.clone()).unwrap();
-            let addr = result.borrow().addr();
+            let _addr = result.borrow().addr();
             self.remove_peer(token);
         }
 
@@ -371,7 +367,7 @@ impl P2PController {
 
             // bootstrap all peers at init status
             let hosts: Vec<String> = self.peer_list.iter()
-                .map(|mut pair| {
+                .map(|pair| {
                     pair.1.borrow().addr().to_string()
                 }).collect();
             let table = PeerTable::new_with_hosts(hosts);
@@ -555,13 +551,12 @@ impl Thread for P2PController {
         match self.eventloop.status {
             ThreadStatus::Running => {
                 match result {
-                    Ok(size) => {
+                    Ok(_size) => {
                         self.process_events();
                         true
                     },
                     Err(e) => {
                         panic!("exception: {:?}", e);
-                        false
                     }
                 }
             },
@@ -591,7 +586,7 @@ impl Thread for P2PController {
 
                 // generate hosts list
                 let hosts: Vec<String> = self.peer_list.iter()
-                    .map(|mut pair| {
+                    .map(|pair| {
                         pair.1.borrow().addr().to_string()
                     }).collect();
                 let table = PeerTable::new_with_hosts(hosts);

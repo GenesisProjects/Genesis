@@ -1,11 +1,11 @@
 use std::io::*;
 use std::thread;
-use std::time;
+use std::time::Duration;
 
 use observe::*;
 use gen_message::Message;
 
-pub const LOOP_PERIOD: u32 = 100u32;
+pub const LOOP_PERIOD: u64 = 100u64;
 
 #[derive(Copy, Clone)]
 pub enum ThreadStatus {
@@ -46,14 +46,14 @@ pub trait Thread {
                         if !ret {
                             break;
                         }
-                        thread::sleep_ms(LOOP_PERIOD);
+                        thread::sleep(Duration::from_millis(LOOP_PERIOD));
                     }
                 },
                 &mut Err(ref e) => {
                     println!("Error: {:?}", e);
                 }
             }
-            context.and_then(|mut context| {
+            let _ = context.and_then(|mut context| {
                 context.unsubscribe();
                 Ok(context)
             });

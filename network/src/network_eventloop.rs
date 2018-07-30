@@ -1,12 +1,11 @@
-use common::thread::{Thread, ThreadStatus};
+use common::thread::ThreadStatus;
 use mio::*;
-use mio::net::{TcpListener, TcpStream};
+use mio::net::TcpListener;
 use peer::*;
-use session::*;
+
 use std::io::*;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::Mutex;
 use std::time::Duration;
-use utils::*;
 
 pub const SERVER_TOKEN: Token = Token(0);
 /// The poll will give up cpu to let p2p controller update
@@ -55,7 +54,7 @@ pub struct NetworkEventLoop {
 impl NetworkEventLoop {
     pub fn new(events_size: usize) -> Self {
         // Event storage
-        let mut events = Events::with_capacity(events_size);
+        let events = Events::with_capacity(events_size);
         // The [[Poll]] instance
         let poll = Poll::new().expect("Can not instantialize poll");
 
@@ -70,7 +69,7 @@ impl NetworkEventLoop {
 
     pub fn register_server(&self, listener: &TcpListener) {
         let new_token = SERVER_TOKEN;
-        self.poll.register(listener, new_token, Ready::readable(), PollOpt::edge());
+        let _ = self.poll.register(listener, new_token, Ready::readable(), PollOpt::edge());
     }
 
     pub fn register_peer(&self, peer: &Peer) -> Result<(Token)> {
@@ -83,11 +82,11 @@ impl NetworkEventLoop {
     }
 
     pub fn reregister_peer(&self, token: Token, peer: &Peer) {
-        self.poll.reregister(peer, token, Ready::readable(), PollOpt::edge());
+        let _ = self.poll.reregister(peer, token, Ready::readable(), PollOpt::edge());
     }
 
     pub fn deregister(&self, peer: &Peer) {
-        self.poll.deregister(peer);
+        let _ = self.poll.deregister(peer);
     }
 
     /// # next_tick(&mut self)

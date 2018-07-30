@@ -1,16 +1,11 @@
-use std::ops::Deref;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use super::selector::*;
 use super::system_call::*;
 
 use account::Account;
-use chrono::*;
-use parity_wasm::elements::Deserialize;
 use transaction::Transaction;
 use wasmi::*;
-use wasmi::ModuleInstance;
 
 pub type RuntimeContextRef = Rc<RefCell<RuntimeContext>>;
 

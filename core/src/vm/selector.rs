@@ -1,8 +1,5 @@
 use action::Action;
 
-use common::hash::Hash;
-use common::address::Address;
-
 use rlp::RLPSerialize;
 use rlp::types::{RLPError, RLP};
 
