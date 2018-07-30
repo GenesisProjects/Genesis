@@ -174,3 +174,73 @@ impl Decoder {
         }
     }
 }
+
+#[cfg(test)]
+mod decoder_test {
+    use super::Decoder;
+    use super::{RLP, RLPError};
+
+    #[test]
+    fn test_item_string() {
+        // "dog"
+        let rlp = Decoder::decode(&vec![0x83u8, 'd' as u8, 'o' as u8, 'g' as u8]).unwrap();
+        let target: RLP = "dog".to_string().into();
+        assert_eq!(rlp, target);
+    }
+
+
+    #[test]
+    fn test_item_u8() {
+        // 0
+        let rlp = Decoder::decode(&vec![0x00u8]).unwrap();
+        let target: RLP = 0u8.into();
+        assert_eq!(rlp, target);
+
+        // 15
+        let rlp = Decoder::decode(&vec![0x0fu8]).unwrap();
+        let target: RLP = 15u8.into();
+        assert_eq!(rlp, target);
+    }
+
+
+    #[test]
+    fn test_item_u16() {
+        let rlp = Decoder::decode(&vec![0x82u8, 0x04u8, 0x00u8]).unwrap();
+        let target: RLP = 1024u16.into();
+        assert_eq!(rlp, target);
+    }
+
+
+    #[test]
+    fn test_item_u32() {
+        let rlp = Decoder::decode(&vec![132u8, 0u8, 0u8, 0u8, 100u8]).unwrap();
+        let target: RLP = 100u32.into();
+        assert_eq!(rlp, target);
+    }
+
+
+    #[test]
+    fn test_list_empty() {
+        let rlp = Decoder::decode(&vec![0xc0]).unwrap();
+        let target: RLP = RLP::RLPList(vec![]);
+        assert_eq!(rlp, target);
+    }
+
+    #[test]
+    fn test_list_nested() {
+        let rlp = Decoder::decode(&vec![0xc7, 0xc0, 0xc1, 0xc0, 0xc3, 0xc0, 0xc1, 0xc0]).unwrap();
+        let target: RLP = RLP::RLPList(vec![
+            RLP::RLPList(vec![]),
+            RLP::RLPList(vec![
+                RLP::RLPList(vec![])
+            ]),
+            RLP::RLPList(vec![
+                RLP::RLPList(vec![]),
+                RLP::RLPList(vec![
+                    RLP::RLPList(vec![])
+                ]),
+            ])
+        ]);
+        assert_eq!(rlp, target);
+    }
+}

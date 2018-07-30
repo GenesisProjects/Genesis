@@ -21,7 +21,7 @@ pub enum RLPError {
     RLPDecodingErrorMalformed,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum RLP {
     RLPList(Vec<RLP>),
     RLPItem(Vec<u8>),
@@ -129,3 +129,15 @@ impl Into<u32> for RLP {
 
 
 pub type EncodedRLP = Vec<u8>;
+
+#[cfg(test)]
+mod rlp_test {
+    use super::{RLP, RLPError};
+
+    #[test]
+    fn test_item_endian() {
+        let rlp: RLP = 0x12345678u32.into();
+        let num: u32 = rlp.into();
+        assert_eq!(num, 0x12345678u32);
+    }
+}

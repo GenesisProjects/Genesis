@@ -252,13 +252,6 @@ mod encoder_test {
     }
 
     #[test]
-    fn test_item_endian() {
-        let rlp: RLP = 0x12345678u32.into();
-        let num: u32 = rlp.into();
-        assert_eq!(num, 0x12345678u32);
-    }
-
-    #[test]
     fn test_list_empty() {
         let mut encoder = Encoder::new();
         let rlp = RLP::RLPList(vec![]);
