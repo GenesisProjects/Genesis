@@ -29,18 +29,21 @@ lazy_static! {
     };
 }
 
+/// RLP Encoder
 pub struct Encoder {
     buffer: ByteBuffer,
     len_cache: HashMap<String, usize>
 }
 
 impl Encoder {
+    /// Init encoder with preset buffer size
     pub fn new_with_size(size: usize) -> Self {
         let mut buffer = ByteBuffer::new();
         buffer.resize(size);
         Encoder { buffer: buffer, len_cache: HashMap::new() }
     }
 
+    /// Init encoder with default buffer size [ENCODER_BUFFER_SIZE]
     pub fn new() -> Self {
         let mut buffer = ByteBuffer::new();
         buffer.resize(ENCODER_BUFFER_SIZE);
@@ -124,12 +127,12 @@ impl Encoder {
         match cached_result {
             Some(len) => len,
             None =>  match input {
-                &RLP::RLPItem { ref value } => {
+                &RLP::RLPItem(ref value) => {
                     let ret = self.encode_item_len(value);
                     self.len_cache.insert(path,ret);
                     ret
                 },
-                &RLP::RLPList { ref list } => {
+                &RLP::RLPList(ref list) => {
                     let mut total = 0usize;
                     for (i, elem) in list.into_iter().enumerate() {
                         let new_path = path.clone() + format!("{}", i).as_str();
@@ -155,10 +158,10 @@ impl Encoder {
             &RLP::RLPEmpty => {
 
             },
-            &RLP::RLPItem { ref value } => {
+            &RLP::RLPItem(ref value) => {
                 self.encode_item(value);
             },
-            &RLP::RLPList { ref list } => {
+            &RLP::RLPList(ref list) => {
                 let mut l = 0u64;
                 for (i, elem) in list.into_iter().enumerate() {
                     let new_path = path.clone() + format!("{}", i).as_str();
@@ -191,6 +194,7 @@ impl Encoder {
         }
     }
 
+    /// Encode RLP into u8 array
     pub fn encode(&mut self, obj: &RLP) -> EncodedRLP {
         self.buffer.clear();
         self.len_cache = HashMap::new();
@@ -198,5 +202,20 @@ impl Encoder {
         let len = self.encode_list_len("".to_string(), obj);
         self.encode_list("".to_string(), obj);
         Vec::from_iter(self.buffer.to_bytes()[0..len].iter().cloned())
+    }
+}
+
+#[cfg(test)]
+mod encoder_test {
+    use super::Encoder;
+    use super::{RLP, RLPError};
+
+    #[test]
+    fn test_item() {
+        //let test_rlp = RLP::Item
+        let mut encoder = Encoder::new();
+        let rlp: RLP = 100u32.into();
+        let result = encoder.encode(rlp);
+        println!("{:?}", result)
     }
 }

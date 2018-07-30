@@ -65,7 +65,7 @@ impl Decoder {
                 if expected_len != 1 {
                     malformed_err()
                 } else {
-                    (Ok(RLP::RLPItem { value: vec![prefix] }), 1)
+                    (Ok(RLP::RLPItem (vec![prefix])), 1)
                 }
             },
             // short string
@@ -75,9 +75,9 @@ impl Decoder {
                 if expected_len != seg_len {
                     malformed_err()
                 } else {
-                    (Ok(RLP::RLPItem { value:
+                    (Ok(RLP::RLPItem (
                         input[start + 1usize .. start + 1usize + l as usize].to_vec()
-                     }), seg_len)
+                    )), seg_len)
                 }
             },
             // long string
@@ -93,9 +93,9 @@ impl Decoder {
                     malformed_err()
                 } else {
                     let offset = start + 1usize + (l_total_byte as usize);
-                    (Ok(RLP::RLPItem {
-                        value: input[offset .. offset + l as usize].to_vec()
-                    }), seg_len)
+                    (Ok(RLP::RLPItem (
+                        input[offset .. offset + l as usize].to_vec()
+                    )), seg_len)
                 }
             },
             // short list
@@ -125,7 +125,7 @@ impl Decoder {
                             cur_pos = cur_pos + seg_len;
                         }
                     }
-                    (Ok(RLP::RLPList { list: result_list }), all_seg_len)
+                    (Ok(RLP::RLPList(result_list)), all_seg_len)
                 }
             },
             // long list
@@ -158,7 +158,7 @@ impl Decoder {
                             cur_pos = cur_pos + seg_len;
                         }
                     }
-                    (Ok(RLP::RLPList { list: result_list }), all_seg_len)
+                    (Ok(RLP::RLPList(result_list)), all_seg_len)
                 }
             },
             // default

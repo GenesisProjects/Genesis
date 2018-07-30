@@ -25,9 +25,8 @@ lazy_static! {
 /// - 1. ***[[Token]]***
 /// ## Examples
 /// ```
-/// let new_token = token_generator();
 /// ```
-fn token_generator() -> Token {
+pub fn token_generator() -> Token {
     let mut seq = TOKEN_SEQ.lock().unwrap();
     let token = Token(*seq);
     *seq += 1;

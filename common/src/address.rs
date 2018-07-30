@@ -53,13 +53,13 @@ impl From<PublicKey> for Address {
 
 impl RLPSerialize for Address {
     fn serialize(&self) -> Result<RLP, RLPError> {
-        Ok(RLP::RLPItem { value: self.text.to_owned().into() })
+        Ok(RLP::RLPItem(self.text.to_owned().into()))
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
         use std::str;
         match rlp {
-            &RLP::RLPItem { ref value } => {
+            &RLP::RLPItem(ref value) => {
                 Ok(Address { text: str::from_utf8(value).unwrap().into() })
             },
             _ => {
