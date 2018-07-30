@@ -70,7 +70,7 @@ impl Encoder {
         } else {
             let prefix: u8 = SHORT_STRING_PREFIX_BASE + input.len() as u8;
             self.buffer.write_u8(prefix);
-            self.buffer.write(input);
+            self.buffer.write(input).unwrap();
         }
     }
 
@@ -211,11 +211,78 @@ mod encoder_test {
     use super::{RLP, RLPError};
 
     #[test]
-    fn test_item() {
-        //let test_rlp = RLP::Item
+    fn test_item_string() {
+        // "dog"
+        let mut encoder = Encoder::new();
+        let rlp: RLP = "dog".to_string().into();
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![0x83u8, 'd' as u8, 'o' as u8, 'g' as u8]);
+    }
+
+
+    #[test]
+    fn test_item_u8() {
+        // 0
+        let mut encoder = Encoder::new();
+        let rlp: RLP = 0u8.into();
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![0x00u8]);
+
+        // 15
+        let mut encoder = Encoder::new();
+        let rlp: RLP = 15u8.into();
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![0x0fu8]);
+    }
+
+    #[test]
+    fn test_item_u16() {
+        let mut encoder = Encoder::new();
+        let rlp: RLP = 1024u16.into();
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![0x82u8, 0x04u8, 0x00u8]);
+    }
+
+    #[test]
+    fn test_item_u32() {
         let mut encoder = Encoder::new();
         let rlp: RLP = 100u32.into();
-        let result = encoder.encode(rlp);
-        println!("{:?}", result)
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![132u8, 0u8, 0u8, 0u8, 100u8]);
+    }
+
+    #[test]
+    fn test_item_endian() {
+        let rlp: RLP = 0x12345678u32.into();
+        let num: u32 = rlp.into();
+        assert_eq!(num, 0x12345678u32);
+    }
+
+    #[test]
+    fn test_list_empty() {
+        let mut encoder = Encoder::new();
+        let rlp = RLP::RLPList(vec![]);
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![0xc0]);
+    }
+
+    #[test]
+    fn test_list_nested() {
+        //[ [], [[]], [ [], [[]] ] ]
+        let mut encoder = Encoder::new();
+        let rlp = RLP::RLPList(vec![
+            RLP::RLPList(vec![]),
+            RLP::RLPList(vec![
+                RLP::RLPList(vec![])
+            ]),
+            RLP::RLPList(vec![
+                RLP::RLPList(vec![]),
+                RLP::RLPList(vec![
+                    RLP::RLPList(vec![])
+                ]),
+            ])
+        ]);
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![ 0xc7, 0xc0, 0xc1, 0xc0, 0xc3, 0xc0, 0xc1, 0xc0 ]);
     }
 }

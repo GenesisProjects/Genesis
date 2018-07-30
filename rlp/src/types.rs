@@ -81,7 +81,7 @@ impl Into<u8> for RLP {
 
 impl From<u16> for RLP {
     fn from(v: u16) -> Self {
-        let bytes: [u8; 2] = unsafe { transmute(v.to_le()) };
+        let bytes: [u8; 2] = unsafe { transmute(v.to_be()) };
         RLP::RLPItem(vec![bytes[0], bytes[1]])
     }
 }
@@ -93,7 +93,7 @@ impl Into<u16> for RLP {
                 if value.len() != 2 {
                     panic!("The size of vec should be 2usize")
                 } else {
-                    (value[0] as u16) + (value[1] as u16) << 8
+                    (value[1] as u16) + ((value[0] as u16) << 8)
                 }
             },
             _ => panic!("Only [RLPItem] can be converted into [u16]")
@@ -115,10 +115,10 @@ impl Into<u32> for RLP {
                 if value.len() != 4 {
                     panic!("The size of vec should be 4usize")
                 } else {
-                    (value[0] as u32)
-                        + (value[1] as u32) << 8
-                        + (value[1] as u32) << 16
-                        + (value[1] as u32) << 24
+                    (value[3] as u32)
+                        + ((value[2] as u32) << 8)
+                        + ((value[1] as u32) << 16)
+                        + ((value[0] as u32) << 24)
                 }
             },
             _ => panic!("Only [RLPItem] can be converted into [u32]")
