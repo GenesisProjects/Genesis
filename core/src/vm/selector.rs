@@ -68,7 +68,60 @@ impl RLPSerialize for Selector {
         //      [["i32"],["100"],["string"],["abc"]     # inputs
         //      [["bool"]]                              # outputs
         // ]
-        unimplemented!()
+        let name_rlp = RLPSerialize::serialize(&self.name).unwrap_or(RLP::RLPEmpty);
+
+        let mut args_rlp: Vec<RLP> = vec![];
+        for arg in self.args.clone() {
+            match arg {
+                Argument::Int32(value) => {
+                    let arg_item = RLPSerialize::serialize(&(value as u32)).unwrap_or(RLP::RLPEmpty);
+                    args_rlp.append(&mut vec![arg_item]);
+                },
+                Argument::Int64(value) => {
+                    let arg_item = RLPSerialize::serialize(&(value as u64)).unwrap_or(RLP::RLPEmpty);
+                    args_rlp.append(&mut vec![arg_item]);
+                },
+                Argument::Uint32(value) => {
+                    let arg_item = RLPSerialize::serialize(&value).unwrap_or(RLP::RLPEmpty);
+                    args_rlp.append(&mut vec![arg_item]);
+                },
+                Argument::Uint64(value) => {
+                    let arg_item = RLPSerialize::serialize(&value).unwrap_or(RLP::RLPEmpty);
+                    args_rlp.append(&mut vec![arg_item]);
+                },
+                _ => {
+                    unimplemented!()
+                }
+            }
+        }
+
+        let mut returns_rlp: Vec<RLP> = vec![];
+        for ret in self.returns.clone() {
+            match ret {
+                Argument::Int32(value) => {
+                    let ret_item = RLPSerialize::serialize(&(value as u32)).unwrap_or(RLP::RLPEmpty);
+                    returns_rlp.append(&mut vec![ret_item]);
+                },
+                Argument::Int64(value) => {
+                    let ret_item = RLPSerialize::serialize(&(value as u64)).unwrap_or(RLP::RLPEmpty);
+                    returns_rlp.append(&mut vec![ret_item]);
+                },
+                Argument::Uint32(value) => {
+                    let ret_item = RLPSerialize::serialize(&value).unwrap_or(RLP::RLPEmpty);
+                    returns_rlp.append(&mut vec![ret_item]);
+                },
+                Argument::Uint64(value) => {
+                    let ret_item = RLPSerialize::serialize(&value).unwrap_or(RLP::RLPEmpty);
+                    returns_rlp.append(&mut vec![ret_item]);
+                },
+                _ => {
+                    unimplemented!()
+                }
+            }
+
+        }
+
+        Ok(RLP::RLPList(vec![name_rlp, RLP::RLPList(args_rlp), RLP::RLPList(returns_rlp)]))
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {

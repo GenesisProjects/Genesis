@@ -41,18 +41,39 @@ impl RLPSerialize for u8 {
     }
 }
 
-impl RLPSerialize for u16 {
-    fn serialize(&self) -> Result<RLP, RLPError> {
-        Ok(RLP::RLPItem(vec![(self >> 8) as u8, (self & 0x00ff) as u8]))
-    }
 
-    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        match rlp {
-            &RLP::RLPItem(ref value) => Ok(((value[0] as u16) << 8) + value[1] as u16),
-            _ => Err(RLPError::RLPErrorType),
-        }
-    }
+macro_rules! impl_rlp_serialize_for_u {
+	($name: ident, $size: expr) => {
+		impl RLPSerialize for $name {
+			fn serialize(&self) -> Result<types::RLP, types::RLPError> {
+				let mut arr = vec![0u8; $size];
+				for (i, elem) in arr.iter_mut().enumerate() {
+                    *elem = (self >> (($size - i - 1) * 8) & (0xff as $name)) as u8;
+                }
+
+				Ok(RLP::RLPItem(arr))
+			}
+
+			fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
+                match rlp {
+                    &RLP::RLPItem(ref value) => {
+                        let mut ret = 0 as $name;
+                        for i in 0..$size {
+                            ret += (value[i] as $name) << (($size - i - 1) * 8);
+                        }
+                        Ok(ret)
+                    },
+                    _ => Err(RLPError::RLPErrorType),
+                }
+            }
+		}
+	}
 }
+
+impl_rlp_serialize_for_u!(u16, 2);
+impl_rlp_serialize_for_u!(u32, 4);
+impl_rlp_serialize_for_u!(u64, 8);
+
 
 impl RLPSerialize for String {
     fn serialize(&self) -> Result<types::RLP, types::RLPError> {
