@@ -1,7 +1,7 @@
 use super::node::*;
+use common::hash::*;
 use db::manager::*;
 use rlp::RLPSerialize;
-use common::hash::*;
 
 use std::cmp::min;
 use std::marker::PhantomData;
@@ -320,5 +320,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
 # [cfg(test)]
 mod tests {
     # [test]
-    fn test_trie() {}
+    fn test_trie() {
+
+    }
 }

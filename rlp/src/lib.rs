@@ -27,21 +27,3 @@ pub trait RLPSerialize: Sized {
     fn serialize(&self) -> Result<types::RLP, types::RLPError>;
     fn deserialize(rlp: &types::RLP) -> Result<Self, types::RLPError>;
 }
-
-impl RLPSerialize for SocketAddr {
-    fn serialize(&self) -> Result<types::RLP, types::RLPError> {
-        let ip_rlp: RLP = self.ip().to_string().into();
-        let port_rlp: RLP = self.port().into();
-        Ok(RLP::RLPList(vec![ip_rlp, port_rlp]))
-    }
-    fn deserialize(rlp: &types::RLP) -> Result<Self, types::RLPError> {
-        /*match rlp {
-            &RLP::RLPItem { ref value } => match String::from_utf8(value.to_owned()) {
-                Ok(str) => Ok(str),
-                Err(_) => Err(RLPError::RLPErrorUnknown)
-            }
-            _ => Err(RLPError::RLPErrorUnknown)
-        }*/
-        unimplemented!()
-    }
-}
