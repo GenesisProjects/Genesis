@@ -310,4 +310,9 @@ mod tests {
         assert_eq!(even_extension, (vec![0x1,0x2], false));
         assert_eq!(even_terminated, (vec![0x1,0x2], true));
     }
+
+    # [test]
+    fn test_ser() {
+        TrieNode::new_branch_node()
+    }
 }
