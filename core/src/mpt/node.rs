@@ -105,7 +105,7 @@ pub fn decode_path(encoded_path: &Vec<u8>) -> (Vec<u8>, bool) {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TrieNode<T: RLPSerialize + Clone> {
     EMPTY,
     BranchNode { branches: [TrieKey; MAX_BRANCHE_NUM], value: Option<T> },
@@ -312,7 +312,15 @@ mod tests {
     }
 
     # [test]
-    fn test_ser() {
-        TrieNode::new_branch_node()
+    fn test_serde_branch() {
+        let mut new_branches: [TrieKey; MAX_BRANCHE_NUM] = [zero_hash!(); MAX_BRANCHE_NUM];
+        new_branches[0][0]= 0x1;
+        new_branches[1][1]= 0x2;
+        new_branches[2][2]= 0x3;
+        new_branches[3][3]= 0x4;
+        let node: TrieNode<String> = TrieNode::new_branch_node(&new_branches, None);
+        let rlp = node.serialize().unwrap();
+        let target = TrieNode::deserialize(&rlp).unwrap();
+        assert_eq!(node, target);
     }
 }

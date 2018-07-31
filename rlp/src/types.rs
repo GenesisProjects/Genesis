@@ -14,6 +14,7 @@ macro_rules! rlp_list {
 
 pub type EncodedRLP = Vec<u8>;
 
+#[derive(Debug)]
 pub enum RLPError {
     RLPErrorUnknown,
 
