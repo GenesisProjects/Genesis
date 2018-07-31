@@ -286,4 +286,28 @@ mod tests {
             0x7,0x2,0x6,0xc,0x6,0x4
         ], result)
     }
+
+    # [test]
+    fn test_encode_path() {
+        let odd_extension = encode_path(&vec![0x1], false);
+        let odd_terminated = encode_path(&vec![0x1], true);
+        let even_extension = encode_path(&vec![0x1,0x2], false);
+        let even_terminated = encode_path(&vec![0x1,0x2], true);
+        assert_eq!(odd_extension, vec![17]);
+        assert_eq!(odd_terminated, vec![49]);
+        assert_eq!(even_extension, vec![0, 18]);
+        assert_eq!(even_terminated, vec![32, 18]);
+    }
+
+    # [test]
+    fn test_decode_path() {
+        let odd_extension = decode_path(&vec![17]);
+        let odd_terminated = decode_path(&vec![49]);
+        let even_extension = decode_path(&vec![0, 18]);
+        let even_terminated = decode_path(&vec![32, 18]);
+        assert_eq!(odd_extension, (vec![0x1], false));
+        assert_eq!(odd_terminated, (vec![0x1], true));
+        assert_eq!(even_extension, (vec![0x1,0x2], false));
+        assert_eq!(even_terminated, (vec![0x1,0x2], true));
+    }
 }
