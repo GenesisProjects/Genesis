@@ -70,24 +70,24 @@ impl RLPSerialize for Selector {
         // ]
         let name_rlp: RLP = self.name.to_owned().into();
 
-        let mut args_rlp: Vec<RLP> = vec![];
+        let mut args_rlp: RLP = rlp_list![];
         for arg in self.args.clone() {
             match arg {
                 Argument::Int32(value) => {
                     let arg_item: RLP = (value as u32).into();
-                    args_rlp.push(arg_item);
+                    args_rlp = args_rlp << arg_item;
                 },
                 Argument::Int64(value) => {
                     let arg_item: RLP = (value as u64).into();
-                    args_rlp.push(arg_item);
+                    args_rlp = args_rlp << arg_item;
                 },
                 Argument::Uint32(value) => {
                     let arg_item: RLP = (value as u32).into();
-                    args_rlp.push(arg_item);
+                    args_rlp = args_rlp << arg_item;
                 },
                 Argument::Uint64(value) => {
                     let arg_item: RLP = (value as u64).into();
-                    args_rlp.push(arg_item);
+                    args_rlp = args_rlp << arg_item;
                 },
                 _ => {
                     unimplemented!()
@@ -95,24 +95,24 @@ impl RLPSerialize for Selector {
             }
         }
 
-        let mut returns_rlp: Vec<RLP> = vec![];
+        let mut returns_rlp: RLP = rlp_list![];
         for ret in self.returns.clone() {
             match ret {
                 Argument::Int32(value) => {
                     let ret_item: RLP = (value as u32).into();
-                    returns_rlp.push(ret_item);
+                    args_rlp = args_rlp << ret_item;
                 },
                 Argument::Int64(value) => {
                     let ret_item: RLP = (value as u64).into();
-                    returns_rlp.push(ret_item);
+                    args_rlp = args_rlp << ret_item;
                 },
                 Argument::Uint32(value) => {
                     let ret_item: RLP = (value as u32).into();
-                    returns_rlp.push(ret_item);
+                    args_rlp = args_rlp << ret_item;
                 },
                 Argument::Uint64(value) => {
                     let ret_item: RLP = (value as u64).into();
-                    returns_rlp.push(ret_item);
+                    args_rlp = args_rlp << ret_item;
                 },
                 _ => {
                     unimplemented!()
@@ -121,11 +121,11 @@ impl RLPSerialize for Selector {
 
         }
 
-        Ok(RLP::RLPList(vec![
+        Ok(rlp_list![
             name_rlp,
-            RLP::RLPList(args_rlp),
-            RLP::RLPList(returns_rlp)
-        ]))
+            args_rlp,
+            returns_rlp
+        ])
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
