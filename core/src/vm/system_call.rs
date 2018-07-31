@@ -133,13 +133,10 @@ impl Api for SystemCall {
                             new_runtime.module_ref().unwrap(),
                             StorageCache::new(),
                         ) {
-                            //TODO: decode from memory
-                            let selector = Selector::new(
-                                "test_1".into(),
-                                vec![],
-                                vec![],
-                            );
-                            //TODO: end decode from memory
+
+                            let selector = self.memory_load(abi, 32).and_then(|vec| {
+                                Ok(Selector::decode(&vec[..]))
+                            }).unwrap();
 
                             // begin excution
                             let result = self.execute(new_runtime.module_ref().unwrap(), selector, 1000);

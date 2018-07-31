@@ -2,6 +2,8 @@ use action::Action;
 
 use rlp::RLPSerialize;
 use rlp::types::{RLPError, RLP};
+use rlp::decoder::Decoder;
+use rlp::encoder::Encoder;
 
 use wasmi::*;
 
@@ -174,10 +176,14 @@ pub trait SelectorCodec {
 
 impl<T> SelectorCodec for T where T: RLPSerialize {
     fn decode(input: &[u8]) -> T {
-        unimplemented!()
+        let rlp = Decoder::decode(&input.to_vec()).unwrap();
+        Selector::deserialize(&rlp)
     }
 
     fn encode<'a>(&self, buff: &mut[u8]) {
-        unimplemented!()
+        let mut encoder = Encoder::new();
+        let rlp: RLP = self.serialize().unwrap();
+        let result = encoder.encode(&rlp);
+        buff.copy_from_slice(&result[..]);
     }
 }
