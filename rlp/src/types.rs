@@ -126,6 +126,44 @@ impl Into<u32> for RLP {
     }
 }
 
+impl From<u64> for RLP {
+    fn from(v: u64) -> Self {
+        let bytes: [u8; 8] = unsafe { transmute(v.to_be()) };
+        RLP::RLPItem(vec![
+            bytes[0],
+            bytes[1],
+            bytes[2],
+            bytes[3],
+            bytes[4],
+            bytes[5],
+            bytes[6],
+            bytes[7]
+        ])
+    }
+}
+
+impl Into<u64> for RLP {
+    fn into(self) -> u64 {
+        match self {
+            RLP::RLPItem(value) => {
+                if value.len() != 8 {
+                    panic!("The size of vec should be 8usize")
+                } else {
+                    (value[7] as u64)
+                        + ((value[6] as u64) << 8)
+                        + ((value[5] as u64) << 16)
+                        + ((value[4] as u64) << 24)
+                        + ((value[3] as u64) << 32)
+                        + ((value[2] as u64) << 40)
+                        + ((value[1] as u64) << 48)
+                        + ((value[0] as u64) << 56)
+                }
+            },
+            _ => panic!("Only [RLPItem] can be converted into [u64]")
+        }
+    }
+}
+
 
 
 pub type EncodedRLP = Vec<u8>;
