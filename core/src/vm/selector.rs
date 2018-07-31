@@ -165,7 +165,30 @@ impl RLPSerialize for Selector {
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        unimplemented!()
+        if let RLP::RLPList(mut list) = rlp {
+            if list.len() != 3 {
+                return Err(RLPError::RLPErrorType);
+            }
+
+            let mut name = String::new();
+            let args = vec![];
+            let returns = vec![];
+            if let RLP::RLPItem(name_val) = list[0] {
+                name = String::decode(name_val);
+            }
+
+            if let RLP::RLPItem(arg_list) = list[1] {
+                unimplemented!()
+            }
+
+            if let RLP::RLPItem(ret_list) = list[2] {
+                unimplemented!()
+            }
+
+            Ok(Selector { name, args, returns })
+        } else {
+            Err(RLPError::RLPErrorType)
+        }
     }
 }
 
@@ -177,7 +200,7 @@ pub trait SelectorCodec {
 impl<T> SelectorCodec for T where T: RLPSerialize {
     fn decode(input: &[u8]) -> T {
         let rlp = Decoder::decode(&input.to_vec()).unwrap();
-        Selector::deserialize(&rlp)
+        T::deserialize(&rlp)
     }
 
     fn encode<'a>(&self, buff: &mut[u8]) {
