@@ -135,7 +135,7 @@ impl Api for SystemCall {
                         ) {
 
                             let selector = self.memory_load(abi, 32).and_then(|vec| {
-                                Ok(Selector::decode(&vec[..]))
+                                Ok(Selector::decode(&vec).unwrap())
                             }).unwrap();
 
                             // begin excution

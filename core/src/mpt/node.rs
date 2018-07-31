@@ -105,7 +105,7 @@ pub fn decode_path(encoded_path: &Vec<u8>) -> (Vec<u8>, bool) {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TrieNode<T: RLPSerialize + Clone> {
     EMPTY,
     BranchNode { branches: [TrieKey; MAX_BRANCHE_NUM], value: Option<T> },
@@ -309,5 +309,38 @@ mod tests {
         assert_eq!(odd_terminated, (vec![0x1], true));
         assert_eq!(even_extension, (vec![0x1,0x2], false));
         assert_eq!(even_terminated, (vec![0x1,0x2], true));
+    }
+
+    # [test]
+    fn test_serde_branch() {
+        let mut new_branches: [TrieKey; MAX_BRANCHE_NUM] = [zero_hash!(); MAX_BRANCHE_NUM];
+        new_branches[0][0]= 0x1;
+        new_branches[1][1]= 0x2;
+        new_branches[2][2]= 0x3;
+        new_branches[3][3]= 0x4;
+        let node: TrieNode<String> = TrieNode::new_branch_node(&new_branches, None);
+        let rlp = node.serialize().unwrap();
+        let target = TrieNode::deserialize(&rlp).unwrap();
+        assert_eq!(node, target);
+    }
+
+    # [test]
+    fn test_serde_extension() {
+        let path = vec![1,2,3];
+        let encoded_path = encode_path(&path, false);
+        let node: TrieNode<String> = TrieNode::new_extension_node(&encoded_path, &zero_hash!());
+        let rlp = node.serialize().unwrap();
+        let target = TrieNode::deserialize(&rlp).unwrap();
+        assert_eq!(node, target);
+    }
+
+    # [test]
+    fn test_serde_leaf() {
+        let path = vec![1,2,3];
+        let encoded_path = encode_path(&path, true);
+        let node: TrieNode<String> = TrieNode::new_leaf_node(&encoded_path, &"test".to_string());
+        let rlp = node.serialize().unwrap();
+        let target = TrieNode::deserialize(&rlp).unwrap();
+        assert_eq!(node, target);
     }
 }

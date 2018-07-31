@@ -1,9 +1,9 @@
 use action::Action;
 
-use rlp::RLPSerialize;
-use rlp::types::{RLPError, RLP};
 use rlp::decoder::Decoder;
 use rlp::encoder::Encoder;
+use rlp::RLPSerialize;
+use rlp::types::{RLPError, RLP, EncodedRLP};
 
 use wasmi::*;
 
@@ -48,6 +48,30 @@ impl Selector {
                 Argument::Float64(val) => RuntimeValue::F64(val.into())
             }
         }).collect()
+    }
+
+    pub fn decode(input: &Vec<u8>) -> Option<Selector> {
+        match Decoder::decode(input) {
+            Some(r) => {
+                match Selector::deserialize(&r) {
+                    Ok(r) => Some(r),
+                    _ => None
+                }
+            },
+            _ => None
+        }
+    }
+
+    pub fn encode<'a>(&self) -> Result<EncodedRLP, &'static str> {
+        let mut encoder = Encoder::new();
+        match self.serialize() {
+            Ok(r) => {
+                let result = encoder.encode(&r);
+                Ok(result)
+            },
+            _ => Err("rlp serialization failed")
+        }
+
     }
 }
 
@@ -154,7 +178,6 @@ impl RLPSerialize for Selector {
                     returns_rlp = returns_rlp << ret_item;
                 }
             }
-
         }
 
         Ok(rlp_list![
@@ -165,48 +188,10 @@ impl RLPSerialize for Selector {
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        if let RLP::RLPList(mut list) = rlp {
-            if list.len() != 3 {
-                return Err(RLPError::RLPErrorType);
-            }
-
-            let mut name = String::new();
-            let args = vec![];
-            let returns = vec![];
-            if let RLP::RLPItem(name_val) = list[0] {
-                name = String::decode(name_val);
-            }
-
-            if let RLP::RLPItem(arg_list) = list[1] {
-                unimplemented!()
-            }
-
-            if let RLP::RLPItem(ret_list) = list[2] {
-                unimplemented!()
-            }
-
-            Ok(Selector { name, args, returns })
+        if let RLP::RLPList(list) = rlp {
+            unimplemented!()
         } else {
             Err(RLPError::RLPErrorType)
         }
-    }
-}
-
-pub trait SelectorCodec {
-    fn decode(input: &[u8]) -> Self;
-    fn encode<'a>(&self, buff: &mut[u8]);
-}
-
-impl<T> SelectorCodec for T where T: RLPSerialize {
-    fn decode(input: &[u8]) -> T {
-        let rlp = Decoder::decode(&input.to_vec()).unwrap();
-        T::deserialize(&rlp)
-    }
-
-    fn encode<'a>(&self, buff: &mut[u8]) {
-        let mut encoder = Encoder::new();
-        let rlp: RLP = self.serialize().unwrap();
-        let result = encoder.encode(&rlp);
-        buff.copy_from_slice(&result[..]);
     }
 }
