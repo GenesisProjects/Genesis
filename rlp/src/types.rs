@@ -1,7 +1,18 @@
-use std::ops::Index;
+use std::ops::{Index, Shl};
 use std::convert::{From, Into};
 use std::string::FromUtf8Error;
 use std::mem::transmute;
+
+#[macro_export]
+macro_rules! rlp_list {
+    ($( $rlp: expr ),*) => {{
+         let mut list: Vec<RLP> = vec![];
+         $( list.push($rlp); )*
+         RLP::RLPList(list)
+    }}
+}
+
+pub type EncodedRLP = Vec<u8>;
 
 pub enum RLPError {
     RLPErrorUnknown,
@@ -164,9 +175,19 @@ impl Into<u64> for RLP {
     }
 }
 
+impl Shl<RLP> for RLP {
+    type Output = Self;
 
+    fn shl(self, rlp: RLP) -> RLP {
+        if let RLP::RLPList(mut list) = self {
+            list.push(rlp);
+            RLP::RLPList(list)
+        } else {
+            panic!("Only [RLPList] can be appended")
+        }
+    }
+}
 
-pub type EncodedRLP = Vec<u8>;
 
 #[cfg(test)]
 mod rlp_test {
