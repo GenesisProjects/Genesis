@@ -1,7 +1,9 @@
 use action::Action;
 
+use rlp::decoder::Decoder;
+use rlp::encoder::Encoder;
 use rlp::RLPSerialize;
-use rlp::types::{RLPError, RLP};
+use rlp::types::{RLPError, RLP, EncodedRLP};
 
 use wasmi::*;
 
@@ -46,6 +48,30 @@ impl Selector {
                 Argument::Float64(val) => RuntimeValue::F64(val.into())
             }
         }).collect()
+    }
+
+    pub fn decode(input: &Vec<u8>) -> Option<Selector> {
+        match Decoder::decode(input) {
+            Some(r) => {
+                match Selector::deserialize(&r) {
+                    Ok(r) => Some(r),
+                    _ => None
+                }
+            },
+            _ => None
+        }
+    }
+
+    pub fn encode<'a>(&self) -> Result<EncodedRLP, &'static str> {
+        let mut encoder = Encoder::new();
+        match self.serialize() {
+            Ok(r) => {
+                let result = encoder.encode(&r);
+                Ok(result)
+            },
+            _ => Err("rlp serialization failed")
+        }
+
     }
 }
 
@@ -152,7 +178,6 @@ impl RLPSerialize for Selector {
                     returns_rlp = returns_rlp << ret_item;
                 }
             }
-
         }
 
         Ok(rlp_list![
@@ -163,21 +188,6 @@ impl RLPSerialize for Selector {
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        unimplemented!()
-    }
-}
-
-pub trait SelectorCodec {
-    fn decode(input: &[u8]) -> Self;
-    fn encode<'a>(&self, buff: &mut[u8]);
-}
-
-impl<T> SelectorCodec for T where T: RLPSerialize {
-    fn decode(input: &[u8]) -> T {
-        unimplemented!()
-    }
-
-    fn encode<'a>(&self, buff: &mut[u8]) {
         unimplemented!()
     }
 }
