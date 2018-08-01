@@ -16,7 +16,7 @@ pub type EncodedRLP = Vec<u8>;
 
 #[derive(Debug)]
 pub enum RLPError {
-    RLPErrorUnknown,
+    RLPErrorUnknown(&'static str),
 
     RLPErrorType,
 

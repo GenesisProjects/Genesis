@@ -48,11 +48,11 @@ impl Receipt {
 
 impl RLPSerialize for Receipt {
     fn serialize(&self) -> Result<RLP, RLPError> {
-        Err(RLPError::RLPErrorUnknown)
+        Err(RLPError::RLPErrorUnknown(""))
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        Err(RLPError::RLPErrorUnknown)
+        Err(RLPError::RLPErrorUnknown(""))
     }
 }
 
