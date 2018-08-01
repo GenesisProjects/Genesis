@@ -92,7 +92,7 @@ impl Kernel {
 
         //TODO: test
         let mut f = File::open("./test_contract/test.wasm").expect("file not found");
-        let mut contents = String::new();
+        let contents = String::new();
         f.read_to_end(code_buff)
             .expect("something went wrong reading the file");
         Ok(())

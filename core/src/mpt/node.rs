@@ -343,4 +343,26 @@ mod tests {
         let target = TrieNode::deserialize(&rlp).unwrap();
         assert_eq!(node, target);
     }
+
+    # [test]
+    #[should_panic]
+    fn test_serde_invalid_leaf() {
+        let path = vec![1,2,3];
+        let encoded_path = encode_path(&path, false);
+        let node: TrieNode<String> = TrieNode::new_leaf_node(&encoded_path, &"test".to_string());
+        let rlp = node.serialize().unwrap();
+        let target = TrieNode::deserialize(&rlp).unwrap();
+
+    }
+
+    # [test]
+    #[should_panic]
+    fn test_serde_invalid_extension() {
+        let path = vec![1,2,3];
+        let encoded_path = encode_path(&path, true);
+        let node: TrieNode<String> = TrieNode::new_leaf_node(&encoded_path, &"test".to_string());
+        let rlp = node.serialize().unwrap();
+        let target = TrieNode::deserialize(&rlp).unwrap();
+
+    }
 }

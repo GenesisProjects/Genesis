@@ -138,6 +138,31 @@ impl Into<u32> for RLP {
     }
 }
 
+impl From<i32> for RLP {
+    fn from(v: i32) -> Self {
+        let bytes: [u8; 4] = unsafe { transmute(v.to_be()) };
+        RLP::RLPItem(vec![bytes[0], bytes[1], bytes[2], bytes[3]])
+    }
+}
+
+impl Into<i32> for RLP {
+    fn into(self) -> i32 {
+        match self {
+            RLP::RLPItem(value) => {
+                if value.len() != 4 {
+                    panic!("The size of vec should be 4usize")
+                } else {
+                    (value[3] as i32)
+                        + ((value[2] as i32) << 8)
+                        + ((value[1] as i32) << 16)
+                        + ((value[0] as i32) << 24)
+                }
+            },
+            _ => panic!("Only [RLPItem] can be converted into [i32]")
+        }
+    }
+}
+
 impl From<u64> for RLP {
     fn from(v: u64) -> Self {
         let bytes: [u8; 8] = unsafe { transmute(v.to_be()) };
@@ -175,6 +200,69 @@ impl Into<u64> for RLP {
         }
     }
 }
+
+impl From<i64> for RLP {
+    fn from(v: i64) -> Self {
+        let bytes: [u8; 8] = unsafe { transmute(v.to_be()) };
+        RLP::RLPItem(vec![
+            bytes[0],
+            bytes[1],
+            bytes[2],
+            bytes[3],
+            bytes[4],
+            bytes[5],
+            bytes[6],
+            bytes[7]
+        ])
+    }
+}
+
+impl Into<i64> for RLP {
+    fn into(self) -> i64 {
+        match self {
+            RLP::RLPItem(value) => {
+                if value.len() != 8 {
+                    panic!("The size of vec should be 8usize")
+                } else {
+                    (value[7] as i64)
+                        + ((value[6] as i64) << 8)
+                        + ((value[5] as i64) << 16)
+                        + ((value[4] as i64) << 24)
+                        + ((value[3] as i64) << 32)
+                        + ((value[2] as i64) << 40)
+                        + ((value[1] as i64) << 48)
+                        + ((value[0] as i64) << 56)
+                }
+            },
+            _ => panic!("Only [RLPItem] can be converted into [i64]")
+        }
+    }
+}
+
+impl From<f32> for RLP {
+    fn from(v: f32) -> Self {
+        unimplemented!()
+    }
+}
+
+impl Into<f32> for RLP {
+    fn into(self) -> f32 {
+        unimplemented!()
+    }
+}
+
+impl From<f64> for RLP {
+    fn from(v: f64) -> Self {
+        unimplemented!()
+    }
+}
+
+impl Into<f64> for RLP {
+    fn into(self) -> f64 {
+        unimplemented!()
+    }
+}
+
 
 impl Shl<RLP> for RLP {
     type Output = Self;

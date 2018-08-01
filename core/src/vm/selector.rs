@@ -4,7 +4,7 @@ use std::panic;
 use rlp::decoder::Decoder;
 use rlp::encoder::Encoder;
 use rlp::RLPSerialize;
-use rlp::types::{RLPError, RLP, EncodedRLP};
+use rlp::types::*;
 
 use wasmi::*;
 
@@ -189,45 +189,60 @@ impl RLPSerialize for Selector {
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        if let RLP::RLPList(mut list) = rlp {
+        let result = panic::catch_unwind(|| {
+            let name = String::deserialize(&rlp[0]).unwrap();
+            let mut args: Vec<Argument> = vec![];
+            let mut returns: Vec<Argument> = vec![];
 
-            let name = String::deserialize(&list[0]).unwrap();
-            let mut args = vec![];
-            let mut returns = vec![];
-
-            if let RLP::RLPList(arg_list) = list[1] {
-                for i in (0..arg_list.len()).step_by(2) {
+            if let RLP::RLPList(ref arg_list) = rlp[1] {
+                let mut i = 0usize;
+                while i < arg_list.len() {
                     match String::deserialize(&arg_list[i]).unwrap().as_ref() {
-                        "i32" => args.push(Argument::Int32(u32::deserialize(&arg_list[i+1]).unwrap() as i32)),
-                        "i64" => args.push(Argument::Int64(u64::deserialize(&arg_list[i+1]).unwrap() as i64)),
-                        "u32" => args.push(Argument::Uint32(arg_list[i+1].into())),
-                        "u64" => args.push(Argument::Uint64(arg_list[i+1].into())),
-                        "f32" => args.push(Argument::Float32(u32::deserialize(&arg_list[i+1]).unwrap() as f32)),
-                        "f64" => args.push(Argument::Float64(u64::deserialize(&arg_list[i+1]).unwrap() as f64))
+                        "i32" => args.push(Argument::Int32(arg_list[i + 1].to_owned().into())),
+                        "i64" => args.push(Argument::Int64(arg_list[i + 1].to_owned().into())),
+                        "u32" => args.push(Argument::Uint32(arg_list[i + 1].to_owned().into())),
+                        "u64" => args.push(Argument::Uint64(arg_list[i + 1].to_owned().into())),
+                        "f32" => args.push(Argument::Float32(arg_list[i + 1].to_owned().into())),
+                        "f64" => args.push(Argument::Float64(arg_list[i + 1].to_owned().into())),
+                        _ => panic!("Unknown data type")
                     }
+                    i += 2;
                 }
+            } else {
+                panic!("Unknown args")
             }
 
-            if let RLP::RLPList(ret_list) = list[2] {
-                for i in (0..ret_list.len()).step_by(2) {
+            if let RLP::RLPList(ref ret_list) = rlp[2] {
+                let mut i = 0usize;
+                while i < ret_list.len() {
                     match String::deserialize(&ret_list[i]).unwrap().as_ref() {
-                        "i32" => returns.push(Argument::Int32(u32::deserialize(&ret_list[i+1]).unwrap() as i32)),
-                        "i64" => returns.push(Argument::Int64(u64::deserialize(&ret_list[i+1]).unwrap() as i64)),
-                        "u32" => returns.push(Argument::Uint32(ret_list[i+1].into())),
-                        "u64" => returns.push(Argument::Uint64(ret_list[i+1].into())),
-                        "f32" => returns.push(Argument::Float32(u32::deserialize(&ret_list[i+1]).unwrap() as f32)),
-                        "f64" => returns.push(Argument::Float64(u64::deserialize(&ret_list[i+1]).unwrap() as f64))
+                        "i32" => returns.push(Argument::Int32(ret_list[i + 1].to_owned().into())),
+                        "i64" => returns.push(Argument::Int64(ret_list[i + 1].to_owned().into())),
+                        "u32" => returns.push(Argument::Uint32(ret_list[i + 1].to_owned().into())),
+                        "u64" => returns.push(Argument::Uint64(ret_list[i + 1].to_owned().into())),
+                        "f32" => returns.push(Argument::Float32(ret_list[i + 1].to_owned().into())),
+                        "f64" => returns.push(Argument::Float64(ret_list[i + 1].to_owned().into())),
+                        _ => panic!("Unknown data type")
                     }
+                    i += 2;
                 }
+            } else {
+                panic!("Unknown args")
             }
 
-            let _ = panic::catch_unwind(|| {
-                println!("caught unwinding error");
-            });
+            Selector {
+                name: name,
+                args: args,
+                returns: returns
+            }
+        });
 
-            Ok(Selector { name, args, returns })
-        } else {
-            Err(RLPError::RLPErrorType)
+        match result {
+            Ok(r) => Ok(r),
+            Err(e) => {
+                println!("{:?}", e);
+                Err(RLPError::RLPDecodingErrorMalformed)
+            }
         }
     }
 }
