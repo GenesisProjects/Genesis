@@ -319,10 +319,24 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rlp::types::RLP;
+    use rlp::types::*;
+
+    struct TestObject {
+        name: String
+    }
+
+    impl RLPSerialize for TestObject {
+        fn serialize(&self) -> Result<RLP, RLPError> {
+            Ok(self.name.to_owned().into())
+        }
+
+        fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
+            Ok(TestObject{ name: String::deserialize(&rlp.to_owned()).unwrap() })
+        }
+    }
 
     #[test]
     fn test_trie() {
-        Trie::<RLP>::new(&SHARED_MANAGER);
+        let trie = Trie::<RLP>::new(&SHARED_MANAGER);
     }
 }
