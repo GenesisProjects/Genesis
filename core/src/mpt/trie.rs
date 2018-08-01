@@ -337,6 +337,6 @@ mod tests {
 
     #[test]
     fn test_trie() {
-        let trie = Trie::<RLP>::new(&SHARED_MANAGER);
+        let trie = Trie::<TestObject>::new(&SHARED_MANAGER);
     }
 }
