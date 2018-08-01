@@ -5,7 +5,6 @@ pub mod log;
 pub mod mpt;
 pub mod storage;
 pub mod transaction;
-pub mod action;
 pub mod receipt;
 pub mod vm;
 
