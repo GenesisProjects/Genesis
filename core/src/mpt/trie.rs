@@ -318,6 +318,11 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use rlp::types::RLP;
+
     #[test]
-    fn test_trie() {}
+    fn test_trie() {
+        Trie::<RLP>::new(&SHARED_MANAGER);
+    }
 }

@@ -1,13 +1,10 @@
-use std::collections::HashMap;
-
 use common::address::Address;
 use common::hash::Hash;
+use std::collections::HashMap;
 use storage::StorageCache;
-
 use super::kernel::{Kernel, KernelRef};
 use super::runtime::*;
 use super::selector::Selector;
-
 use wasmi::*;
 use wasmi::ValueType::*;
 
@@ -133,7 +130,6 @@ impl Api for SystemCall {
                             new_runtime.module_ref().unwrap(),
                             StorageCache::new(),
                         ) {
-
                             let selector = self.memory_load(abi, 32).and_then(|vec| {
                                 Ok(Selector::decode(&vec).unwrap())
                             }).unwrap();
@@ -218,7 +214,7 @@ impl Api for SystemCall {
                     .read(&key, &storage) {
                     Ok(chunk) => {
                         self.memory_set(offset, &chunk[..])
-                    },
+                    }
                     Err(e) => {
                         Err(Error::Validation("Can not read storage".into()))
                     }

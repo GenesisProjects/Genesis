@@ -1,11 +1,9 @@
 use action::Action;
-use std::panic;
-
 use rlp::decoder::Decoder;
 use rlp::encoder::Encoder;
 use rlp::RLPSerialize;
 use rlp::types::*;
-
+use std::panic;
 use wasmi::*;
 
 #[derive(Clone, Debug)]
@@ -15,14 +13,14 @@ pub enum Argument {
     Uint32(u32),
     Uint64(u64),
     Float32(f32),
-    Float64(f64)
+    Float64(f64),
 }
 
 #[derive(Clone, Debug)]
 pub struct Selector {
     name: String,
     args: Vec<Argument>,
-    returns: Vec<Argument>
+    returns: Vec<Argument>,
 }
 
 impl Selector {
@@ -30,7 +28,7 @@ impl Selector {
         Selector {
             name: name,
             args: args,
-            returns: returns
+            returns: returns,
         }
     }
 
@@ -72,7 +70,6 @@ impl Selector {
             },
             _ => Err("rlp serialization failed")
         }
-
     }
 }
 
@@ -80,10 +77,10 @@ impl From<Action> for Selector {
     fn from(f: Action) -> Self {
         //TODO: test
         //unimplemented!()
-        Selector{
+        Selector {
             name: "test".to_string(),
             args: vec![],
-            returns: vec![]
+            returns: vec![],
         }
     }
 }
@@ -233,7 +230,7 @@ impl RLPSerialize for Selector {
             Selector {
                 name: name,
                 args: args,
-                returns: returns
+                returns: returns,
             }
         });
 
