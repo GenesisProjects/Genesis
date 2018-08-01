@@ -320,7 +320,7 @@ mod tests {
         new_branches[3][3]= 0x4;
         let node: TrieNode<String> = TrieNode::new_branch_node(&new_branches, None);
         let rlp = node.serialize().unwrap();
-        let target = TrieNode::deserialize(&rlp).unwrap();
+        let target: TrieNode<String> = TrieNode::deserialize(&rlp).unwrap();
         assert_eq!(node, target);
     }
 
@@ -330,7 +330,7 @@ mod tests {
         let encoded_path = encode_path(&path, false);
         let node: TrieNode<String> = TrieNode::new_extension_node(&encoded_path, &zero_hash!());
         let rlp = node.serialize().unwrap();
-        let target = TrieNode::deserialize(&rlp).unwrap();
+        let target: TrieNode<String> = TrieNode::deserialize(&rlp).unwrap();
         assert_eq!(node, target);
     }
 
@@ -340,29 +340,27 @@ mod tests {
         let encoded_path = encode_path(&path, true);
         let node: TrieNode<String> = TrieNode::new_leaf_node(&encoded_path, &"test".to_string());
         let rlp = node.serialize().unwrap();
-        let target = TrieNode::deserialize(&rlp).unwrap();
+        let target: TrieNode<String> = TrieNode::deserialize(&rlp).unwrap();
         assert_eq!(node, target);
     }
 
     # [test]
-    #[should_panic]
+    # [should_panic]
     fn test_serde_invalid_leaf() {
         let path = vec![1,2,3];
         let encoded_path = encode_path(&path, false);
         let node: TrieNode<String> = TrieNode::new_leaf_node(&encoded_path, &"test".to_string());
         let rlp = node.serialize().unwrap();
-        let target = TrieNode::deserialize(&rlp).unwrap();
-
+        let target: TrieNode<String> = TrieNode::deserialize(&rlp).unwrap();
     }
 
     # [test]
-    #[should_panic]
+    # [should_panic]
     fn test_serde_invalid_extension() {
         let path = vec![1,2,3];
         let encoded_path = encode_path(&path, true);
-        let node: TrieNode<String> = TrieNode::new_leaf_node(&encoded_path, &"test".to_string());
+        let node: TrieNode<String> = TrieNode::new_extension_node(&encoded_path, &zero_hash!());
         let rlp = node.serialize().unwrap();
-        let target = TrieNode::deserialize(&rlp).unwrap();
-
+        let target: TrieNode<String> = TrieNode::deserialize(&rlp).unwrap();
     }
 }
