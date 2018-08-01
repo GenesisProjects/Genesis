@@ -28,6 +28,10 @@ impl<T> Trie<T> where T: RLPSerialize + Clone {
     pub fn new(db: &'static Mutex<DBManager>) -> Trie<T> {
         Trie::<T> { root: zero_hash!(), db: db, phantom: PhantomData }
     }
+
+    pub fn root(&self) -> TrieKey {
+        self.root.to_owned()
+    }
 }
 
 const PATH_MAX_LEN: usize = 64usize;
