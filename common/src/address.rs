@@ -12,14 +12,6 @@ pub struct Address {
     pub text: String
 }
 
-impl From<PublicKey> for Address {
-    fn from(v: PublicKey) -> Self {
-        Address {
-            text: v.to_base58()
-        }
-    }
-}
-
 impl Address {
     /// Convert to key
     pub fn to_key(&self) -> Option<PublicKey> {
@@ -41,17 +33,33 @@ impl Address {
     pub fn load() -> Option<Self> {
         Some(Address {text: "12345678901234567890123456789012".to_string()})
     }
+
+    /// load vec
+    pub fn try_from(value: Vec<u8>) -> Result<Self, ()> {
+        match String::from_utf8(value) {
+            Ok(r) => Ok(Address {text: r}),
+            Err(_) => Err(())
+        }
+    }
+}
+
+impl From<PublicKey> for Address {
+    fn from(v: PublicKey) -> Self {
+        Address {
+            text: v.to_base58()
+        }
+    }
 }
 
 impl RLPSerialize for Address {
     fn serialize(&self) -> Result<RLP, RLPError> {
-        Ok(RLP::RLPItem { value: self.text.to_owned().into() })
+        Ok(RLP::RLPItem(self.text.to_owned().into()))
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
         use std::str;
         match rlp {
-            &RLP::RLPItem { ref value } => {
+            &RLP::RLPItem(ref value) => {
                 Ok(Address { text: str::from_utf8(value).unwrap().into() })
             },
             _ => {

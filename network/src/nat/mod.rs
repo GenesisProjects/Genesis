@@ -2,7 +2,7 @@ pub mod defines;
 pub mod stun;
 pub mod upnp;
 
-use std::net::{AddrParseError, IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::net::{AddrParseError, SocketAddr};
 
 pub type SocketInfo = SocketAddr;
 

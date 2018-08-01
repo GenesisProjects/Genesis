@@ -1,8 +1,5 @@
 use std::cell::RefCell;
 
-use rlp::RLPSerialize;
-use rlp::types::RLP;
-
 pub trait Poolable {
     fn empty_obj() -> Self;
     fn unique_id(&self) -> &String;
@@ -20,7 +17,7 @@ impl<T: Poolable> Pool<T> {
     pub fn new(max: usize) -> Self {
         let working_pool: Vec<RefCell<T>> = vec![];
         let mut recycle_pool: Vec<RefCell<T>> = vec![];
-        for i in 0usize .. max {
+        for _ in 0usize .. max {
             recycle_pool.push(RefCell::new(T::empty_obj()));
         }
         let new_pool = Pool {

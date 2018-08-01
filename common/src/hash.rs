@@ -2,8 +2,6 @@ use crypto::digest::Digest;
 use crypto::sha2::Sha256;
 
 use rlp::RLPSerialize;
-use rlp::encoder::SHARED_ENCODER;
-use rlp::types::RLP;
 use rlp::encoder::Encoder;
 
 /// macro gen_hash! takes (*_str => '&str' type data) and (*_raw => '&[u8]' type data) as input
@@ -53,7 +51,7 @@ impl<T> SerializableAndSHA256Hashable for T where T: RLPSerialize {
     fn encrype_sha256(&self) -> Option<(Hash, Vec<u8>)> {
         match self.serialize() {
             Ok(r) => {
-                let encoded_rlp = SHARED_ENCODER.lock().unwrap().encode(&r);
+                let encoded_rlp = Encoder::new().encode(&r);
                 let data: String = gen_hash!(sha256_raw => &encoded_rlp);
                 let mut result: Hash = [0; HASH_LEN];
                 result.clone_from_slice(&data.as_bytes()[0 .. HASH_LEN]);

@@ -28,11 +28,11 @@ pub struct Log {
 
 impl RLPSerialize for Log {
     fn serialize(&self) -> Result<RLP, RLPError> {
-        Err(RLPError::RLPErrorUnknown)
+        unimplemented!()
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        Err(RLPError::RLPErrorUnknown)
+        unimplemented!()
     }
 }
 

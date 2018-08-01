@@ -1,6 +1,5 @@
 use std::cell::RefCell;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
-use std::time::{Duration, SystemTime};
+use std::net::SocketAddr;
 use std::rc::{Rc, Weak};
 use std::io::*;
 use std::result::Result as SerdeResult;
@@ -11,7 +10,7 @@ use nat::*;
 use session::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};
-use mio::net::{TcpListener, TcpStream};
+use mio::net::TcpStream;
 
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 

@@ -1,13 +1,9 @@
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::ops::*;
 
 use common::address::Address as Account;
 use common::hash::{Hash, HASH_LEN};
 use chrono::*;
-use rlp::RLPSerialize;
-use rlp::types::*;
 use rust_base58::{ToBase58, FromBase58};
-use peer::*;
 
 pub trait MessageCodec {
     fn encoder(&self) -> Vec<u8>;

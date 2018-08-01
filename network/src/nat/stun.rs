@@ -5,8 +5,7 @@ use bytebuffer::*;
 use super::defines::stun::*;
 use super::SocketInfo;
 
-use std::net::UdpSocket;
-
+#[macro_export]
 macro_rules! msg_class_from_type {
     ($msg_type: expr) => {{
         match ($msg_type).raw_value | STUN_CLASS_MASK {
@@ -44,7 +43,6 @@ impl STUNMessageType {
         match manager.in_buffer.read_bits(14u8) {
             0x0001u64 => STUNMessageType::BindingRequest,
             0x0111u64 => STUNMessageType::BindingResponse,
-            0x0111u64 => STUNMessageType::BindingErrorResponse,
             0x0002u64 => STUNMessageType::SharedSecretRequest,
             0x0102u64 => STUNMessageType::SharedSecretResponse,
             0x0112u64 => STUNMessageType::SharedSecretErrorResponse,

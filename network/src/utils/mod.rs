@@ -1,6 +1,6 @@
 use std::process::Command;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use regex::{Regex, Captures};
+use regex::Regex;
 
 pub fn get_local_ip() -> Option<IpAddr> { get() }
 

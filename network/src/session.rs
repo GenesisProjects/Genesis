@@ -4,17 +4,11 @@ use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
 
 use std::io::*;
-use std::net::{Shutdown, SocketAddr};
-use std::time::Instant;
+use std::net::SocketAddr;
 
-use common::address::Address as Account;
-use common::hash::Hash;
 use gen_message::{MESSAGE_CENTER, Message};
-
 use message::defines::*;
 use message::protocol::*;
-use nat::*;
-use pool_manager::SHARED_POOL_MANAGER;
 use p2p_controller::CHANNEL_NAME;
 use socket::*;
 
@@ -62,7 +56,7 @@ impl TaskContext {
         TaskContext {
             data_send: 0,
             data_recv: 0,
-            size_expected: 0,
+            size_expected: expected,
             task_type: task_type
         }
     }
@@ -344,7 +338,7 @@ impl Session {
         match self.socket.receive_data(self.context.size_expected - self.context.data_recv) {
             Ok(data) => {
                 self.updated = Utc::now();
-                self.try_complete(data.len());
+                self.try_complete(data.len())?;
                 Ok(data.len() as u32)
             },
             Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
@@ -366,7 +360,7 @@ impl Session {
             // encode and store data (transaction/block)
             match self.context.task_type {
                 _ => unimplemented!()
-            }
+            };
 
             self.status = SessionStatus::Idle;
             self.mode = SessionMode::Command;

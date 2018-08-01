@@ -29,18 +29,21 @@ lazy_static! {
     };
 }
 
+/// RLP Encoder
 pub struct Encoder {
     buffer: ByteBuffer,
     len_cache: HashMap<String, usize>
 }
 
 impl Encoder {
+    /// Init encoder with preset buffer size
     pub fn new_with_size(size: usize) -> Self {
         let mut buffer = ByteBuffer::new();
         buffer.resize(size);
         Encoder { buffer: buffer, len_cache: HashMap::new() }
     }
 
+    /// Init encoder with default buffer size [ENCODER_BUFFER_SIZE]
     pub fn new() -> Self {
         let mut buffer = ByteBuffer::new();
         buffer.resize(ENCODER_BUFFER_SIZE);
@@ -67,7 +70,7 @@ impl Encoder {
         } else {
             let prefix: u8 = SHORT_STRING_PREFIX_BASE + input.len() as u8;
             self.buffer.write_u8(prefix);
-            self.buffer.write(input);
+            self.buffer.write(input).unwrap();
         }
     }
 
@@ -124,12 +127,12 @@ impl Encoder {
         match cached_result {
             Some(len) => len,
             None =>  match input {
-                &RLP::RLPItem { ref value } => {
+                &RLP::RLPItem(ref value) => {
                     let ret = self.encode_item_len(value);
                     self.len_cache.insert(path,ret);
                     ret
                 },
-                &RLP::RLPList { ref list } => {
+                &RLP::RLPList(ref list) => {
                     let mut total = 0usize;
                     for (i, elem) in list.into_iter().enumerate() {
                         let new_path = path.clone() + format!("{}", i).as_str();
@@ -155,10 +158,10 @@ impl Encoder {
             &RLP::RLPEmpty => {
 
             },
-            &RLP::RLPItem { ref value } => {
+            &RLP::RLPItem(ref value) => {
                 self.encode_item(value);
             },
-            &RLP::RLPList { ref list } => {
+            &RLP::RLPList(ref list) => {
                 let mut l = 0u64;
                 for (i, elem) in list.into_iter().enumerate() {
                     let new_path = path.clone() + format!("{}", i).as_str();
@@ -191,6 +194,7 @@ impl Encoder {
         }
     }
 
+    /// Encode RLP into u8 array
     pub fn encode(&mut self, obj: &RLP) -> EncodedRLP {
         self.buffer.clear();
         self.len_cache = HashMap::new();
@@ -198,5 +202,80 @@ impl Encoder {
         let len = self.encode_list_len("".to_string(), obj);
         self.encode_list("".to_string(), obj);
         Vec::from_iter(self.buffer.to_bytes()[0..len].iter().cloned())
+    }
+}
+
+#[cfg(test)]
+mod encoder_test {
+    use super::Encoder;
+    use super::{RLP, RLPError};
+
+    #[test]
+    fn test_item_string() {
+        // "dog"
+        let mut encoder = Encoder::new();
+        let rlp: RLP = "dog".to_string().into();
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![0x83u8, 'd' as u8, 'o' as u8, 'g' as u8]);
+    }
+
+
+    #[test]
+    fn test_item_u8() {
+        // 0
+        let mut encoder = Encoder::new();
+        let rlp: RLP = 0u8.into();
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![0x00u8]);
+
+        // 15
+        let mut encoder = Encoder::new();
+        let rlp: RLP = 15u8.into();
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![0x0fu8]);
+    }
+
+    #[test]
+    fn test_item_u16() {
+        let mut encoder = Encoder::new();
+        let rlp: RLP = 1024u16.into();
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![0x82u8, 0x04u8, 0x00u8]);
+    }
+
+    #[test]
+    fn test_item_u32() {
+        let mut encoder = Encoder::new();
+        let rlp: RLP = 100u32.into();
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![132u8, 0u8, 0u8, 0u8, 100u8]);
+    }
+
+    #[test]
+    fn test_list_empty() {
+        let mut encoder = Encoder::new();
+        let rlp = RLP::RLPList(vec![]);
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![0xc0]);
+    }
+
+    #[test]
+    fn test_list_nested() {
+        //[ [], [[]], [ [], [[]] ] ]
+        let mut encoder = Encoder::new();
+        let rlp = RLP::RLPList(vec![
+            RLP::RLPList(vec![]),
+            RLP::RLPList(vec![
+                RLP::RLPList(vec![])
+            ]),
+            RLP::RLPList(vec![
+                RLP::RLPList(vec![]),
+                RLP::RLPList(vec![
+                    RLP::RLPList(vec![])
+                ]),
+            ])
+        ]);
+        let result = encoder.encode(&rlp);
+        assert_eq!(result, vec![ 0xc7, 0xc0, 0xc1, 0xc0, 0xc3, 0xc0, 0xc1, 0xc0 ]);
     }
 }

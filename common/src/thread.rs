@@ -1,11 +1,11 @@
 use std::io::*;
 use std::thread;
-use std::time;
+use std::time::Duration;
 
 use observe::*;
 use gen_message::Message;
 
-pub const LOOP_PERIOD: u32 = 100u32;
+pub const LOOP_PERIOD: u64 = 100u64;
 
 #[derive(Copy, Clone)]
 pub enum ThreadStatus {
@@ -25,7 +25,6 @@ pub trait Thread {
                     context_ref.set_status(ThreadStatus::Running);
                     loop {
                         let ret = context_ref.run();
-                        context_ref.update();
                         if let Some(msg) = context_ref.receive_async() {
                             let forward_msg = msg.clone();
                             match msg.msg.as_ref() {
@@ -47,14 +46,14 @@ pub trait Thread {
                         if !ret {
                             break;
                         }
-                        thread::sleep_ms(LOOP_PERIOD);
+                        thread::sleep(Duration::from_millis(LOOP_PERIOD));
                     }
                 },
                 &mut Err(ref e) => {
                     println!("Error: {:?}", e);
                 }
             }
-            context.and_then(|mut context| {
+            let _ = context.and_then(|mut context| {
                 context.unsubscribe();
                 Ok(context)
             });
@@ -70,9 +69,6 @@ pub trait Thread {
 
     /// set status
     fn set_status(&mut self, status: ThreadStatus);
-
-    /// update
-    fn update(&mut self);
 
     ///
     fn new() -> Result<Self> where Self: Sized;

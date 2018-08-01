@@ -65,7 +65,7 @@ impl Decoder {
                 if expected_len != 1 {
                     malformed_err()
                 } else {
-                    (Ok(RLP::RLPItem { value: vec![prefix] }), 1)
+                    (Ok(RLP::RLPItem (vec![prefix])), 1)
                 }
             },
             // short string
@@ -75,9 +75,9 @@ impl Decoder {
                 if expected_len != seg_len {
                     malformed_err()
                 } else {
-                    (Ok(RLP::RLPItem { value:
+                    (Ok(RLP::RLPItem (
                         input[start + 1usize .. start + 1usize + l as usize].to_vec()
-                     }), seg_len)
+                    )), seg_len)
                 }
             },
             // long string
@@ -93,9 +93,9 @@ impl Decoder {
                     malformed_err()
                 } else {
                     let offset = start + 1usize + (l_total_byte as usize);
-                    (Ok(RLP::RLPItem {
-                        value: input[offset .. offset + l as usize].to_vec()
-                    }), seg_len)
+                    (Ok(RLP::RLPItem (
+                        input[offset .. offset + l as usize].to_vec()
+                    )), seg_len)
                 }
             },
             // short list
@@ -125,7 +125,7 @@ impl Decoder {
                             cur_pos = cur_pos + seg_len;
                         }
                     }
-                    (Ok(RLP::RLPList { list: result_list }), all_seg_len)
+                    (Ok(RLP::RLPList(result_list)), all_seg_len)
                 }
             },
             // long list
@@ -158,7 +158,7 @@ impl Decoder {
                             cur_pos = cur_pos + seg_len;
                         }
                     }
-                    (Ok(RLP::RLPList { list: result_list }), all_seg_len)
+                    (Ok(RLP::RLPList(result_list)), all_seg_len)
                 }
             },
             // default
@@ -172,5 +172,75 @@ impl Decoder {
             Ok(r) => Some(r),
             Err(e) => None
         }
+    }
+}
+
+#[cfg(test)]
+mod decoder_test {
+    use super::Decoder;
+    use super::{RLP, RLPError};
+
+    #[test]
+    fn test_item_string() {
+        // "dog"
+        let rlp = Decoder::decode(&vec![0x83u8, 'd' as u8, 'o' as u8, 'g' as u8]).unwrap();
+        let target: RLP = "dog".to_string().into();
+        assert_eq!(rlp, target);
+    }
+
+
+    #[test]
+    fn test_item_u8() {
+        // 0
+        let rlp = Decoder::decode(&vec![0x00u8]).unwrap();
+        let target: RLP = 0u8.into();
+        assert_eq!(rlp, target);
+
+        // 15
+        let rlp = Decoder::decode(&vec![0x0fu8]).unwrap();
+        let target: RLP = 15u8.into();
+        assert_eq!(rlp, target);
+    }
+
+
+    #[test]
+    fn test_item_u16() {
+        let rlp = Decoder::decode(&vec![0x82u8, 0x04u8, 0x00u8]).unwrap();
+        let target: RLP = 1024u16.into();
+        assert_eq!(rlp, target);
+    }
+
+
+    #[test]
+    fn test_item_u32() {
+        let rlp = Decoder::decode(&vec![132u8, 0u8, 0u8, 0u8, 100u8]).unwrap();
+        let target: RLP = 100u32.into();
+        assert_eq!(rlp, target);
+    }
+
+
+    #[test]
+    fn test_list_empty() {
+        let rlp = Decoder::decode(&vec![0xc0]).unwrap();
+        let target: RLP = RLP::RLPList(vec![]);
+        assert_eq!(rlp, target);
+    }
+
+    #[test]
+    fn test_list_nested() {
+        let rlp = Decoder::decode(&vec![0xc7, 0xc0, 0xc1, 0xc0, 0xc3, 0xc0, 0xc1, 0xc0]).unwrap();
+        let target: RLP = RLP::RLPList(vec![
+            RLP::RLPList(vec![]),
+            RLP::RLPList(vec![
+                RLP::RLPList(vec![])
+            ]),
+            RLP::RLPList(vec![
+                RLP::RLPList(vec![]),
+                RLP::RLPList(vec![
+                    RLP::RLPList(vec![])
+                ]),
+            ])
+        ]);
+        assert_eq!(rlp, target);
     }
 }

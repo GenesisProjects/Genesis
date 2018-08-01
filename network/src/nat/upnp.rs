@@ -1,5 +1,4 @@
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
-use std::io;
+use std::net::{SocketAddr, SocketAddrV4};
 use igd::{PortMappingProtocol, search_gateway_from_timeout};
 use std::time::Duration;
 use super::SocketInfo;

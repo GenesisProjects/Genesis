@@ -2,13 +2,12 @@ use chrono::prelude::*;
 
 use common::address::Address as Account;
 use common::hash::Hash;
-use common::key::KeyPair;
 
 use message::defines::*;
 use nat::*;
 use peer::PeerRef;
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::net::SocketAddr;
 
 const MAX_DELAY:i64 = 30i64;
 
@@ -274,7 +273,7 @@ impl P2PProtocol {
             "GOSSIP".to_string(),
             vec![]
         );
-        let mut args: Vec<SocketMessageArg>  = vec![];
+        let args: Vec<SocketMessageArg>  = vec![];
         msg = msg <<  SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
         } << SocketMessageArg::Account {

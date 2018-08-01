@@ -1,12 +1,9 @@
 use common::address::Address;
 use common::key::Signature;
-use common::hash::{ Hash, SerializableAndSHA256Hashable };
 use num::bigint::BigInt;
 use num::Zero;
 use rlp::RLPSerialize;
 use rlp::types::*;
-
-use std::marker::PhantomData;
 
 ///
 ///

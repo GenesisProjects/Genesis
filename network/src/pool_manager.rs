@@ -1,9 +1,4 @@
-use gen_core::block::Block;
 use gen_core::transaction::Transaction;
-
-use rlp::decoder::Decoder;
-use rlp::types::RLP;
-use rlp::RLPSerialize;
 
 use std::sync::Mutex;
 

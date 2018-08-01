@@ -16,9 +16,10 @@ pub mod types;
 
 use self::serde::ser::Serialize;
 use self::serde::de::Deserialize;
-
 use self::gen_utils::log_writer::LOGGER;
 
+use std::convert::{Into, From};
+use std::string::FromUtf8Error;
 use std::net::SocketAddr;
 
 use types::{ RLPError, RLP };
@@ -28,61 +29,26 @@ pub trait RLPSerialize: Sized {
     fn deserialize(rlp: &types::RLP) -> Result<Self, types::RLPError>;
 }
 
-impl RLPSerialize for u8 {
-    fn serialize(&self) -> Result<RLP, RLPError> {
-        Ok(RLP::RLPItem { value: vec![self.clone()] })
+impl<T> RLPSerialize for T
+    where T: Into<RLP>
+    + From<RLP>
+    + Clone {
+    fn serialize(&self) -> Result<types::RLP, types::RLPError> {
+        Ok(self.clone().into())
     }
 
-    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        match rlp {
-            &RLP::RLPItem { ref value } => Ok(value[0]),
-            _ => Err(RLPError::RLPErrorType)
-        }
-    }
-}
-
-impl RLPSerialize for u16 {
-    fn serialize(&self) -> Result<RLP, RLPError> {
-        Ok(RLP::RLPItem { value: vec![(self >> 8) as u8, (self & 0x00ff) as u8] })
-    }
-
-    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        match rlp {
-            &RLP::RLPItem { ref value } => Ok(((value[0] as u16) << 8) + value[1] as u16),
-            _ => Err(RLPError::RLPErrorType),
-        }
+    fn deserialize(rlp: &RLP) -> Result<Self, types::RLPError> {
+        Ok(rlp.clone().into())
     }
 }
 
 impl RLPSerialize for String {
     fn serialize(&self) -> Result<types::RLP, types::RLPError> {
-        Ok(RLP::RLPItem { value: self.as_bytes().to_vec() })
+        Ok(self.clone().into())
     }
-    fn deserialize(rlp: &types::RLP) -> Result<Self, types::RLPError> {
-        match rlp {
-            &RLP::RLPItem { ref value } => match String::from_utf8(value.to_owned()) {
-                Ok(str) => Ok(str),
-                Err(_) => Err(RLPError::RLPErrorUnknown)
-            }
-            _ => Err(RLPError::RLPErrorUnknown)
-        }
-    }
-}
 
-impl RLPSerialize for SocketAddr {
-    fn serialize(&self) -> Result<types::RLP, types::RLPError> {
-        let ip_rlp = RLPSerialize::serialize(&self.ip().to_string()).unwrap_or(RLP::RLPEmpty);
-        let port_rlp = RLPSerialize::serialize(&self.port()).unwrap_or(RLP::RLPEmpty);
-        Ok(RLP::RLPList { list: vec![ip_rlp, port_rlp] })
-    }
-    fn deserialize(rlp: &types::RLP) -> Result<Self, types::RLPError> {
-        /*match rlp {
-            &RLP::RLPItem { ref value } => match String::from_utf8(value.to_owned()) {
-                Ok(str) => Ok(str),
-                Err(_) => Err(RLPError::RLPErrorUnknown)
-            }
-            _ => Err(RLPError::RLPErrorUnknown)
-        }*/
-        unimplemented!()
+    fn deserialize(rlp: &RLP) -> Result<Self, types::RLPError> {
+        let result: Result<String, FromUtf8Error> = rlp.clone().into();
+        Ok(result.unwrap())
     }
 }

@@ -4,10 +4,13 @@ version = "0.1.0"
 authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
+chrono = "0.4.2"
+lazy_static = "1.0.0"
+num = "0.1.30"
+wasmi = "0.3.0"
+parity-wasm = "0.31"
+
 common = { version = "0.1.0", path = "../common" }
 db = { version = "0.1.0", path = "../db" }
-rlp = { version = "0.1.0", path = "../rlp" }
 gen_utils = { version = "0.1.0", path = "../util" }
-parity-wasm = "0.27"
-chrono = "0.4"
-num = "0.1.30"
+rlp = { version = "0.1.0", path = "../rlp" }

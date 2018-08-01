@@ -3,8 +3,6 @@ use ring::{rand, signature};
 use ring::signature::ED25519_PKCS8_V2_LEN as PKCS_LEN;
 use untrusted::Input as Input;
 
-use std::clone::Clone;
-
 pub const PUBLIC_KEY_LEN: usize = 32;
 
 pub type PublicKey = [u8; PUBLIC_KEY_LEN];

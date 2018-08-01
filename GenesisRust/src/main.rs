@@ -1,19 +1,20 @@
-extern crate gen_network;
 extern crate common;
-
-use gen_network::utils::*;
-use gen_network::nat::*;
-use gen_network::p2p_controller::*;
-use common::thread::Thread;
-use std::net::*;
-use std::str::FromStr;
+extern crate gen_core;
+use common::address::Address;
+use gen_core::vm::gen_vm::GenVM;
+use gen_core::action::Action;
 
 fn main() {
-    P2PController::launch_controller();
+    let mut test_action = Action {
+        balance: 100,
+        addr: Address::load().unwrap()
+    };
+    let test_addr = Address::load().unwrap();
+    let mut vm = GenVM::new(&test_action, test_addr).unwrap();
+
+    let _ = vm.launch(&mut test_action);
+
     loop {
 
     }
-    let test = get_local_ip();
-    let result = get_public_ip_addr(Protocol::UPNP, &SocketAddr::from_str("192.168.0.1:20").unwrap());
-    println!("{:?}", test);
 }
