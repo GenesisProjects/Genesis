@@ -321,6 +321,7 @@ mod tests {
     use super::*;
     use rlp::types::*;
 
+    #[derive(Clone)]
     struct TestObject {
         name: String
     }
