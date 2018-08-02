@@ -127,11 +127,15 @@ impl<T: RLPSerialize + Clone> TrieNode<T> {
 
     #[inline]
     pub fn new_leaf_node(encoded_path: &EncodedPath, value: &T) -> Self {
+        let nibbles = vec2nibble(encoded_path);
+        assert!(nibbles[0] == 3u8 || (nibbles[0] == 2u8 && nibbles[1] == 0u8));
         TrieNode::LeafNode { encoded_path: encoded_path.clone(), value: value.clone() }
     }
 
     #[inline]
     pub fn new_extension_node(encoded_path: &EncodedPath, key: &TrieKey) -> Self {
+        let nibbles = vec2nibble(encoded_path);
+        assert!(nibbles[0] == 1u8 || (nibbles[0] == 0u8 && nibbles[1] == 0u8));
         TrieNode::ExtensionNode { encoded_path: encoded_path.clone(), key: key.clone() }
     }
 }
