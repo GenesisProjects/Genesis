@@ -176,7 +176,7 @@ impl Decoder {
 }
 
 #[cfg(test)]
-mod decoder_test {
+mod decoder {
     use super::Decoder;
     use super::{RLP, RLPError};
 

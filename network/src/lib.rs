@@ -7,6 +7,7 @@ pub mod socket;
 pub mod pool;
 pub mod pool_manager;
 pub mod session;
+pub mod test;
 pub mod utils;
 
 pub extern crate bytebuffer;
@@ -21,8 +22,6 @@ pub extern crate lazy_static;
 pub extern crate libc;
 pub extern crate mio;
 pub extern crate mio_extras;
-#[macro_use]
-pub extern crate mockito;
 pub extern crate igd;
 pub extern crate rlp;
 pub extern crate rust_base58;

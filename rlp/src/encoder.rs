@@ -206,7 +206,7 @@ impl Encoder {
 }
 
 #[cfg(test)]
-mod encoder_test {
+mod encoder {
     use super::Encoder;
     use super::{RLP, RLPError};
 
