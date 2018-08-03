@@ -201,9 +201,11 @@ impl Drop for PeerSocket {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use mockito::{mock, SERVER_ADDRESS};
 
     #[test]
     fn test_socket_connect() {
-        //PeerSocket::connect()
+        let socket = PeerSocket::connect(SERVER_ADDRESS).unwrap();
+
     }
 }
