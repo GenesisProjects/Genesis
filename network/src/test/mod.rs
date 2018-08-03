@@ -1,6 +1,3 @@
-use mio::net::TcpStream;
-use std::io::Result;
-
 #[cfg(test)]
 pub static SERVER_ADDRESS: &'static str = "127.0.0.1:65000";
 
@@ -12,6 +9,8 @@ pub trait TcpStreamMock {
 }
 
 #[cfg(test)]
+use mio::net::TcpStream;
+use std::io::Result;
 impl TcpStreamMock for TcpStream {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         unimplemented!()
