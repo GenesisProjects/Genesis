@@ -1,5 +1,6 @@
 use chrono::*;
 use nat::*;
+use net_config::*;
 use network_eventloop::*;
 use peer::*;
 use message::protocol::*;
@@ -23,9 +24,6 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::thread;
 
-pub const UPDATE_TIMEBASE: i64 = 3000;
-pub const CONNECT_TIMEOUT: i64 = 3000;
-pub const EXPIRE: i64 = 1000 * 60;
 pub const CHANNEL_NAME: &'static str = "P2P_CONTROLLER";
 
 /// # P2PController
@@ -45,18 +43,23 @@ pub const CHANNEL_NAME: &'static str = "P2P_CONTROLLER";
 /// the only way communicate with other controller/thread
 pub struct P2PController {
     account: Account,
+    listener: TcpListener,
+
     peer_list: HashMap<Token, PeerRef>,
     min_required_peers: usize,
     max_allowed_peers: usize,
+
     waiting_list: Vec<SocketAddr>,
     max_waiting_list: usize,
+
     block_list: Vec<SocketAddr>,
     max_blocked_peers: usize,
-    eventloop: NetworkEventLoop,
-    listener: TcpListener,
+
     ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>,
+    config: NetConfig,
+    eventloop: NetworkEventLoop,
     last_updated: DateTime<Utc>,
-    protocol: P2PProtocol
+    protocol: P2PProtocol,
 }
 
 impl P2PController {
@@ -83,7 +86,6 @@ impl P2PController {
     /// ```
     /// ```
     fn connect(&mut self, addr: SocketInfo) -> Result<(PeerRef)> {
-        //TODO: port configuable
         match TcpStream::connect(&addr) {
             Ok(stream) => {
                 Ok(Rc::new(RefCell::new(Peer::new(stream, &addr))))
@@ -104,9 +106,8 @@ impl P2PController {
             init
         });
 
-        //TODO: boostrap peers configurable
         // add bootstrap peers
-        raw_peers_table.push((Some(Account {text: "12345678901234567890123456789013".to_string()}), SocketAddr::from_str("127.0.0.1:19999").unwrap()));
+        raw_peers_table.append(&mut self.config.bootstrap_peers());
 
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
@@ -259,7 +260,8 @@ impl P2PController {
    /// ```
    /// ```
     fn update(&mut self) {
-        if (Utc::now() - self.last_updated).num_milliseconds() < UPDATE_TIMEBASE {
+        let update_timebase = self.config.update_timebase();
+        if (Utc::now() - self.last_updated).num_milliseconds() < update_timebase {
             return;
         }
         self.last_updated = Utc::now();
@@ -281,9 +283,10 @@ impl P2PController {
             self.remove_peer(token);
         }
 
+        let expire = self.config.peer_expire();
         // find all expired token in the peer list
         let expired_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
-            if pair.1.borrow().session.milliseconds_from_last_update() > EXPIRE {
+            if pair.1.borrow().session.milliseconds_from_last_update() > expire {
                 true
             } else {
                 false
@@ -300,8 +303,9 @@ impl P2PController {
         }
 
         // find all connection timeout tokens in the peer list
+        let timeout = self.config.connect_timeout();
         let timeout_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
-            if pair.1.borrow().session.milliseconds_connecting() > CONNECT_TIMEOUT {
+            if pair.1.borrow().session.milliseconds_connecting() > timeout {
                 true
             } else {
                 false
@@ -498,40 +502,66 @@ impl Observe for P2PController {
 
 impl Thread for P2PController {
     fn new() -> Result<Self> {
-        //TODO: load port from config
-        let addr = "127.0.0.1:39999".parse().unwrap();
+        let config = NetConfig::load();
+
         //TODO: make socket resuseable
-        let server = TcpListener::bind(&addr);
+        let server = TcpListener::bind(&config.server_addr());
         let account = Account::load();
 
         match (server, account) {
             (Ok(server), Some(account)) => {
-                //TODO: load events size from config
-                let event_loop = NetworkEventLoop::new(1024);
-                //TODO: max_allowed_peers configuable
-                let max_allowed_peers: usize = 512;
-                //TODO: max_blocked_peers configuable
-                let max_blocked_peers: usize = 1024;
-                //TODO: max_waiting_list configuable
-                let max_waiting_list: usize = 1024;
-                //TODO: min required # of peers configuable
-                let min_required_peers: usize = 4;
-
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
                 Ok(P2PController {
                     account: account.clone(),
                     peer_list: peer_list,
-                    min_required_peers: min_required_peers,
-                    max_allowed_peers: max_allowed_peers,
+                    min_required_peers: config.min_required_peer(),
+                    max_allowed_peers: config.max_allowed_peers(),
                     waiting_list: vec![],
-                    max_waiting_list: max_waiting_list,
+                    max_waiting_list: config.max_waitinglist_size(),
                     block_list: vec![],
-                    max_blocked_peers: max_blocked_peers,
-                    eventloop: event_loop,
+                    max_blocked_peers: config.max_blocklist_size(),
+                    eventloop: NetworkEventLoop::new(config.events_size()),
                     listener: server,
                     ch_pair: None,
                     last_updated: Utc::now(),
-                    protocol: P2PProtocol::new()
+                    protocol: P2PProtocol::new(),
+                    config: config
+                })
+            },
+            (Ok(_), None) => {
+                Err(Error::from(ErrorKind::ConnectionRefused))
+            },
+            (Err(e), _) => {
+                Err(e)
+            }
+        }
+    }
+    #[cfg(test)]
+    fn mock() -> Result<Self> {
+        let config = NetConfig::mock();
+
+        //TODO: make socket resuseable
+        let server = TcpListener::bind(&config.server_addr());
+        let account = Account::load();
+
+        match (server, account) {
+            (Ok(server), Some(account)) => {
+                let mut peer_list = HashMap::<Token, PeerRef>::new();
+                Ok(P2PController {
+                    account: account.clone(),
+                    peer_list: peer_list,
+                    min_required_peers: config.min_required_peer(),
+                    max_allowed_peers: config.max_allowed_peers(),
+                    waiting_list: vec![],
+                    max_waiting_list: config.max_waitinglist_size(),
+                    block_list: vec![],
+                    max_blocked_peers: config.max_blocklist_size(),
+                    eventloop: NetworkEventLoop::new(config.events_size()),
+                    listener: server,
+                    ch_pair: None,
+                    last_updated: Utc::now(),
+                    protocol: P2PProtocol::new(),
+                    config: config
                 })
             },
             (Ok(_), None) => {
@@ -608,5 +638,38 @@ impl Thread for P2PController {
 impl Drop for P2PController {
     fn drop(&mut self) {
 
+    }
+}
+
+
+#[cfg(test)]
+mod socket {
+    use std::net::SocketAddr;
+    use super::*;
+
+    static SERVER_ADDRESS: &'static str = "127.0.0.1:1234";
+
+    #[test]
+    fn test_socket_connect() {
+        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
+        let socket = PeerSocket::connect(&server_addr).unwrap();
+    }
+
+    #[test]
+    fn test_new_socket() {
+        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
+        let stream = TcpStream::connect(&server_addr).unwrap();
+        let socket = PeerSocket::new(stream);
+    }
+
+    #[test]
+    fn test_send_data() {
+        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
+        let stream = TcpStream::connect(&server_addr).unwrap();
+        let mut socket = PeerSocket::new(stream);
+        let result = socket.send_data(
+            &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+        ).unwrap();
+        assert_eq!(result, 2);
     }
 }
