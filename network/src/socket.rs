@@ -1,11 +1,9 @@
-use mio::{Evented, Poll, PollOpt, Ready, Token};
-use mio::tcp::TcpStream;
-
 use bytebuffer::*;
 use message::defines::*;
-
+use mio::{Evented, Poll, PollOpt, Ready, Token};
+use mio::tcp::TcpStream;
+use std::io::{Error, ErrorKind, Read, Write};
 use std::io::Result as STDResult;
-use std::io::{Read, Write, Error, ErrorKind};
 use std::net::{Shutdown, SocketAddr};
 use std::str;
 
@@ -18,7 +16,7 @@ pub struct PeerSocket {
     stream: TcpStream,
     read_buffer: ByteBuffer,
     write_buffer: Vec<u8>,
-    line_cache: Vec<u8>
+    line_cache: Vec<u8>,
 }
 
 impl PeerSocket {
@@ -29,9 +27,9 @@ impl PeerSocket {
 
         PeerSocket {
             stream: socket,
-            read_buffer:  ByteBuffer::new(),
+            read_buffer: ByteBuffer::new(),
             write_buffer: vec![],
-            line_cache: vec![]
+            line_cache: vec![],
         }
     }
 
@@ -42,7 +40,7 @@ impl PeerSocket {
                 stream: r,
                 read_buffer: ByteBuffer::new(),
                 write_buffer: vec![],
-                line_cache: vec![]
+                line_cache: vec![],
             }),
             Err(e) => Err(e)
         }
@@ -50,7 +48,7 @@ impl PeerSocket {
 
     #[inline]
     pub fn send_data(&mut self, data: &[u8]) -> STDResult<usize> {
-        let mut new_data =  data[..].to_vec();
+        let mut new_data = data[..].to_vec();
         self.write_buffer.append(&mut new_data);
         match self.stream.write(&self.write_buffer[..]) {
             Ok(size) => {
@@ -61,7 +59,7 @@ impl PeerSocket {
                 } else {
                     Ok(size)
                 }
-            },
+            }
             Err(e) => Err(e)
         }
     }
@@ -74,8 +72,8 @@ impl PeerSocket {
                 // if the read size is larger than remain_size, read the overflow bytes
                 // into the line cache
                 if size > remain_size {
-                    self.read_buffer.write(&temp_buf[.. remain_size])?;
-                    let mut vec = temp_buf[remain_size .. size].to_vec();
+                    self.read_buffer.write(&temp_buf[..remain_size])?;
+                    let mut vec = temp_buf[remain_size..size].to_vec();
                     let ret = match self.read_buffer.read_to_end(&mut vec) {
                         Ok(_) => Ok(vec.clone()),
                         Err(e) => Err(e)
@@ -90,7 +88,7 @@ impl PeerSocket {
                         Err(e) => Err(e)
                     }
                 }
-            },
+            }
             Err(e) => Err(e)
         }
     }
@@ -98,7 +96,7 @@ impl PeerSocket {
     #[inline]
     pub fn send_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
         // println!("data1 {:?}", &msg);
-        let mut new_data =  msg.encoder();
+        let mut new_data = msg.encoder();
         self.write_buffer.append(&mut new_data);
         match self.stream.write(&self.write_buffer[..]) {
             Ok(size) => {
@@ -109,7 +107,7 @@ impl PeerSocket {
                 } else {
                     Ok(())
                 }
-            },
+            }
             Err(e) => Err(e)
         }
     }
@@ -122,7 +120,7 @@ impl PeerSocket {
                 println!("data chunk recieved: {}!!!", size);
                 self.read_buffer.write(&temp_buf[..size]).unwrap();
                 self.fetch_messages_from_buffer(size)
-            },
+            }
             Err(e) => Err(e)
         }
     }
@@ -167,7 +165,7 @@ impl PeerSocket {
 
     #[inline]
     fn flush_line_cache(&mut self) {
-       self.read_buffer.write_all(&self.line_cache[..]).unwrap();
+        self.read_buffer.write_all(&self.line_cache[..]).unwrap();
         self.line_cache = vec![];
     }
 
@@ -175,7 +173,6 @@ impl PeerSocket {
     fn clean_line_cache(&mut self) {
         self.line_cache = vec![];
     }
-
 }
 
 impl Evented for PeerSocket {
@@ -200,9 +197,9 @@ impl Drop for PeerSocket {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::net::SocketAddr;
-    use mockito::{mock, SERVER_ADDRESS};
+    use super::*;
+    use test::*;
 
     #[test]
     fn test_socket_connect() {
@@ -215,5 +212,16 @@ mod tests {
         let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
         let stream = TcpStream::connect(&server_addr).unwrap();
         let socket = PeerSocket::new(stream);
+    }
+
+    #[test]
+    fn test_send_data() {
+        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
+        let stream = TcpStream::connect(&server_addr).unwrap();
+        let mut socket = PeerSocket::new(stream);
+        let result = socket.send_data(
+            &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+        ).unwrap();
+        assert_eq!(result, 2);
     }
 }
