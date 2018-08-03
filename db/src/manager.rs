@@ -3,6 +3,7 @@ extern crate rlp;
 
 use self::common::hash::Hash;
 use self::rlp::RLPSerialize;
+use gen_rocksdb::*;
 
 use std::sync::Mutex;
 
@@ -31,7 +32,9 @@ pub struct DBStatus {
 }
 
 pub struct DBConfig {
-
+    pub create_if_missing: bool,
+    pub max_open_files: i32,
+    pub path: String
 }
 
 pub struct DBManager {
@@ -40,7 +43,7 @@ pub struct DBManager {
 
 impl DBManager {
     pub fn connect(&self, config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError> {
-        unimplemented!()
+        RocksDB::open(config)
     }
 
     pub fn disconnect(&self) -> Result<DBResult, DBError> {
