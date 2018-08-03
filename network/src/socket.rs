@@ -196,7 +196,7 @@ impl Drop for PeerSocket {
 }
 
 #[cfg(test)]
-mod tests {
+mod socket {
     use std::net::SocketAddr;
     use super::*;
     use test::*;
