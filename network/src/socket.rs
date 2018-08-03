@@ -197,3 +197,13 @@ impl Drop for PeerSocket {
         self.stream.shutdown(Shutdown::Both).unwrap();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_socket_connect() {
+        //PeerSocket::connect()
+    }
+}
