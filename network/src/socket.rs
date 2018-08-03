@@ -201,11 +201,19 @@ impl Drop for PeerSocket {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::SocketAddr;
     use mockito::{mock, SERVER_ADDRESS};
 
     #[test]
     fn test_socket_connect() {
-        let socket = PeerSocket::connect(SERVER_ADDRESS).unwrap();
+        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
+        let socket = PeerSocket::connect(&server_addr).unwrap();
+    }
 
+    #[test]
+    fn test_new_socket() {
+        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
+        let stream = TcpStream::connect(&server_addr).unwrap();
+        let socket = PeerSocket::new(stream);
     }
 }
