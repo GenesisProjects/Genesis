@@ -18,7 +18,12 @@ pub trait Thread {
     fn launch<T>(name: String) where T: Observe + Thread {
         // TODO: make stack size configuable
         thread::Builder::new().stack_size(4 * 1024 * 1024).name(name.to_owned()).spawn(move || {
-            let mut context = T::new();
+            let mut context = if cfg!(test) {
+                T::new()
+            } else {
+                T::mock()
+            };
+
             match &mut context {
                 &mut Ok(ref mut context_ref) => {
                     context_ref.subscribe();
@@ -60,7 +65,6 @@ pub trait Thread {
         }).unwrap();
     }
 
-
     /// run loop
     fn run(&mut self) -> bool;
 
@@ -70,6 +74,11 @@ pub trait Thread {
     /// set status
     fn set_status(&mut self, status: ThreadStatus);
 
-    ///
+    /// init instance
     fn new() -> Result<Self> where Self: Sized;
+
+    /// init mock instance
+    fn mock() -> Result<Self> where Self: Sized {
+        unimplemented!()
+    }
 }

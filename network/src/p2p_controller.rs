@@ -63,17 +63,28 @@ pub struct P2PController {
 }
 
 impl P2PController {
-    /// # launch_controller(1)
+    /// # launch_controller
     /// **Usage**
     /// - launch the controller with a new thread
     /// - subscribe a interthread channel
-    /// **Parameters**
-    /// - 1. ***String(name)***: the interthread channel name
     /// ## Examples
     /// ```
     /// ```
     pub fn launch_controller() {
         P2PController::launch::<P2PController>(CHANNEL_NAME.to_string());
+    }
+
+    /// # launch_controller_with_channel(1)
+    /// **Usage**
+    /// - launch the controller with a new thread
+    /// - subscribe a interthread channel
+    /// **Parameters**
+    /// - 1. ***&'static str(ch)***: the interthread channel name
+    /// ## Examples
+    /// ```
+    /// ```
+    pub fn launch_controller_with_channel(ch: &'static str) {
+        P2PController::launch::<P2PController>(ch.to_string());
     }
 
     /// # connect(&mut self, 1)
@@ -643,33 +654,13 @@ impl Drop for P2PController {
 
 
 #[cfg(test)]
-mod socket {
-    use std::net::SocketAddr;
+mod p2p {
     use super::*;
 
-    static SERVER_ADDRESS: &'static str = "127.0.0.1:1234";
-
     #[test]
-    fn test_socket_connect() {
-        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
-        let socket = PeerSocket::connect(&server_addr).unwrap();
-    }
-
-    #[test]
-    fn test_new_socket() {
-        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
-        let stream = TcpStream::connect(&server_addr).unwrap();
-        let socket = PeerSocket::new(stream);
-    }
-
-    #[test]
-    fn test_send_data() {
-        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
-        let stream = TcpStream::connect(&server_addr).unwrap();
-        let mut socket = PeerSocket::new(stream);
-        let result = socket.send_data(
-            &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
-        ).unwrap();
-        assert_eq!(result, 2);
+    fn test_launch() {
+        P2PController::launch_controller_with_channel("peer1");
+        P2PController::launch_controller_with_channel("peer2");
+        P2PController::launch_controller();
     }
 }
