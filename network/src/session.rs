@@ -9,7 +9,6 @@ use std::net::SocketAddr;
 use gen_message::{MESSAGE_CENTER, Message};
 use message::defines::*;
 use message::protocol::*;
-use p2p_controller::CHANNEL_NAME;
 use socket::*;
 
 pub const CMD_ERR_PENALTY: u32 = 100u32;
@@ -293,14 +292,14 @@ impl Session {
    /// ```
    /// ```
     #[inline]
-    pub fn process(&mut self) -> Result<u32> {
+    pub fn process(&mut self, name: String) -> Result<u32> {
         match self.status  {
             SessionStatus::Abort => {
                 Err(Error::new(ErrorKind::ConnectionAborted, "The peer connection has aborted"))
             },
             _ => {
                 match self.mode {
-                    SessionMode::Command => self.process_events(),
+                    SessionMode::Command => self.process_events(name),
                     SessionMode::Transmission => self.process_data()
                 }
             }
@@ -371,7 +370,7 @@ impl Session {
     }
 
     #[inline]
-    fn process_events(&mut self) -> Result<u32> {
+    fn process_events(&mut self, name: String) -> Result<u32> {
         let mut err_count: usize = 0usize;
         match self.socket.receive_msgs() {
             Ok(msgs) => {
@@ -379,7 +378,7 @@ impl Session {
                 println!("process_single_event {}:", &msgs.len());
                 for msg_ref in &msgs {
                     println!("process_single_event {:?}", msg_ref);
-                    if !self.process_single_event(msg_ref) {
+                    if !self.process_single_event(msg_ref, name.to_owned()) {
                         err_count += 1;
                     }
                 }
@@ -395,7 +394,7 @@ impl Session {
         }
     }
 
-    fn process_single_event(&mut self, msg: &SocketMessage) -> bool {
+    fn process_single_event(&mut self, msg: &SocketMessage, name: String) -> bool {
         let event = msg.event();
         let event = event.as_str();
         let args = &msg.args();
@@ -422,7 +421,7 @@ impl Session {
                             // notify controller send gossip
                             if let Some(token) = self.token.clone() {
                                 MESSAGE_CENTER.lock().unwrap().send(
-                                    &CHANNEL_NAME.to_string(),
+                                    &name,
                                     Message::new(token.0 as u16, "gossip".to_string())
                                 );
                             }

@@ -19,9 +19,9 @@ pub trait Thread {
         // TODO: make stack size configuable
         thread::Builder::new().stack_size(4 * 1024 * 1024).name(name.to_owned()).spawn(move || {
             let mut context = if cfg!(test) {
-                T::new()
+                T::new(name)
             } else {
-                T::mock()
+                T::mock(name)
             };
 
             match &mut context {
@@ -75,10 +75,10 @@ pub trait Thread {
     fn set_status(&mut self, status: ThreadStatus);
 
     /// init instance
-    fn new() -> Result<Self> where Self: Sized;
+    fn new(name: String) -> Result<Self> where Self: Sized;
 
     /// init mock instance
-    fn mock() -> Result<Self> where Self: Sized {
+    fn mock(name: String) -> Result<Self> where Self: Sized {
         unimplemented!()
     }
 }

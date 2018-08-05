@@ -24,8 +24,6 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::thread;
 
-pub const CHANNEL_NAME: &'static str = "P2P_CONTROLLER";
-
 /// # P2PController
 /// **Usage**
 /// - p2p network controller
@@ -42,6 +40,7 @@ pub const CHANNEL_NAME: &'static str = "P2P_CONTROLLER";
 /// - 10.   ***ch_pair***:              message channel,
 /// the only way communicate with other controller/thread
 pub struct P2PController {
+    name: String,
     account: Account,
     listener: TcpListener,
 
@@ -71,7 +70,7 @@ impl P2PController {
     /// ```
     /// ```
     pub fn launch_controller() {
-        P2PController::launch::<P2PController>(CHANNEL_NAME.to_string());
+        P2PController::launch::<P2PController>("P2PController".to_string());
     }
 
     /// # launch_controller_with_channel(1)
@@ -245,7 +244,7 @@ impl P2PController {
                     // println!("peer event: token {:?}, {:?}, {}",PEER_TOKEN, event, self.eventloop.round);
                     self.get_peer(peer_token).and_then(|ref mut peer_ref| {
                         peer_ref.borrow_mut().session.set_connect(true);
-                        let result = peer_ref.borrow_mut().process();
+                        let result = peer_ref.borrow_mut().process(self.name.to_owned());
                         match result {
                             Ok(_) => {},
                             Err(_) => {
@@ -457,23 +456,25 @@ impl Notify for P2PController {
 
 impl Observe for P2PController {
     fn subscribe(&mut self) {
+        let name = self.name.to_owned();
         self.ch_pair = Some(
             MESSAGE_CENTER
                 .lock()
                 .unwrap()
-                .subscribe(&CHANNEL_NAME.to_string())
+                .subscribe(&name)
                 .clone()
         );
     }
 
     fn unsubscribe(&mut self) {
+        let name = self.name.to_owned();
         if let Some(ch_pair) = self.ch_pair.clone() {
             let uid = (*ch_pair).0.lock().unwrap().uid.clone();
             self.ch_pair = None;
             MESSAGE_CENTER
                 .lock()
                 .unwrap()
-                .unsubscribe(&"P2P_CONTROLLER".to_string(), uid);
+                .unsubscribe(&name, uid);
         }
 
     }
@@ -512,7 +513,7 @@ impl Observe for P2PController {
 }
 
 impl Thread for P2PController {
-    fn new() -> Result<Self> {
+    fn new(name: String) -> Result<Self> {
         let config = NetConfig::load();
 
         //TODO: make socket resuseable
@@ -523,6 +524,7 @@ impl Thread for P2PController {
             (Ok(server), Some(account)) => {
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
                 Ok(P2PController {
+                    name: name,
                     account: account.clone(),
                     peer_list: peer_list,
                     min_required_peers: config.min_required_peer(),
@@ -548,7 +550,7 @@ impl Thread for P2PController {
         }
     }
     #[cfg(test)]
-    fn mock() -> Result<Self> {
+    fn mock(name: String) -> Result<Self> {
         let config = NetConfig::mock();
 
         //TODO: make socket resuseable
@@ -559,6 +561,7 @@ impl Thread for P2PController {
             (Ok(server), Some(account)) => {
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
                 Ok(P2PController {
+                    name: name,
                     account: account.clone(),
                     peer_list: peer_list,
                     min_required_peers: config.min_required_peer(),
@@ -660,7 +663,21 @@ mod p2p {
     #[test]
     fn test_launch() {
         P2PController::launch_controller_with_channel("peer1");
-        P2PController::launch_controller_with_channel("peer2");
-        P2PController::launch_controller();
+        thread::sleep_ms(1000);
+        assert!(MESSAGE_CENTER
+            .lock()
+            .unwrap()
+            .channels_exist_by_name(&"peer1".to_string()));
+    }
+
+    #[test]
+    fn test_start() {
+        MESSAGE_CENTER
+            .lock()
+            .unwrap()
+            .send(&"peer1".to_string(), Message {
+                op: 10,
+                msg: "start".to_string()
+            });
     }
 }
