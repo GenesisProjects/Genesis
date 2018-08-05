@@ -461,7 +461,7 @@ impl Observe for P2PController {
             MESSAGE_CENTER
                 .lock()
                 .unwrap()
-                .subscribe(&name)
+                .subscribe(name)
                 .clone()
         );
     }
@@ -474,7 +474,7 @@ impl Observe for P2PController {
             MESSAGE_CENTER
                 .lock()
                 .unwrap()
-                .unsubscribe(&name, uid);
+                .unsubscribe(name, uid);
         }
 
     }
@@ -667,7 +667,7 @@ mod p2p {
         assert!(MESSAGE_CENTER
             .lock()
             .unwrap()
-            .channels_exist_by_name(&"peer1".to_string()));
+            .channels_exist_by_name("peer1".to_string()));
     }
 
     #[test]
@@ -675,7 +675,7 @@ mod p2p {
         MESSAGE_CENTER
             .lock()
             .unwrap()
-            .send(&"peer1".to_string(), Message {
+            .send("peer1".to_string(), Message {
                 op: 10,
                 msg: "start".to_string()
             });

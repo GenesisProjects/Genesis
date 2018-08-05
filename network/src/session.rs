@@ -421,7 +421,7 @@ impl Session {
                             // notify controller send gossip
                             if let Some(token) = self.token.clone() {
                                 MESSAGE_CENTER.lock().unwrap().send(
-                                    &name,
+                                    name,
                                     Message::new(token.0 as u16, "gossip".to_string())
                                 );
                             }

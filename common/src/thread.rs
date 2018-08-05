@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::io::*;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -6,6 +8,37 @@ use observe::*;
 use gen_message::Message;
 
 pub const LOOP_PERIOD: u64 = 100u64;
+
+lazy_static! {
+    pub static ref THREAD_TABLE: Mutex<ControllerTable> = {
+        let table: ControllerTable = ControllerTable::new();
+        Mutex::new(table)
+    };
+}
+
+pub struct ControllerTable {
+    table: HashMap<String, Arc<Thread + Send + Sync>>
+}
+
+impl ControllerTable {
+    pub fn new() -> Self {
+        ControllerTable { table: HashMap::new() }
+    }
+
+    pub fn insert(
+        &mut self,
+        key: String,
+        value: Arc<Thread + Send + Sync>) -> Option<Arc<Thread + Send + Sync>> {
+        match self.table.get(&key) {
+            Some(_) => None,
+            None => self.table.insert(key, value)
+        }
+    }
+
+    pub fn remove(&mut self, key: String) {
+        self.table.remove(&key);
+    }
+}
 
 #[derive(Copy, Clone)]
 pub enum ThreadStatus {
@@ -15,7 +48,7 @@ pub enum ThreadStatus {
 }
 
 pub trait Thread {
-    fn launch<T>(name: String) where T: Observe + Thread {
+    fn launch<T>(name: String) where T: Observe + Thread, Self: Sized {
         // TODO: make stack size configuable
         thread::Builder::new().stack_size(4 * 1024 * 1024).name(name.to_owned()).spawn(move || {
             let mut context = if cfg!(test) {
