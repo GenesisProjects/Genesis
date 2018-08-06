@@ -549,9 +549,48 @@ impl Thread for P2PController {
             }
         }
     }
+
     #[cfg(test)]
     fn mock(name: String) -> Result<Self> {
         let config = NetConfig::mock();
+
+        //TODO: make socket resuseable
+        let server = TcpListener::bind(&config.server_addr());
+        let account = Account::load();
+
+        match (server, account) {
+            (Ok(server), Some(account)) => {
+                let mut peer_list = HashMap::<Token, PeerRef>::new();
+                Ok(P2PController {
+                    name: name,
+                    account: account.clone(),
+                    peer_list: peer_list,
+                    min_required_peers: config.min_required_peer(),
+                    max_allowed_peers: config.max_allowed_peers(),
+                    waiting_list: vec![],
+                    max_waiting_list: config.max_waitinglist_size(),
+                    block_list: vec![],
+                    max_blocked_peers: config.max_blocklist_size(),
+                    eventloop: NetworkEventLoop::new(config.events_size()),
+                    listener: server,
+                    ch_pair: None,
+                    last_updated: Utc::now(),
+                    protocol: P2PProtocol::new(),
+                    config: config
+                })
+            },
+            (Ok(_), None) => {
+                Err(Error::from(ErrorKind::ConnectionRefused))
+            },
+            (Err(e), _) => {
+                Err(e)
+            }
+        }
+    }
+
+    #[cfg(test)]
+    fn mock_peer(name: String) -> Result<Self> {
+        let config = NetConfig::mock_peer();
 
         //TODO: make socket resuseable
         let server = TcpListener::bind(&config.server_addr());
@@ -662,12 +701,17 @@ mod p2p {
 
     #[test]
     fn test_launch() {
-        P2PController::launch_controller_with_channel("peer1");
+        P2PController::launch_controller_with_channel("server");
+        P2PController::launch_controller_with_channel("peer");
         thread::sleep_ms(1000);
         assert!(MESSAGE_CENTER
             .lock()
             .unwrap()
-            .channels_exist_by_name("peer1".to_string()));
+            .channels_exist_by_name("server".to_string()));
+        assert!(MESSAGE_CENTER
+            .lock()
+            .unwrap()
+            .channels_exist_by_name("peer".to_string()));
     }
 
     #[test]
@@ -675,9 +719,17 @@ mod p2p {
         MESSAGE_CENTER
             .lock()
             .unwrap()
-            .send("peer1".to_string(), Message {
+            .send("server".to_string(), Message {
                 op: 10,
                 msg: "start".to_string()
             });
+        thread::sleep_ms(1000);
+        assert_eq!(
+            MESSAGE_CENTER
+            .lock()
+            .unwrap()
+            .queue_size("server".to_string()),
+            1usize
+        )
     }
 }
