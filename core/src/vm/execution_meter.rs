@@ -72,7 +72,12 @@ fn inject_mem_stat(instructions: &mut elements::Instructions, mem_stat_func: u32
             counter += 1;
         }
     }
-    Ok(())
+    if counter > 0 {
+        Ok(())
+    } else {
+        Err(())
+    }
+
 }
 
 fn add_mem_stat(module: elements::Module, ext_mem_stat_func: u32) -> elements::Module {
@@ -202,7 +207,9 @@ pub fn inject_resource_stat(module: elements::Module)
     let cpu_stat_func = module.import_count(elements::ImportCountType::Function) as u32 - 1;
     let mem_stat_func = module.import_count(elements::ImportCountType::Function) as u32 - 2;
 
+    let total_func = module.functions_space() as u32;
     let mut error = false;
+    let mut need_grow_counter = false;
 
     // Updating calling addresses (all calls to function index >= `gas_func` should be incremented)
     for section in module.sections_mut() {
@@ -215,9 +222,8 @@ pub fn inject_resource_stat(module: elements::Module)
                         break;
                     }
                     update_call_index(func_body.code_mut(), mem_stat_func);
-                    if let Err(_) = inject_mem_stat(func_body.code_mut(), mem_stat_func) {
-                        error = true;
-                        break;
+                    if let Err(_) = inject_mem_stat(func_body.code_mut(), total_func) {
+                        need_grow_counter  = true;
                     }
                 }
             },
@@ -241,6 +247,5 @@ pub fn inject_resource_stat(module: elements::Module)
     }
 
     if error { return Err(module); }
-
-    Ok(add_mem_stat(module, mem_stat_func))
+    if need_grow_counter { Ok(add_mem_stat(module, mem_stat_func)) } else { Ok(module) }
 }
