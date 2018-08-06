@@ -54,7 +54,19 @@ impl Meter {
     }
 }
 
-fn add_grow_counter(module: elements::Module, gas_func: u32) -> elements::Module {
+fn inject_mem_stat(instructions: &mut elements::Instructions, mem_stat_func: u32) -> usize {
+    use parity_wasm::elements::Instruction::*;
+    let mut counter = 0;
+    for instruction in instructions.elements_mut() {
+        if let GrowMemory(_) = *instruction {
+            *instruction = Call(mem_stat_func);
+            counter += 1;
+        }
+    }
+    counter
+}
+
+fn add_mem_stat(module: elements::Module, ext_mem_stat_func: u32) -> elements::Module {
     use parity_wasm::elements::Instruction::*;
 
     let mut b = builder::from_module(module);
@@ -68,20 +80,19 @@ fn add_grow_counter(module: elements::Module, gas_func: u32) -> elements::Module
                 I32Const(1 as i32),
                 I32Mul,
                 // todo: there should be strong guarantee that it does not return anything on stack?
-                Call(gas_func),
+                Call(ext_mem_stat_func),
                 GrowMemory(0),
                 End,
             ]))
-            .build()
-            .build()
+            .build().build()
     );
 
     b.build()
 }
 
-pub fn inject_meter(
+pub fn inject_cpu_stat(
     instructions: &mut elements::Instructions,
-    gas_func: u32,
+    cpu_stat_func: u32,
 ) -> Result<(), ()> {
     use parity_wasm::elements::Instruction::*;
 
@@ -134,7 +145,7 @@ pub fn inject_meter(
         let effective_pos = block.start_pos + cumulative_offset;
 
         instructions.elements_mut().insert(effective_pos, I32Const(block.cpu_cost as i32));
-        instructions.elements_mut().insert(effective_pos+1, Call(gas_func));
+        instructions.elements_mut().insert(effective_pos+1, Call(cpu_stat_func));
 
         // Take into account these two inserted instructions.
         cumulative_offset += 2;
