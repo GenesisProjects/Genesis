@@ -85,14 +85,13 @@ impl GenVM {
         let mut code: Vec<u8> = vec![];
         Kernel::load_contract_account(addr).and_then(|account| {
             Kernel::load_code(&account, &mut code).and_then(|_| {
-                let init_runtime = Runtime::new(
+                Runtime::new(
                     account,
                     0usize,
                     &SysCallResolver::new(),
                     &code[..],
                     input_balance,
-                );
-                Ok(init_runtime)
+                )
             })
         })
     }

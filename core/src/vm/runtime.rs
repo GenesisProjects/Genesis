@@ -1,9 +1,10 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-
-use super::system_call::*;
-
 use account::Account;
+use parity_wasm::elements::deserialize_buffer;
+use parity_wasm::elements::Error as WASMError;
+use std::cell::RefCell;
+use std::rc::Rc;
+use super::resource_stat::*;
+use super::system_call::*;
 use transaction::Transaction;
 use wasmi::*;
 
@@ -13,26 +14,26 @@ pub type RuntimeContextRef = Rc<RefCell<RuntimeContext>>;
 pub struct RuntimeContext {
     pub account: Account,
     pub depth: usize,
-    pub balance: u32
+    pub balance: u32,
 }
 
 impl RuntimeContext {
     pub fn new(
         account: Account,
         depth: usize,
-        input_balance: u32
+        input_balance: u32,
     ) -> RuntimeContextRef {
         Rc::new(RefCell::new(RuntimeContext {
             account: account,
             depth: depth,
-            balance: input_balance
+            balance: input_balance,
         }))
     }
 }
 
 pub struct Runtime {
     context: RuntimeContextRef,
-    module_ref: Option<ModuleRef>
+    module_ref: Option<ModuleRef>,
 }
 
 impl Runtime {
@@ -49,14 +50,22 @@ impl Runtime {
         depth: usize,
         sys_resolver: &SysCallResolver,
         buff: &[u8],
-        input_balance: u32
-    ) -> Self {
-        let mut module = Module::from_buffer(buff).unwrap();
-        module = Self::inject_instruction_meter(module);
-        Runtime {
-            context: RuntimeContext::new(account, depth, input_balance),
-            module_ref: Some(module.register(sys_resolver)),
-        }
+        input_balance: u32,
+    ) -> Result<Self, Error> {
+        deserialize_buffer(buff)
+            .map_err(|e: WASMError| Error::Validation(e.to_string()))
+            .and_then(|module| {
+                inject_resource_stat(module)
+                    .map_err(|_| Error::Validation("Reject err".to_string()))
+                    .and_then(|module| {
+                    Module::from_parity_wasm_module(module).and_then(|module| {
+                        Ok(Runtime {
+                            context: RuntimeContext::new(account, depth, input_balance),
+                            module_ref: Some(module.register(sys_resolver)),
+                        })
+                    })
+                })
+            })
     }
 
     pub fn new_with_local_contract(
@@ -64,9 +73,9 @@ impl Runtime {
         depth: usize,
         sys_resolver: &SysCallResolver,
         path: &'static str,
-        input_balance: usize
+        input_balance: usize,
     ) -> Self {
-       unimplemented!()
+        unimplemented!()
     }
 
     pub fn context(&self) -> RuntimeContextRef {
@@ -99,16 +108,12 @@ impl Runtime {
             }
         })
     }
-
-    fn inject_instruction_meter(module: Module) -> Module {
-       unimplemented!()
-    }
 }
 
 pub struct RuntimeResult {
     return_val: Option<RuntimeValue>,
     success: bool,
-    txs: Vec<Transaction>
+    txs: Vec<Transaction>,
 }
 
 impl RuntimeResult {

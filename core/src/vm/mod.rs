@@ -1,4 +1,4 @@
-pub mod execution_meter;
+pub mod resource_stat;
 pub mod gen_vm;
 pub mod kernel;
 pub mod selector;

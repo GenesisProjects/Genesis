@@ -55,14 +55,13 @@ impl SystemCall {
         let mut code: Vec<u8> = vec![];
         Kernel::load_contract_account(addr).and_then(|account| {
             Kernel::load_code(&account, &mut code).and_then(|_| {
-                let child_runtime = Runtime::new(
+                Runtime::new(
                     account,
                     parent_context_ref.borrow().depth + 1,
                     &SysCallResolver::new(),
                     &code[..],
                     input_balance,
-                );
-                Ok(child_runtime)
+                )
             })
         })
     }
