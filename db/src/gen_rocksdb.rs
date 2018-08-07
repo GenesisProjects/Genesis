@@ -1,7 +1,7 @@
 extern crate common;
 extern crate rlp;
 
-use rocksdb::*;
+use ::rocksdb::{DB, Options};
 use manager::*;
 use std::{error::Error, fmt, iter::Peekable, mem, path::Path, sync::Arc};
 
@@ -11,8 +11,9 @@ use std::{error::Error, fmt, iter::Peekable, mem, path::Path, sync::Arc};
 /// `RocksDB` is an embedded database for key-value data, which is optimized for fast storage.
 /// This structure is required to potentially adapt the interface to
 /// use different databases.
+
 pub struct RocksDB {
-    db: Arc<rocksdb::DB>,
+    db: Arc<::rocksdb::DB>,
 }
 
 impl DBConfig {
@@ -26,9 +27,9 @@ impl DBConfig {
 
 
 impl RocksDB {
-    pub fn open(options: &DBConfig) -> storage::Result<Self> {
-        let db = rocksdb::DB::open(&options.to_rocksdb(), &options.path)?;
-        Ok(Self { db: Arc::new(db) })
+    pub fn open(options: &DBConfig) -> Self {
+        let db = ::rocksdb::DB::open(&options.to_rocksdb(), &"rocksdb/dir").unwrap();
+        Self { db: Arc::new(db) }
     }
 }
 
@@ -36,11 +37,5 @@ impl RocksDB {
 impl fmt::Debug for RocksDB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "RocksDB(..)")
-    }
-}
-
-impl fmt::Debug for RocksDBSnapshot {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RocksDBSnapshot(..)")
     }
 }

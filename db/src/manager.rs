@@ -33,8 +33,7 @@ pub struct DBStatus {
 
 pub struct DBConfig {
     pub create_if_missing: bool,
-    pub max_open_files: i32,
-    pub path: String
+    pub max_open_files: i32
 }
 
 pub struct DBManager {
@@ -43,7 +42,8 @@ pub struct DBManager {
 
 impl DBManager {
     pub fn connect(&self, config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError> {
-        RocksDB::open(config)
+        let db = RocksDB::open(config);
+        Ok(( &DBContext{}, DBResult::DBConnectSuccess ))
     }
 
     pub fn disconnect(&self) -> Result<DBResult, DBError> {
@@ -58,7 +58,10 @@ impl DBManager {
 lazy_static! {
     //TODO:
     pub static ref SHARED_MANAGER: Mutex<DBManager> = {
-        static mut conf: DBConfig = DBConfig {};
+        static mut conf: DBConfig = DBConfig {
+            create_if_missing: false,
+            max_open_files: 32
+        };
         unsafe { Mutex::new(DBManager{ config: &mut conf }) }
     };
 }
@@ -74,11 +77,11 @@ pub trait DBManagerOP {
 }
 
 impl DBManagerOP for DBManager {
-    fn delete(&self, key: &Vec<u8>) {
+    fn put<T: RLPSerialize>(&self, value: &T) -> Hash {
         unimplemented!()
     }
 
-    fn put<T: RLPSerialize>(&self, value: &T) -> Hash {
+    fn delete(&self, key: &Vec<u8>) {
         unimplemented!()
     }
 
