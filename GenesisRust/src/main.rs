@@ -13,7 +13,7 @@ fn main() {
     let mut vm = GenVM::new(&test_action, test_addr).unwrap();
 
     let _ = vm.launch(&mut test_action);
-
+    println!("test started");
     loop {
 
     }

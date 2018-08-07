@@ -58,13 +58,14 @@ impl Runtime {
                 inject_resource_stat(module)
                     .map_err(|_| Error::Validation("Reject err".to_string()))
                     .and_then(|module| {
-                    Module::from_parity_wasm_module(module).and_then(|module| {
-                        Ok(Runtime {
-                            context: RuntimeContext::new(account, depth, input_balance),
-                            module_ref: Some(module.register(sys_resolver)),
-                        })
+                        Module::from_parity_wasm_module(module)
+                            .and_then(|module| {
+                                Ok(Runtime {
+                                    context: RuntimeContext::new(account, depth, input_balance),
+                                    module_ref: Some(module.register(sys_resolver)),
+                                })
+                            })
                     })
-                })
             })
     }
 
