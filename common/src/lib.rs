@@ -10,6 +10,8 @@ pub extern crate ring;
 pub extern crate rust_base58;
 pub extern crate untrusted;
 pub extern crate siphasher;
+#[macro_use]
+pub extern crate lazy_static;
 
 pub extern crate gen_message;
 pub extern crate rlp;

@@ -194,34 +194,3 @@ impl Drop for PeerSocket {
         self.stream.shutdown(Shutdown::Both).unwrap();
     }
 }
-
-#[cfg(test)]
-mod socket {
-    use std::net::SocketAddr;
-    use super::*;
-    use test::*;
-
-    #[test]
-    fn test_socket_connect() {
-        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
-        let socket = PeerSocket::connect(&server_addr).unwrap();
-    }
-
-    #[test]
-    fn test_new_socket() {
-        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
-        let stream = TcpStream::connect(&server_addr).unwrap();
-        let socket = PeerSocket::new(stream);
-    }
-
-    #[test]
-    fn test_send_data() {
-        let server_addr: SocketAddr = SERVER_ADDRESS.parse().unwrap();
-        let stream = TcpStream::connect(&server_addr).unwrap();
-        let mut socket = PeerSocket::new(stream);
-        let result = socket.send_data(
-            &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
-        ).unwrap();
-        assert_eq!(result, 2);
-    }
-}

@@ -125,8 +125,8 @@ impl Peer {
     }
 
     #[inline]
-    pub fn process(&mut self) -> Result<()> {
-        match self.session.process() {
+    pub fn process(&mut self, name: String) -> Result<()> {
+        match self.session.process(name) {
             Ok(penalty) => {
                 self.ttl = INIT_TTL;
                 if penalty <= self.credit {

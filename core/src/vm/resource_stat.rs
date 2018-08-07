@@ -1,5 +1,14 @@
 use parity_wasm::{builder, elements};
 
+pub fn update_call_index(instructions: &mut elements::Instructions, inserted_index: u32) {
+    use parity_wasm::elements::Instruction::*;
+    for instruction in instructions.elements_mut().iter_mut() {
+        if let &mut Call(ref mut call_index) = instruction {
+            if *call_index >= inserted_index { *call_index += 1}
+        }
+    }
+}
+
 #[derive(Debug)]
 struct BlockEntry {
     /// Index of the first instruction (aka `Opcode`) in the block.
@@ -54,7 +63,24 @@ impl Meter {
     }
 }
 
-fn add_grow_counter(module: elements::Module, gas_func: u32) -> elements::Module {
+fn inject_mem_stat(instructions: &mut elements::Instructions, mem_stat_func: u32) -> Result<(), ()> {
+    use parity_wasm::elements::Instruction::*;
+    let mut counter = 0;
+    for instruction in instructions.elements_mut() {
+        if let GrowMemory(_) = *instruction {
+            *instruction = Call(mem_stat_func);
+            counter += 1;
+        }
+    }
+    if counter > 0 {
+        Ok(())
+    } else {
+        Err(())
+    }
+
+}
+
+fn add_mem_stat(module: elements::Module, ext_mem_stat_func: u32) -> elements::Module {
     use parity_wasm::elements::Instruction::*;
 
     let mut b = builder::from_module(module);
@@ -68,20 +94,19 @@ fn add_grow_counter(module: elements::Module, gas_func: u32) -> elements::Module
                 I32Const(1 as i32),
                 I32Mul,
                 // todo: there should be strong guarantee that it does not return anything on stack?
-                Call(gas_func),
+                Call(ext_mem_stat_func),
                 GrowMemory(0),
                 End,
             ]))
-            .build()
-            .build()
+            .build().build()
     );
 
     b.build()
 }
 
-pub fn inject_meter(
+pub fn inject_cpu_stat(
     instructions: &mut elements::Instructions,
-    gas_func: u32,
+    cpu_stat_func: u32,
 ) -> Result<(), ()> {
     use parity_wasm::elements::Instruction::*;
 
@@ -134,11 +159,93 @@ pub fn inject_meter(
         let effective_pos = block.start_pos + cumulative_offset;
 
         instructions.elements_mut().insert(effective_pos, I32Const(block.cpu_cost as i32));
-        instructions.elements_mut().insert(effective_pos+1, Call(gas_func));
+        instructions.elements_mut().insert(effective_pos+1, Call(cpu_stat_func));
 
         // Take into account these two inserted instructions.
         cumulative_offset += 2;
     }
 
     Ok(())
+}
+
+
+pub fn inject_resource_stat(module: elements::Module)
+                          -> Result<elements::Module, elements::Module>
+{
+    // Injecting resource statistic external
+    let mut mbuilder = builder::from_module(module);
+    let import_sig = mbuilder.push_signature(
+        builder::signature()
+            .param().i32()
+            .build_sig()
+    );
+
+    // mem stat
+    mbuilder.push_import(
+        builder::import()
+            .module("env")
+            .field("mem_stat")
+            .external().func(import_sig)
+            .build()
+    );
+
+    // cpu stat
+    mbuilder.push_import(
+        builder::import()
+            .module("env")
+            .field("cpu_stat")
+            .external().func(import_sig)
+            .build()
+    );
+
+    // back to plain module
+    let mut module = mbuilder.build();
+
+    // calculate actual function index of the imported definition
+    //    (substract all imports that are NOT functions)
+
+    let cpu_stat_func = module.import_count(elements::ImportCountType::Function) as u32 - 1;
+    let mem_stat_func = module.import_count(elements::ImportCountType::Function) as u32 - 2;
+
+    let total_func = module.functions_space() as u32;
+    let mut error = false;
+    let mut need_grow_counter = false;
+
+    // Updating calling addresses (all calls to function index >= `gas_func` should be incremented)
+    for section in module.sections_mut() {
+        match section {
+            &mut elements::Section::Code(ref mut code_section) => {
+                for ref mut func_body in code_section.bodies_mut() {
+                    update_call_index(func_body.code_mut(), cpu_stat_func);
+                    if let Err(_) = inject_cpu_stat(func_body.code_mut(), cpu_stat_func) {
+                        error = true;
+                        break;
+                    }
+                    update_call_index(func_body.code_mut(), mem_stat_func);
+                    if let Err(_) = inject_mem_stat(func_body.code_mut(), total_func) {
+                        need_grow_counter  = true;
+                    }
+                }
+            },
+            &mut elements::Section::Export(ref mut export_section) => {
+                for ref mut export in export_section.entries_mut() {
+                    if let &mut elements::Internal::Function(ref mut func_index) = export.internal_mut() {
+                        if *func_index >= mem_stat_func { *func_index += 2}
+                    }
+                }
+            },
+            &mut elements::Section::Element(ref mut elements_section) => {
+                for ref mut segment in elements_section.entries_mut() {
+                    // update all indirect call addresses initial values
+                    for func_index in segment.members_mut() {
+                        if *func_index >= mem_stat_func { *func_index += 2}
+                    }
+                }
+            },
+            _ => { }
+        }
+    }
+
+    if error { return Err(module); }
+    if need_grow_counter { Ok(add_mem_stat(module, mem_stat_func)) } else { Ok(module) }
 }
