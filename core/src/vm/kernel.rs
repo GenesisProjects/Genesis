@@ -89,7 +89,6 @@ impl Kernel {
     #[inline]
     pub fn load_code(account: &Account, code_buff: &mut Vec<u8>) -> Result<(), Error> {
         //unimplemented!()
-
         //TODO: test
         let mut f = File::open("./test_contract/test.wasm").expect("file not found");
         let contents = String::new();
