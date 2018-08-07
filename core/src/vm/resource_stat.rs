@@ -147,7 +147,7 @@ pub fn inject_cpu_stat(
             }
             _ => {
                 // An ordinal non control flow instruction. Just increment the cost of the current block.
-                let instruction_cost =1;
+                let instruction_cost = 1;
                 meter.increment(instruction_cost)?;
             }
         }
@@ -158,8 +158,8 @@ pub fn inject_cpu_stat(
     for block in meter.blocks {
         let effective_pos = block.start_pos + cumulative_offset;
 
-        instructions.elements_mut().insert(effective_pos, I32Const(block.cpu_cost as i32));
-        instructions.elements_mut().insert(effective_pos+1, Call(cpu_stat_func));
+        //instructions.elements_mut().insert(effective_pos, I32Const(block.cpu_cost as i32));
+        //instructions.elements_mut().insert(effective_pos+1, Call(cpu_stat_func));
 
         // Take into account these two inserted instructions.
         cumulative_offset += 2;

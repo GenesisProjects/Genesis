@@ -50,26 +50,11 @@ impl Selector {
     }
 
     pub fn decode(input: &Vec<u8>) -> Option<Selector> {
-        match Decoder::decode(input) {
-            Some(r) => {
-                match Selector::deserialize(&r) {
-                    Ok(r) => Some(r),
-                    _ => None
-                }
-            },
-            _ => None
-        }
+        unimplemented!()
     }
 
     pub fn encode<'a>(&self) -> Result<EncodedRLP, &'static str> {
-        let mut encoder = Encoder::new();
-        match self.serialize() {
-            Ok(r) => {
-                let result = encoder.encode(&r);
-                Ok(result)
-            },
-            _ => Err("rlp serialization failed")
-        }
+       unimplemented!()
     }
 }
 

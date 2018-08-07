@@ -24,7 +24,7 @@ macro_rules! hashmap {
 }
 
 pub trait Api {
-    fn call(&mut self, addr: u32, abi: u32, input_balance: u32) -> RuntimeValue;
+    fn call(&mut self, addr: u32, abi: u32, abi_len: u32, input_balance: u32) -> RuntimeValue;
 
     fn create(&mut self, abi: u32, input_balance: u32) -> RuntimeValue;
 
@@ -118,7 +118,7 @@ impl SystemCall {
 }
 
 impl Api for SystemCall {
-    fn call(&mut self, addr: u32, abi: u32, input_balance: u32) -> RuntimeValue {
+    fn call(&mut self, addr: u32, abi: u32, abi_len: u32, input_balance: u32) -> RuntimeValue {
         let parent = self.kernel.borrow().top_context();
         let result = self.memory_load(addr, 32).and_then(|vec| {
             match Address::try_from(vec) {
@@ -140,7 +140,8 @@ impl Api for SystemCall {
                             new_runtime.module_ref().unwrap(),
                             StorageCache::new(),
                         ) {
-                            let selector = self.memory_load(abi, 32).and_then(|vec| {
+                            let selector = self.memory_load(abi, abi_len as usize).and_then(|vec| {
+                                println!("{:?}", vec);
                                 Ok(Selector::decode(&vec).unwrap())
                             }).unwrap();
 
@@ -279,7 +280,12 @@ impl Externals for SystemCall {
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
         match index {
             CALL_INDEX => {
-                Ok(Some(self.call(args.nth(0), args.nth(1), args.nth(2))))
+                Ok(Some(self.call(
+                    args.nth(0),
+                    args.nth(1),
+                    args.nth(2),
+                    args.nth(3)))
+                )
             },
             MEM_STAT_INDEX => {
                 self.mem_stat(args.nth(0));
@@ -316,7 +322,7 @@ impl SysCallResolver {
     pub fn new() -> SysCallResolver {
         SysCallResolver {
             system_call_table: hashmap![
-                CALL_INDEX => Signature::new(&[I32, I32, I32][..], Some(I32)),
+                CALL_INDEX => Signature::new(&[I32, I32, I32, I32][..], Some(I32)),
                 TEST_INDEX => Signature::new(&[][..], None),
                 MEM_STAT_INDEX => Signature::new(&[I32][..], None),
                 CPU_STAT_INDEX => Signature::new(&[I32][..], None)
