@@ -12,6 +12,8 @@ pub const RETURN_INDEX: usize = 0x01;
 pub const CALL_INDEX: usize = 0x02;
 pub const CREATE_INDEX: usize = 0x03;
 pub const TEST_INDEX: usize = 0x04;
+pub const MEM_STAT_INDEX: usize = 0x05;
+pub const CPU_STAT_INDEX: usize = 0x06;
 
 macro_rules! hashmap {
     ($( $key: expr => $val: expr ),*) => {{
@@ -35,6 +37,10 @@ pub trait Api {
     fn read_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>;
 
     fn write_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>;
+
+    fn mem_stat(&mut self, amount: i32);
+
+    fn cpu_stat(&mut self, amount: i32);
 }
 
 pub struct SystemCall {
@@ -48,7 +54,12 @@ impl SystemCall {
         }
     }
 
-    fn init_runtime_with_parent(&self, parent_context_ref: RuntimeContextRef, addr: Address, input_balance: u32) -> Result<Runtime, Error> {
+    fn init_runtime_with_parent(
+        &self,
+        parent_context_ref: RuntimeContextRef,
+        addr: Address,
+        input_balance: u32,
+    ) -> Result<Runtime, Error> {
         if input_balance > parent_context_ref.borrow().balance {
             return Err(Error::Validation("Insufficient balance".into()));
         }
@@ -237,6 +248,14 @@ impl Api for SystemCall {
             })
         })
     }
+
+    fn mem_stat(&mut self, amount: i32) {
+        unimplemented!()
+    }
+
+    fn cpu_stat(&mut self, amount: i32) {
+        unimplemented!()
+    }
 }
 
 pub trait SysCallRegister {
@@ -261,6 +280,14 @@ impl Externals for SystemCall {
         match index {
             CALL_INDEX => {
                 Ok(Some(self.call(args.nth(0), args.nth(1), args.nth(2))))
+            },
+            MEM_STAT_INDEX => {
+                self.mem_stat(args.nth(0));
+                Ok(None)
+            },
+            CPU_STAT_INDEX => {
+                self.cpu_stat(args.nth(0));
+                Ok(None)
             }
             _ => panic!("unknown function index {}", index)
         }
@@ -290,7 +317,9 @@ impl SysCallResolver {
         SysCallResolver {
             system_call_table: hashmap![
                 CALL_INDEX => Signature::new(&[I32, I32, I32][..], Some(I32)),
-                TEST_INDEX => Signature::new(&[][..], None)
+                TEST_INDEX => Signature::new(&[][..], None),
+                MEM_STAT_INDEX => Signature::new(&[I32][..], None),
+                CPU_STAT_INDEX => Signature::new(&[I32][..], None)
             ]
         }
     }
@@ -332,6 +361,22 @@ impl ModuleImportResolver for SysCallResolver {
                     Some(f) => Ok(f),
                     None => Err(Error::Function(
                         format!("function index: {} is not register in the kernel", TEST_INDEX)
+                    ))
+                }
+            },
+            "mem_stat" => {
+                match self.func_ref(MEM_STAT_INDEX) {
+                    Some(f) => Ok(f),
+                    None => Err(Error::Function(
+                        format!("function index: {} is not register in the kernel", MEM_STAT_INDEX)
+                    ))
+                }
+            },
+            "cpu_stat" => {
+                match self.func_ref(CPU_STAT_INDEX) {
+                    Some(f) => Ok(f),
+                    None => Err(Error::Function(
+                        format!("function index: {} is not register in the kernel", CPU_STAT_INDEX)
                     ))
                 }
             }
