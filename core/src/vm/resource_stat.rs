@@ -4,7 +4,7 @@ pub fn update_call_index(instructions: &mut elements::Instructions, inserted_ind
     use parity_wasm::elements::Instruction::*;
     for instruction in instructions.elements_mut().iter_mut() {
         if let &mut Call(ref mut call_index) = instruction {
-            if *call_index >= inserted_index { *call_index += 1}
+            if *call_index >= inserted_index { *call_index += 2 }
         }
     }
 }
@@ -158,8 +158,8 @@ pub fn inject_cpu_stat(
     for block in meter.blocks {
         let effective_pos = block.start_pos + cumulative_offset;
 
-        //instructions.elements_mut().insert(effective_pos, I32Const(block.cpu_cost as i32));
-        //instructions.elements_mut().insert(effective_pos+1, Call(cpu_stat_func));
+        instructions.elements_mut().insert(effective_pos, I32Const(block.cpu_cost as i32));
+        instructions.elements_mut().insert(effective_pos + 1, Call(cpu_stat_func));
 
         // Take into account these two inserted instructions.
         cumulative_offset += 2;
@@ -216,14 +216,15 @@ pub fn inject_resource_stat(module: elements::Module)
         match section {
             &mut elements::Section::Code(ref mut code_section) => {
                 for ref mut func_body in code_section.bodies_mut() {
-                    update_call_index(func_body.code_mut(), cpu_stat_func);
+                    update_call_index(func_body.code_mut(), mem_stat_func);
                     if let Err(_) = inject_cpu_stat(func_body.code_mut(), cpu_stat_func) {
                         error = true;
                         break;
                     }
-                    update_call_index(func_body.code_mut(), mem_stat_func);
-                    if let Err(_) = inject_mem_stat(func_body.code_mut(), total_func) {
+                    if let Ok(_) = inject_mem_stat(func_body.code_mut(), total_func) {
                         need_grow_counter  = true;
+                    } else {
+                        need_grow_counter  = false;
                     }
                 }
             },

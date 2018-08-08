@@ -255,7 +255,7 @@ impl Api for SystemCall {
     }
 
     fn cpu_stat(&mut self, amount: i32) {
-        unimplemented!()
+        println!("Current block has {} instructions", amount)
     }
 }
 
