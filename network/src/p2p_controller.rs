@@ -42,6 +42,7 @@ use std::thread;
 pub struct P2PController {
     name: String,
     account: Account,
+    height: usize,
     listener: TcpListener,
 
     peer_list: HashMap<Token, PeerRef>,
@@ -156,6 +157,11 @@ impl P2PController {
             Some(_) => true,
             _ => false
         }
+    }
+
+    #[inline]
+    fn height(&self) -> usize {
+        self.height
     }
 
     fn peers_persist(&self) -> Result<usize> {
@@ -430,8 +436,8 @@ impl Notify for P2PController {
     }
 
     #[inline]
-    fn notify_gossip(protocol: P2PProtocol, peer_ref: PeerRef, table: &PeerTable) {
-        let result = peer_ref.borrow_mut().session.send_event(protocol.gossip(table));
+    fn notify_gossip(protocol: P2PProtocol, peer_ref: PeerRef, table: &PeerTable, self_block_len: usize) {
+        let result = peer_ref.borrow_mut().session.send_event(protocol.gossip(self_block_len, table));
         match result {
             Err(ref e) if e.kind() == ErrorKind::ConnectionAborted => {
                 // EAGAIN
@@ -526,6 +532,7 @@ impl Thread for P2PController {
                 Ok(P2PController {
                     name: name,
                     account: account.clone(),
+                    height: 0usize,
                     peer_list: peer_list,
                     min_required_peers: config.min_required_peer(),
                     max_allowed_peers: config.max_allowed_peers(),
@@ -564,6 +571,7 @@ impl Thread for P2PController {
                 Ok(P2PController {
                     name: name,
                     account: account.clone(),
+                    height: 0usize,
                     peer_list: peer_list,
                     min_required_peers: config.min_required_peer(),
                     max_allowed_peers: config.max_allowed_peers(),
@@ -602,6 +610,7 @@ impl Thread for P2PController {
                 Ok(P2PController {
                     name: name,
                     account: account.clone(),
+                    height: 0usize,
                     peer_list: peer_list,
                     min_required_peers: config.min_required_peer(),
                     max_allowed_peers: config.max_allowed_peers(),
@@ -676,7 +685,8 @@ impl Thread for P2PController {
                 Self::notify_gossip(
                     self.protocol.clone(),
                     peer_ref,
-                    &table
+                    &table,
+                    self.height
                 );
             },
             _ => {}

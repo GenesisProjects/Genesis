@@ -5,7 +5,7 @@
 - Init -> WaitGosship
 
 **2-1. gossip (Server Unconnected)**
-- GOSSIP Version Account Timestamp String(host) ...
+- GOSSIP Version Account Timestamp Int(block height) String(host) ...
 - Init -> WaitingRequestBlockInfo
 
 **2-2. reject (Server Unconnected)**

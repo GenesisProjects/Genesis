@@ -26,7 +26,7 @@ pub trait Notify {
     /// ## Examples
     /// ```
     /// ```
-    fn notify_gossip(protocol: P2PProtocol, peer_ref: PeerRef, table: &PeerTable);
+    fn notify_gossip(protocol: P2PProtocol, peer_ref: PeerRef, table: &PeerTable, self_block_len: usize);
 
     /// # heartbeat(&mut self, 1)
     /// **Usage**
@@ -268,7 +268,7 @@ impl P2PProtocol {
 
     //TODO: more protocols
 
-    pub fn gossip(&self, table: &PeerTable) -> SocketMessage {
+    pub fn gossip(&self, self_block_len: usize, table: &PeerTable) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "GOSSIP".to_string(),
             vec![]
@@ -280,6 +280,8 @@ impl P2PProtocol {
             value: Account::load().expect("Can not load account")
         } << SocketMessageArg::Timestamp {
             value: Utc::now()
+        } << SocketMessageArg::Int {
+            value: self_block_len as i32
         };
 
         for host in &table.table {
