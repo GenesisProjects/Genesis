@@ -1,5 +1,3 @@
-use std::ops::Range;
-
 /// Encoder buffer size
 pub const ENCODER_BUFFER_SIZE: usize    = 1024 * 1024 * 16;
 

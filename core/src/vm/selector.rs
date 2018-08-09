@@ -63,7 +63,7 @@ impl From<Action> for Selector {
         //TODO: test
         //unimplemented!()
         Selector {
-            name: "foo".to_string(),
+            name: "test".to_string(),
             args: vec![],
             returns: vec![],
         }

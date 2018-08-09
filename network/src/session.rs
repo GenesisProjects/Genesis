@@ -3,12 +3,16 @@ use chrono::*;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
 
+use std::cell::RefCell;
+use std::fmt;
 use std::io::*;
 use std::net::SocketAddr;
+use std::rc::Rc;
 
 use gen_message::{MESSAGE_CENTER, Message};
 use message::defines::*;
 use message::protocol::*;
+use message::message_handler::SocketMessageHandler;
 use socket::*;
 
 pub const CMD_ERR_PENALTY: u32 = 100u32;
@@ -141,7 +145,6 @@ pub enum SessionMode {
 /// - 5. ***context***:     instance of [TaskContext]
 /// - 6. ***connected***:   true if communication session has been established
 /// - 6. ***mode***:        instance of [SessionMode]
-#[derive(Debug)]
 pub struct Session {
     token: Option<Token>,
     socket: PeerSocket,
@@ -155,7 +158,9 @@ pub struct Session {
     protocol: P2PProtocol,
 
     table: PeerTable,
-    block_info: Option<BlockInfo>
+    block_info: Option<BlockInfo>,
+
+    pub handler: Rc<RefCell<SocketMessageHandler>>
 }
 
 impl Session {
@@ -187,9 +192,12 @@ impl Session {
             protocol: P2PProtocol::new(),
 
             table: PeerTable::new(),
-            block_info: None
+            block_info: None,
+
+            handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
         }
     }
+
 
     /// # connect(1)
     /// **Usage**
@@ -220,7 +228,9 @@ impl Session {
                     protocol: P2PProtocol::new(),
 
                     table: PeerTable::new(),
-                    block_info: None
+                    block_info: None,
+
+                    handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
                 })
             },
             Err(e) => Err(e)
@@ -250,6 +260,11 @@ impl Session {
     }
 
     #[inline]
+    pub fn protocol(&self) -> P2PProtocol {
+        self.protocol.clone()
+    }
+
+    #[inline]
     pub fn block_info(&self) -> Option<BlockInfo> {
         self.block_info.clone()
     }
@@ -257,6 +272,16 @@ impl Session {
     #[inline]
     pub fn table(&self) -> PeerTable {
         self.table.clone()
+    }
+
+    #[inline]
+    pub fn set_table(&mut self, table: PeerTable) {
+        self.table = table;
+    }
+
+    #[inline]
+    pub fn token(&self) -> Option<Token> {
+        self.token.clone()
     }
 
     #[inline]
@@ -396,88 +421,10 @@ impl Session {
 
     fn process_single_event(&mut self, msg: &SocketMessage, name: String) -> bool {
         let event = msg.event();
-        let event = event.as_str();
         let args = &msg.args();
-        match event {
-            "BOOTSTRAP" => {
-                if !self.protocol.verify(&msg) {
-                    false
-                } else {
-                    match self.status {
-                        SessionStatus::Init => {
-                            let slice = &args[3 .. ];
-                            let mut hosts: Vec<String> = vec![];
-                            for arg in slice {
-                                match arg {
-                                    &SocketMessageArg::String { ref value } => {
-                                        //TODO: make port configurable
-                                        hosts.push(value.clone())
-                                    }
-                                    _ => ()
-                                };
-                            }
-                            self.table = PeerTable::new_with_hosts(hosts);
-                            self.status = SessionStatus::WaitGosship;
-                            // notify controller send gossip
-                            if let Some(token) = self.token.clone() {
-                                MESSAGE_CENTER.lock().unwrap().send(
-                                    name,
-                                    Message::new(token.0 as u16, "gossip".to_string())
-                                );
-                            }
-                            true
-                        },
-                        _ => {
-                            // TODO: print cmd output here
-                            println!("Unavailable to process bootstrap right now");
-                            false
-                        }
-                    }
-                }
-            },
-            "GOSSIP" => {
-                if !self.protocol.verify(&msg) {
-                    false
-                } else {
-                    let slice = &args[3 .. ];
-                    let mut hosts: Vec<String> = vec![];
-                    for arg in slice {
-                        match arg {
-                            &SocketMessageArg::String { ref value } => {
-                                //TODO: make port configurable
-                                hosts.push(value.clone())
-                            }
-                            _ => ()
-                        };
-                    }
-                    self.table = PeerTable::new_with_hosts(hosts);
-                    self.status = SessionStatus::WaitBlockInfoRequest;
-                    true
-                }
-            },
-            "REJECT" => {
-                if !self.protocol.verify(&msg) {
-                    false
-                } else {
-                    match &args[3] {
-                        &SocketMessageArg::String { ref value } => {
-                            println!("Rejected!");
-                        },
-                        _ => {
-                            return false;
-                        }
-                    }
-                    match self.status {
-                        SessionStatus::Init | SessionStatus::WaitBlockInfoRequest => {
-                            self.status = SessionStatus::ConnectionReject;
-                            true
-                        },
-                        _ => false
-                    }
-                }
-            },
-            _ => false
-        }
+        let handle = self.handler.clone();
+        let mut handler_ref = handle.borrow_mut();
+        handler_ref.process_event(event, self, msg)
     }
 
 }
@@ -494,6 +441,12 @@ impl Evented for Session {
     fn deregister(&self, poll: &Poll) -> Result<()> {
         println!("session: {:?} deregister here", self.token);
         self.socket.deregister(poll)
+    }
+}
+
+impl fmt::Debug for Session {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Session")
     }
 }
 
