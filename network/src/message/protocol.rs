@@ -37,13 +37,39 @@ pub trait Notify {
     fn heartbeat(protocol: P2PProtocol, peer_ref: PeerRef);
 }
 
+pub trait Consensus {
+    /// # notify_propose(&mut self, 1)
+   /// **Usage**
+   /// - send propose message
+   /// ## Examples
+   /// ```
+   /// ```
+    fn notify_propose(protocol: P2PProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
+
+    /// # notify_prevote(&mut self, 1)
+    /// **Usage**
+    /// - send prevote message
+    /// ## Examples
+    /// ```
+    /// ```
+    fn notify_prevote(protocol: P2PProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
+
+    /// # notify_precommit(&mut self, 1)
+    /// **Usage**
+    /// - send precommit message
+    /// ## Examples
+    /// ```
+    /// ```
+    fn notify_precommit(protocol: P2PProtocol, round: usize, propose_hash: Hash, block_hash: Hash, table: &PeerTable);
+}
+
 #[derive(Clone, Debug)]
 pub struct BlockInfo {
     pub block_len: usize,
     pub last_block_num: usize,
     pub last_block_hash: Hash,
 
-    pub esitmated_round: usize
+    pub estimated_round: usize
 }
 
 #[derive(Debug)]
