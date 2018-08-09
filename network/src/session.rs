@@ -3,9 +3,11 @@ use chrono::*;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
 
+use std::cell::RefCell;
 use std::fmt;
 use std::io::*;
 use std::net::SocketAddr;
+use std::rc::Rc;
 
 use gen_message::{MESSAGE_CENTER, Message};
 use message::defines::*;
@@ -158,7 +160,7 @@ pub struct Session {
     table: PeerTable,
     block_info: Option<BlockInfo>,
 
-    handler: SocketMessageHandler
+    handler: Rc<RefCell<SocketMessageHandler>>
 }
 
 impl Session {
@@ -192,7 +194,7 @@ impl Session {
             table: PeerTable::new(),
             block_info: None,
 
-            handler: SocketMessageHandler::new()
+            handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
         }
     }
 
@@ -227,7 +229,7 @@ impl Session {
                     table: PeerTable::new(),
                     block_info: None,
 
-                    handler: SocketMessageHandler::new()
+                    handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
                 })
             },
             Err(e) => Err(e)
@@ -403,9 +405,10 @@ impl Session {
 
     fn process_single_event(&mut self, msg: &SocketMessage, name: String) -> bool {
         let event = msg.event();
-        let event = event.as_str();
         let args = &msg.args();
-        self.handler.process_event(event, self, msg)
+        let handle = self.handler.clone();
+        let mut handler_ref = handle.borrow_mut();
+        handler_ref.process_event(event, self, msg)
     }
 
 }

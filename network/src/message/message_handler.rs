@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 pub type SocketMessageCallback = fn(session: &mut Session, msg: &SocketMessage, name: String) -> bool;
 
+#[derive(Clone)]
 pub struct SocketMessageHandler(HashMap<String, SocketMessageCallback>);
 
 impl SocketMessageHandler {
