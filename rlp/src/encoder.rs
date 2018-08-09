@@ -4,7 +4,7 @@ use self::bytebuffer::*;
 use defines::*;
 use types::*;
 
-use std::io::{Read, Write, Result};
+use std::io::Write;
 use std::mem::*;
 use std::iter::FromIterator;
 use std::sync::Mutex;
@@ -52,7 +52,7 @@ impl Encoder {
 }
 
 impl Encoder {
-    fn encode_byte_len(&self, input: u8) -> usize { 1 }
+    fn encode_byte_len(&self, _input: u8) -> usize { 1 }
 
     fn encode_byte(&mut self, input: u8) {
         if input > SINGLE_BYTE_MAX_VALUE {
@@ -120,7 +120,7 @@ impl Encoder {
 
     fn encode_list_len(&mut self, path: String, input: &RLP) -> usize {
         let cached_result: Option<usize> = match self.len_cache.entry(path.to_owned()) {
-            Vacant(entry) => None,
+            Vacant(_entry) => None,
             Occupied(entry) => Some(entry.get().to_owned()),
         };
 

@@ -1,9 +1,5 @@
 use config;
-use serde;
-use std::collections::HashMap;
-use std::error::Error;
 use std::sync::RwLock;
-use std::path::Path;
 use std::env;
 
 lazy_static! {
