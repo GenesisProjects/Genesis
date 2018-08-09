@@ -3,6 +3,8 @@ use chrono::*;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
 
+use std::collections::HashMap;
+use std::fmt;
 use std::io::*;
 use std::net::SocketAddr;
 
@@ -13,6 +15,9 @@ use socket::*;
 
 pub const CMD_ERR_PENALTY: u32 = 100u32;
 pub const DATA_TRANS_ERR_PENALTY: u32 = 200u32;
+
+
+type SessionMessageHandler = fn(session: &mut Session, msg: &SocketMessage, name: String) -> bool;
 
 #[derive(Debug)]
 pub enum TaskType {
@@ -141,7 +146,6 @@ pub enum SessionMode {
 /// - 5. ***context***:     instance of [TaskContext]
 /// - 6. ***connected***:   true if communication session has been established
 /// - 6. ***mode***:        instance of [SessionMode]
-#[derive(Debug)]
 pub struct Session {
     token: Option<Token>,
     socket: PeerSocket,
@@ -155,7 +159,9 @@ pub struct Session {
     protocol: P2PProtocol,
 
     table: PeerTable,
-    block_info: Option<BlockInfo>
+    block_info: Option<BlockInfo>,
+
+    handlers: HashMap<String, SessionMessageHandler>
 }
 
 impl Session {
@@ -187,7 +193,9 @@ impl Session {
             protocol: P2PProtocol::new(),
 
             table: PeerTable::new(),
-            block_info: None
+            block_info: None,
+
+            handlers: HashMap::new()
         }
     }
 
@@ -220,7 +228,8 @@ impl Session {
                     protocol: P2PProtocol::new(),
 
                     table: PeerTable::new(),
-                    block_info: None
+                    block_info: None,
+                    handlers: HashMap::new()
                 })
             },
             Err(e) => Err(e)
@@ -494,6 +503,12 @@ impl Evented for Session {
     fn deregister(&self, poll: &Poll) -> Result<()> {
         println!("session: {:?} deregister here", self.token);
         self.socket.deregister(poll)
+    }
+}
+
+impl fmt::Debug for Session {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Session")
     }
 }
 
