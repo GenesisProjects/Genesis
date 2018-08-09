@@ -259,6 +259,11 @@ impl Session {
     }
 
     #[inline]
+    pub fn protocol(&self) -> P2PProtocol {
+        self.protocol.clone()
+    }
+
+    #[inline]
     pub fn block_info(&self) -> Option<BlockInfo> {
         self.block_info.clone()
     }
@@ -266,6 +271,16 @@ impl Session {
     #[inline]
     pub fn table(&self) -> PeerTable {
         self.table.clone()
+    }
+
+    #[inline]
+    pub fn set_table(&mut self, table: PeerTable) {
+        self.table = table;
+    }
+
+    #[inline]
+    pub fn token(&self) -> Option<Token> {
+        self.token.clone()
     }
 
     #[inline]
