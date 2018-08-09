@@ -3,7 +3,6 @@ use chrono::*;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
 
-use std::collections::HashMap;
 use std::fmt;
 use std::io::*;
 use std::net::SocketAddr;
@@ -15,9 +14,6 @@ use socket::*;
 
 pub const CMD_ERR_PENALTY: u32 = 100u32;
 pub const DATA_TRANS_ERR_PENALTY: u32 = 200u32;
-
-
-type SessionMessageHandler = fn(session: &mut Session, msg: &SocketMessage, name: String) -> bool;
 
 #[derive(Debug)]
 pub enum TaskType {
@@ -159,9 +155,7 @@ pub struct Session {
     protocol: P2PProtocol,
 
     table: PeerTable,
-    block_info: Option<BlockInfo>,
-
-    handlers: HashMap<String, SessionMessageHandler>
+    block_info: Option<BlockInfo>
 }
 
 impl Session {
@@ -193,9 +187,7 @@ impl Session {
             protocol: P2PProtocol::new(),
 
             table: PeerTable::new(),
-            block_info: None,
-
-            handlers: HashMap::new()
+            block_info: None
         }
     }
 
@@ -228,8 +220,7 @@ impl Session {
                     protocol: P2PProtocol::new(),
 
                     table: PeerTable::new(),
-                    block_info: None,
-                    handlers: HashMap::new()
+                    block_info: None
                 })
             },
             Err(e) => Err(e)
