@@ -10,6 +10,7 @@ use std::net::SocketAddr;
 use gen_message::{MESSAGE_CENTER, Message};
 use message::defines::*;
 use message::protocol::*;
+use message::message_handler::SocketMessageHandler;
 use socket::*;
 
 pub const CMD_ERR_PENALTY: u32 = 100u32;
@@ -155,7 +156,9 @@ pub struct Session {
     protocol: P2PProtocol,
 
     table: PeerTable,
-    block_info: Option<BlockInfo>
+    block_info: Option<BlockInfo>,
+
+    handler: SocketMessageHandler
 }
 
 impl Session {
@@ -187,7 +190,9 @@ impl Session {
             protocol: P2PProtocol::new(),
 
             table: PeerTable::new(),
-            block_info: None
+            block_info: None,
+
+            handler: SocketMessageHandler::new()
         }
     }
 
@@ -220,7 +225,9 @@ impl Session {
                     protocol: P2PProtocol::new(),
 
                     table: PeerTable::new(),
-                    block_info: None
+                    block_info: None,
+
+                    handler: SocketMessageHandler::new()
                 })
             },
             Err(e) => Err(e)
@@ -398,86 +405,7 @@ impl Session {
         let event = msg.event();
         let event = event.as_str();
         let args = &msg.args();
-        match event {
-            "BOOTSTRAP" => {
-                if !self.protocol.verify(&msg) {
-                    false
-                } else {
-                    match self.status {
-                        SessionStatus::Init => {
-                            let slice = &args[3 .. ];
-                            let mut hosts: Vec<String> = vec![];
-                            for arg in slice {
-                                match arg {
-                                    &SocketMessageArg::String { ref value } => {
-                                        //TODO: make port configurable
-                                        hosts.push(value.clone())
-                                    }
-                                    _ => ()
-                                };
-                            }
-                            self.table = PeerTable::new_with_hosts(hosts);
-                            self.status = SessionStatus::WaitGosship;
-                            // notify controller send gossip
-                            if let Some(token) = self.token.clone() {
-                                MESSAGE_CENTER.lock().unwrap().send(
-                                    name,
-                                    Message::new(token.0 as u16, "gossip".to_string())
-                                );
-                            }
-                            true
-                        },
-                        _ => {
-                            // TODO: print cmd output here
-                            println!("Unavailable to process bootstrap right now");
-                            false
-                        }
-                    }
-                }
-            },
-            "GOSSIP" => {
-                if !self.protocol.verify(&msg) {
-                    false
-                } else {
-                    let slice = &args[3 .. ];
-                    let mut hosts: Vec<String> = vec![];
-                    for arg in slice {
-                        match arg {
-                            &SocketMessageArg::String { ref value } => {
-                                //TODO: make port configurable
-                                hosts.push(value.clone())
-                            }
-                            _ => ()
-                        };
-                    }
-                    self.table = PeerTable::new_with_hosts(hosts);
-                    self.status = SessionStatus::WaitBlockInfoRequest;
-                    true
-                }
-            },
-            "REJECT" => {
-                if !self.protocol.verify(&msg) {
-                    false
-                } else {
-                    match &args[3] {
-                        &SocketMessageArg::String { ref value } => {
-                            println!("Rejected!");
-                        },
-                        _ => {
-                            return false;
-                        }
-                    }
-                    match self.status {
-                        SessionStatus::Init | SessionStatus::WaitBlockInfoRequest => {
-                            self.status = SessionStatus::ConnectionReject;
-                            true
-                        },
-                        _ => false
-                    }
-                }
-            },
-            _ => false
-        }
+        self.handler.process_event(event, self, msg)
     }
 
 }
