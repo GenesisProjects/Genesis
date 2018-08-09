@@ -160,7 +160,7 @@ pub struct Session {
     table: PeerTable,
     block_info: Option<BlockInfo>,
 
-    handler: Rc<RefCell<SocketMessageHandler>>
+    pub handler: Rc<RefCell<SocketMessageHandler>>
 }
 
 impl Session {
@@ -197,6 +197,7 @@ impl Session {
             handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
         }
     }
+
 
     /// # connect(1)
     /// **Usage**

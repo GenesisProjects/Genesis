@@ -8,6 +8,7 @@ use common::address::Address as Account;
 use message::protocol::*;
 use nat::*;
 use session::*;
+use session_state::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::net::TcpStream;
@@ -52,7 +53,7 @@ impl Peer {
             token: None,
             ttl: INIT_TTL,
 
-            session: Session::new(socket, addr),
+            session: Session::new(socket, addr).add_handler(),
         }
     }
 
@@ -68,7 +69,7 @@ impl Peer {
                 token: None,
                 ttl: INIT_TTL,
 
-                session: session
+                session: session.add_handler()
             })
         })
     }
