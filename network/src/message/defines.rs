@@ -5,83 +5,44 @@ use common::hash::{Hash, HASH_LEN};
 use chrono::*;
 use rust_base58::{ToBase58, FromBase58};
 
-pub trait MessageCodec {
-    fn encoder(&self) -> Vec<u8>;
-    fn decoder(input: &str) -> Self;
-}
+use serde::ser::*;
+use serde::de::*;
 
-#[derive(Debug, Clone)]
+static DATE_FMT: &'static str = "%Y-%m-%d-%H-%M-%S-%f";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SocketMessageArg {
     Int { value: i32 },
     String { value: String },
-    Account { value: Account },
+    Account { value: String },
     Hash { value: Hash },
     Vesion { value: String },
-    Timestamp { value: DateTime<Utc> },
+    Timestamp { value: String },
     Unknown
 }
 
-impl SocketMessageArg {
-    pub fn new(input: &str) -> Self {
-        let splits = input.trim().split("@");
-        let vec: Vec<&str> = splits.collect();
-        if vec.len() != 2 {
-            SocketMessageArg::Unknown
-        } else {
-            match vec[0] {
-                "Int" => {
-                    match vec[1].to_string().parse::<i32>() {
-                        Ok(r) => SocketMessageArg::Int { value: r },
-                        _ => SocketMessageArg::Unknown
-                    }
-                },
-                "String" => {
-                    SocketMessageArg::String { value: vec[1].to_string() }
-                },
-                "Account" => {
-                    SocketMessageArg::Account { value: Account { text: vec[1].to_string() } }
-                },
-                "Hash" => {
-                    match vec[1].to_string().from_base58() {
-                        Ok(r) => {
-                            if r.len() == HASH_LEN {
-                                let mut temp: [u8; 32] = [0u8; HASH_LEN];
-                                let r = &r[..HASH_LEN]; // panics if not enough data
-                                temp.copy_from_slice(r);
-                                SocketMessageArg::Hash { value: temp }
-                            } else {
-                                SocketMessageArg::Unknown
-                            }
-                        },
-                        _ => SocketMessageArg::Unknown
-                    }
-                },
-                "Vesion" => {
-                    SocketMessageArg::Vesion { value: vec[1].to_string() }
-                },
-                "Timestamp" => {
-                    match Utc.datetime_from_str(
-                        vec[1].to_string().as_str(),
-                        "%Y-%m-%d-%H-%M-%S-%f"
-                    ) {
-                        Ok(r) => SocketMessageArg::Timestamp { value: r },
-                        _ => SocketMessageArg::Unknown
-                    }
-                },
-                _ => {
-                    SocketMessageArg::Unknown
-                }
-            }
+impl From<Account> for SocketMessageArg {
+    fn from(account: Account) -> Self {
+        SocketMessageArg::Account {
+            value: account.text
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct SocketMessage {
-    event: String,
-    arg: Vec<SocketMessageArg>
+impl From<DateTime<Utc>> for SocketMessageArg {
+    fn from(date: DateTime<Utc>) -> Self {
+        SocketMessageArg::Timestamp {
+            value: date.format(DATE_FMT).to_string()
+        }
+    }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SocketMessage {
+    event: String,
+    arg: Vec<SocketMessageArg>,
+    payload: Vec<u8>
+}
 
 impl Shl<SocketMessageArg> for SocketMessage {
     type Output = Self;
@@ -94,10 +55,11 @@ impl Shl<SocketMessageArg> for SocketMessage {
 }
 
 impl SocketMessage {
-    pub fn new(event: String, arg: Vec<SocketMessageArg>) -> Self {
+    pub fn new(event: String, arg: Vec<SocketMessageArg>, payload: Vec<u8>) -> Self {
         SocketMessage {
             event: event,
-            arg: arg
+            arg: arg,
+            payload: payload
         }
     }
 
@@ -117,7 +79,13 @@ impl SocketMessage {
 
     pub fn account_at(&self, index: usize) -> Option<Account> {
         match &self.arg[index] {
-            &SocketMessageArg::Account { ref value } => Some(value.clone()),
+            &SocketMessageArg::Account { ref value } => {
+                if value.len() == HASH_LEN {
+                    Some(Account{ text: value.clone() })
+                } else {
+                    None
+                }
+            },
             _ => None
         }
     }
@@ -138,7 +106,15 @@ impl SocketMessage {
 
     pub fn timestamp_at(&self, index: usize) -> Option<DateTime<Utc>> {
         match self.arg[index] {
-            SocketMessageArg::Timestamp { value } => Some(value),
+            SocketMessageArg::Timestamp { value } => {
+                match Utc.datetime_from_str(
+                    value.as_str(),
+                    DATE_FMT
+                ) {
+                    Ok(r) => Some(r),
+                    _ => None
+                }
+            },
             _ => None
         }
     }
@@ -152,83 +128,18 @@ impl SocketMessage {
     }
 
     pub fn heartbeat() -> Self {
-        SocketMessage { event: "HEARTBEAT".to_string(), arg: vec![] }
+        SocketMessage {
+            event: "HEARTBEAT".to_string(),
+            arg: vec![],
+            payload: vec![]
+        }
     }
 
     pub fn exception(reason: &str) -> Self {
-        SocketMessage { event: "EXCEPTION".to_string(), arg: vec![SocketMessageArg::String { value: reason.to_string() }] }
-    }
-}
-
-impl MessageCodec for SocketMessage {
-    fn encoder(&self) -> Vec<u8>  {
-        let mut result: Vec<u8> = vec![];
-        let mut vec = self.event.clone().into_bytes();
-        result.append(&mut vec);
-        for elem in self.arg.clone() {
-            match elem {
-                SocketMessageArg::Int { value } => {
-                    let mut header = " Int@".to_string().into_bytes();
-                    let mut vec = value.to_string().into_bytes();
-                    result.append(&mut header);
-                    result.append(&mut vec);
-                },
-                SocketMessageArg::String { ref value } => {
-                    let mut header = " String@".to_string().into_bytes();
-                    let mut vec = value.clone().into_bytes();
-                    result.append(&mut header);
-                    result.append(&mut vec);
-                },
-                SocketMessageArg::Account { ref value } => {
-                    let mut header = " Account@".to_string().into_bytes();
-                    let mut vec = value.text.clone().into_bytes();
-                    result.append(&mut header);
-                    result.append(&mut vec);
-                },
-                SocketMessageArg::Hash { ref value } => {
-                    let mut header = " Hash@".to_string().into_bytes();
-                    let mut vec = value.to_base58().into_bytes();
-                    result.append(&mut header);
-                    result.append(&mut vec);
-                },
-                SocketMessageArg::Vesion { ref value } => {
-                    let mut header = " Vesion@".to_string().into_bytes();
-                    let mut vec = value.clone().into_bytes();
-                    result.append(&mut header);
-                    result.append(&mut vec);
-                },
-                SocketMessageArg::Timestamp { ref value } => {
-                    let mut header = " Timestamp@".to_string().into_bytes();
-                    let mut vec = value.format("%Y-%m-%d-%H-%M-%S-%f").to_string().into_bytes();
-                    result.append(&mut header);
-                    result.append(&mut vec);
-                },
-                _ => ()
-            }
-        }
-        result.push('\n' as u8);
-        result
-    }
-
-    fn decoder(input: &str) -> Self {
-        let splits = input.trim().split(" ");
-        let vec: Vec<&str> = splits.collect();
-        let args: Vec<SocketMessageArg> = vec[1..].to_vec().into_iter().map(|el| { SocketMessageArg::new(el) }).collect();
-
-        let total_unknown = args.clone().into_iter().fold(0usize, |cur, elem| {
-            match elem {
-                SocketMessageArg::Unknown => cur + 1,
-                _ => cur
-            }
-        });
-
-        if total_unknown > 0 {
-            Self::exception("contain unknown args")
-        } else {
-            SocketMessage {
-                event: vec[0].to_string(),
-                arg: args
-            }
+        SocketMessage {
+            event: "EXCEPTION".to_string(),
+            arg: vec![SocketMessageArg::String { value: reason.to_string() }],
+            payload: vec![]
         }
     }
 }

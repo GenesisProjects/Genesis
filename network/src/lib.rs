@@ -12,6 +12,7 @@ pub mod session_state;
 pub mod utils;
 
 pub extern crate bytebuffer;
+#[macro_use]
 pub extern crate common;
 pub extern crate chrono;
 pub extern crate futures;
@@ -27,6 +28,8 @@ pub extern crate igd;
 pub extern crate rlp;
 pub extern crate rust_base58;
 pub extern crate serde;
+#[macro_use]
+pub extern crate serde_derive;
 pub extern crate serde_json;
 pub extern crate slab;
 pub extern crate snap;

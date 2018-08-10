@@ -273,16 +273,14 @@ impl P2PProtocol {
     pub fn bootstrap(&self, table: &PeerTable) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "BOOTSTRAP".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        };
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into();
 
         for &(_, ref addr) in &table.table {
             let addr:SocketAddr = addr.clone();
@@ -297,16 +295,15 @@ impl P2PProtocol {
     pub fn gossip(&self, self_block_len: usize, table: &PeerTable) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "GOSSIP".to_string(),
+            vec![],
             vec![]
         );
         let args: Vec<SocketMessageArg>  = vec![];
         msg = msg <<  SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        } << SocketMessageArg::Int {
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
             value: self_block_len as i32
         };
 
@@ -323,16 +320,15 @@ impl P2PProtocol {
     pub fn reject(&self, reason: String) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "REJECT".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        } << SocketMessageArg::String {
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::String {
             value: reason.to_owned()
         };
 
@@ -345,16 +341,15 @@ impl P2PProtocol {
 
         let mut msg = SocketMessage::new(
             "REQUEST_BLOCK_INFO".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        } << SocketMessageArg::Int {
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
             value: self_block_len as i32
         } << SocketMessageArg::Hash {
             value: self_last_hash.clone()
@@ -366,16 +361,15 @@ impl P2PProtocol {
     pub fn block_info(&self, block_info: &BlockInfo) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "BLOCK_INFO".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        } << SocketMessageArg::Int {
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
             value: block_info.block_len as i32
         } << SocketMessageArg::Hash {
             value: block_info.last_block_hash.clone()
@@ -388,16 +382,15 @@ impl P2PProtocol {
                       block_info: &BlockInfo) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "REQUEST_SYNC_INFO".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        } << SocketMessageArg::Int {
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
             value: block_info.last_block_num as i32
         } << SocketMessageArg::Hash {
             value: block_info.last_block_hash.clone()
@@ -409,16 +402,15 @@ impl P2PProtocol {
     pub fn sync_info(&self, forked_block_info: &BlockInfo, last_block_info: &BlockInfo) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "SYNC_INFO".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        } << SocketMessageArg::Int {
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
             value: forked_block_info.last_block_num as i32
         } << SocketMessageArg::Hash {
             value: forked_block_info.last_block_hash.clone()
@@ -435,16 +427,15 @@ impl P2PProtocol {
                                forked_block_info: &BlockInfo) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "UNSECCESS_SYNC_INFO".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        } << SocketMessageArg::Int {
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
             value: forked_block_info.last_block_num as i32
         } << SocketMessageArg::Hash {
             value: forked_block_info.last_block_hash.clone()
@@ -458,16 +449,15 @@ impl P2PProtocol {
                                 end_block_num: usize) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "REQUEST_TRANS".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        } << SocketMessageArg::Int {
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
             value: start_block_num as i32
         } << SocketMessageArg::Int {
             value: end_block_num as i32
@@ -480,16 +470,15 @@ impl P2PProtocol {
                                 size: usize) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "TRANS_PREPARED".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        } << SocketMessageArg::Int {
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
             value: size as i32
         };
 
@@ -499,16 +488,15 @@ impl P2PProtocol {
     pub fn transmission_not_ready(&self, reason: String) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "TRANS_NOT_READY".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        } << SocketMessageArg::String {
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::String {
             value: reason.to_owned()
         };
 
@@ -518,16 +506,14 @@ impl P2PProtocol {
     pub fn transmission_accept(&self) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "TRANS_ACCEPT".to_string(),
+            vec![],
             vec![]
         );
 
         msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
-        } << SocketMessageArg::Account {
-            value: Account::load().expect("Can not load account")
-        } << SocketMessageArg::Timestamp {
-            value: Utc::now()
-        };
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into();
 
         msg
     }

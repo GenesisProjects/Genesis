@@ -149,18 +149,6 @@ impl Peer {
     }
 }
 
-impl Serialize for Peer {
-    fn serialize<S>(&self, serializer: S) -> SerdeResult<<S as Serializer>::Ok, <S as Serializer>::Error> where S: Serializer {
-        unimplemented!()
-    }
-}
-
-impl Deserialize for Peer {
-    fn deserialize<D>(deserializer: D) -> SerdeResult<Self, <D as Deserializer>::Error> where D: Deserializer {
-        unimplemented!()
-    }
-}
-
 impl Evented for Peer {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()> {
         self.session.register(poll, token, interest, opts)
