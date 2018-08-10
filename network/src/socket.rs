@@ -100,7 +100,7 @@ impl PeerSocket {
     pub fn send_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
         // println!("data1 {:?}", &msg);
         let mut new_data = serde_json::to_string(&msg).unwrap().into_bytes();
-        let size = new_data.len();
+        let size = new_data.len() as u64;
         let mut size_bytes: [u8; 8] = unsafe { transmute(size.to_be()) };
         self.write_buffer.append(&mut size_bytes.to_vec());
         self.write_buffer.append(&mut new_data);
@@ -166,7 +166,19 @@ impl PeerSocket {
                 Err(_) => SocketMessage::exception("cannot parse input string as utf8 encoded")
             }
         }).collect::<Vec<SocketMessage>>())*/
-        unimplemented!()
+        let mut lines: Vec<Vec<u8>> = vec![];
+        if size < 8 {
+
+        }
+
+        Ok(lines.into_iter().map(|line| {
+            let line_string = unsafe{ String::from_utf8_unchecked(line) };
+            let line_str = line_string.as_str();
+            match serde_json::from_str(line_str) {
+                Ok(r) => r,
+                _ => SocketMessage::exception("cannot parse msg")
+            }
+        }).collect::<Vec<SocketMessage>>())
     }
 
     #[inline]
