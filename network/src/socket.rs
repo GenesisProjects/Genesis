@@ -2,14 +2,17 @@ use bytebuffer::*;
 use message::defines::*;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
+use serde_json;
+
 use std::io::{Error, ErrorKind, Read, Write};
 use std::io::Result as STDResult;
 use std::net::{Shutdown, SocketAddr};
+use std::mem::transmute;
 use std::str;
 
 pub const MAX_LINE_CAHCE_LEN: usize = 1024 * 1024 * 4;
 pub const MIO_WINDOW_SIZE: usize = 1024;
-pub const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 16;
+pub const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 1024;
 
 #[derive(Debug)]
 pub struct PeerSocket {
@@ -96,12 +99,14 @@ impl PeerSocket {
     #[inline]
     pub fn send_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
         // println!("data1 {:?}", &msg);
-        let mut new_data = msg.encoder();
+        let mut new_data = serde_json::to_string(&msg).unwrap().into_bytes();
+        let size = new_data.len();
+        let mut size_bytes: [u8; 8] = unsafe { transmute(size.to_be()) };
+        self.write_buffer.append(&mut size_bytes.to_vec());
         self.write_buffer.append(&mut new_data);
         match self.stream.write(&self.write_buffer[..]) {
             Ok(size) => {
-                let residue = &self.write_buffer[size..].to_vec();
-                self.write_buffer = residue.to_owned();
+                self.write_buffer.drain(0..size);
                 if self.write_buffer.len() > MAX_WRITE_BUFF_SIZE {
                     Err(Error::new(ErrorKind::ConnectionAborted, "Buffer overflow"))
                 } else {
