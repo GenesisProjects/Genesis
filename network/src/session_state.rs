@@ -12,14 +12,14 @@ impl EventRegister for Session {
     fn add_handler(self) -> Self {
         let handler = self.handler.clone();
         let mut handler_ref = handler.borrow_mut();
-        handler_ref.add_event_handler("BOOTSTRAP".to_string(), bootstrap_handle);
-        handler_ref.add_event_handler("GOSSIP".to_string(), gossip_handle);
-        handler_ref.add_event_handler("REJECT".to_string(), reject_handle);
+        handler_ref.add_event_handler("BOOTSTRAP".to_string(), bootstrap_handler);
+        handler_ref.add_event_handler("GOSSIP".to_string(), gossip_handler);
+        handler_ref.add_event_handler("REJECT".to_string(), reject_handler);
         self
     }
 }
 
-fn bootstrap_handle(session: &mut Session, msg: &SocketMessage, name: String) -> bool {
+fn bootstrap_handler(session: &mut Session, msg: &SocketMessage, name: String) -> bool {
     let args = msg.args();
     if !session.protocol().verify(&msg) {
         false
@@ -57,7 +57,7 @@ fn bootstrap_handle(session: &mut Session, msg: &SocketMessage, name: String) ->
     }
 }
 
-fn gossip_handle(session: &mut Session, msg: &SocketMessage, name: String) -> bool {
+fn gossip_handler(session: &mut Session, msg: &SocketMessage, name: String) -> bool {
     let args = msg.args();
     if !session.protocol().verify(&msg) {
         false
@@ -79,7 +79,7 @@ fn gossip_handle(session: &mut Session, msg: &SocketMessage, name: String) -> bo
     }
 }
 
-fn reject_handle(session: &mut Session, msg: &SocketMessage, name: String) -> bool {
+fn reject_handler(session: &mut Session, msg: &SocketMessage, name: String) -> bool {
     let args = msg.args();
     if !session.protocol().verify(&msg) {
         false
