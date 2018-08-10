@@ -39,11 +39,11 @@ pub trait Notify {
 
 pub trait Consensus {
     /// # notify_propose(&mut self, 1)
-   /// **Usage**
-   /// - send propose message
-   /// ## Examples
-   /// ```
-   /// ```
+    /// **Usage**
+    /// - send propose message
+    /// ## Examples
+    /// ```
+    /// ```
     fn notify_propose(protocol: P2PProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
 
     /// # notify_prevote(&mut self, 1)
@@ -61,6 +61,38 @@ pub trait Consensus {
     /// ```
     /// ```
     fn notify_precommit(protocol: P2PProtocol, round: usize, propose_hash: Hash, block_hash: Hash, table: &PeerTable);
+
+    /// # handle_consensus(&mut self, 1)
+    /// **Usage**
+    /// - handle consensus message
+    /// ## Examples
+    /// ```
+    /// ```
+    fn handle_consensus(&mut self, msg: SocketMessage);
+
+    /// # handle_propose(&mut self, 1)
+    /// **Usage**
+    /// - handle propose message
+    /// ## Examples
+    /// ```
+    /// ```
+    fn handle_propose(&mut self, propose: Propose);
+
+    /// # handle_prevote(&mut self, 1)
+    /// **Usage**
+    /// - handle prevote message
+    /// ## Examples
+    /// ```
+    /// ```
+    fn handle_prevote(&mut self, propose: Prevote);
+
+    /// # handle_precommit(&mut self, 1)
+    /// **Usage**
+    /// - handle precommit message
+    /// ## Examples
+    /// ```
+    /// ```
+    fn handle_precommit(&mut self, propose: Precommit);
 }
 
 #[derive(Clone, Debug)]
@@ -70,6 +102,47 @@ pub struct BlockInfo {
     pub last_block_hash: Hash,
 
     pub estimated_round: usize
+}
+
+pub struct Propose {
+    /// The validator id.
+    validator: Hash,
+    /// The height to which the message is related.
+    height: usize,
+    /// The round to which the message is related.
+    round: usize,
+    /// Hash of the previous block.
+    prev_hash: Hash,
+    /// The list of transactions to include in the next block.
+    transactions: Vec<Hash>,
+}
+
+pub struct Prevote {
+    /// The validator id.
+    validator: Account,
+    /// The height to which the message is related.
+    height: usize,
+    /// The round to which the message is related.
+    round: usize,
+    /// Hash of the corresponding `Propose`.
+    propose_hash: Hash,
+    /// Locked round.
+    locked_round: usize,
+}
+
+pub struct Precommit {
+    /// The validator id.
+    validator: Account,
+    /// The height to which the message is related.
+    height: usize,
+    /// The round to which the message is related.
+    round: usize,
+    /// Hash of the corresponding `Propose`.
+    propose_hash: Hash,
+    /// Hash of the new block.
+    block_hash: Hash,
+    /// Time of the `Precommit`.
+    time: DateTime<Utc>,
 }
 
 #[derive(Debug)]
