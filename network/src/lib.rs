@@ -11,6 +11,7 @@ pub mod session;
 pub mod session_state;
 pub mod utils;
 
+pub extern crate byteorder;
 pub extern crate bytebuffer;
 #[macro_use]
 pub extern crate common;
