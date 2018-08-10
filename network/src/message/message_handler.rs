@@ -26,6 +26,10 @@ impl SocketMessageHandler {
         event: String,
         session: &mut Session,
         msg: &SocketMessage) -> bool {
-        self.0[&event](session, msg, event.to_owned())
+        if let Some(f) = self.0.get(&event) {
+            f(session, msg, event.to_owned())
+        } else {
+            false
+        }
     }
 }
