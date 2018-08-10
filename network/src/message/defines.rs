@@ -106,7 +106,7 @@ impl SocketMessage {
 
     pub fn timestamp_at(&self, index: usize) -> Option<DateTime<Utc>> {
         match self.arg[index] {
-            SocketMessageArg::Timestamp { value } => {
+            SocketMessageArg::Timestamp { ref value } => {
                 match Utc.datetime_from_str(
                     value.as_str(),
                     DATE_FMT

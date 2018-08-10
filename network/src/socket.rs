@@ -131,7 +131,7 @@ impl PeerSocket {
     }
 
     fn fetch_messages_from_buffer(&mut self, size: usize) -> STDResult<Vec<SocketMessage>> {
-        let mut cur_size = size;
+        /*let mut cur_size = size;
         let mut lines: Vec<Vec<u8>> = vec![];
         loop {
             if cur_size <= 0 {
@@ -165,7 +165,8 @@ impl PeerSocket {
                 Ok(r) => SocketMessage::decoder(r),
                 Err(_) => SocketMessage::exception("cannot parse input string as utf8 encoded")
             }
-        }).collect::<Vec<SocketMessage>>())
+        }).collect::<Vec<SocketMessage>>())*/
+        unimplemented!()
     }
 
     #[inline]
