@@ -63,6 +63,14 @@ pub trait Consensus {
     /// ```
     fn notify_precommit(protocol: P2PProtocol, round: usize, propose_hash: Hash, block_hash: Hash, table: &PeerTable);
 
+    /// # notify_tnx_request(&mut self, 1)
+    /// **Usage**
+    /// - send tnxs request message
+    /// ## Examples
+    /// ```
+    /// ```
+    fn notify_transactions_request(protocol: P2PProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable);
+
     /// # handle_consensus(&mut self, 1)
     /// **Usage**
     /// - handle consensus message
@@ -94,6 +102,14 @@ pub trait Consensus {
     /// ```
     /// ```
     fn handle_precommit(&mut self, propose: Precommit);
+
+    /// # handle_tnx_request(&mut self, 1)
+    /// **Usage**
+    /// - handle tnx request message
+    /// ## Examples
+    /// ```
+    /// ```
+    fn handle_transactions_request(&mut self, tnxs: Vec<Hash>);
 }
 
 #[derive(Clone, Debug)]
@@ -453,7 +469,7 @@ impl P2PProtocol {
     }
 
 
-    pub fn request_tnx(&self, protocol: P2PProtocol, unknown_tnxs: Vec<Hash>) -> SocketMessage {
+    pub fn request_transactions(&self, protocol: P2PProtocol, unknown_tnxs: Vec<Hash>) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "REQUEST_TNX".to_string(),
             vec![],
@@ -474,7 +490,7 @@ impl P2PProtocol {
         msg
     }
 
-    pub fn tnx(&self, tnxs: Vec<Transaction>) -> SocketMessage {
+    pub fn transactions(&self, tnxs: Vec<Transaction>) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "TNX".to_string(),
             vec![],

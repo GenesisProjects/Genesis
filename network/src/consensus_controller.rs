@@ -98,6 +98,10 @@ impl Consensus for ConsensusController {
         unimplemented!()
     }
 
+    fn notify_transactions_request(protocol: P2PProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable) {
+        unimplemented!()
+    }
+
     fn handle_consensus(&mut self, msg: SocketMessage) {
         unimplemented!()
     }
@@ -112,6 +116,10 @@ impl Consensus for ConsensusController {
     }
 
     fn handle_precommit(&mut self, propose: Precommit) {
+        unimplemented!()
+    }
+
+    fn handle_transactions_request(&mut self, tnxs: Vec<Hash>) {
         unimplemented!()
     }
 }
