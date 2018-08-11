@@ -2,6 +2,7 @@ use chrono::prelude::*;
 
 use common::address::Address as Account;
 use common::hash::Hash;
+use gen_core::transaction::Transaction;
 
 use message::defines::*;
 use nat::*;
@@ -447,6 +448,48 @@ impl P2PProtocol {
         } << SocketMessageArg::Hash {
             value: block_info.last_block_hash.clone()
         };
+
+        msg
+    }
+
+
+    pub fn request_tnx(&self, protocol: P2PProtocol, unknown_tnxs: Vec<Hash>) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "REQUEST_TNX".to_string(),
+            vec![],
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into();
+
+        for tnx in &unknown_tnxs {
+            msg = msg << SocketMessageArg::Hash {
+                value: tnx.clone()
+            }
+        }
+
+        msg
+    }
+
+    pub fn tnx(&self, tnxs: Vec<Transaction>) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "TNX".to_string(),
+            vec![],
+            vec![]
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into();
+
+        // Todo: Add tnxs to payload
+        {
+            unimplemented!()
+        }
 
         msg
     }
