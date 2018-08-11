@@ -35,8 +35,8 @@ pub struct ConsensusController {
 
     proposes: HashMap<Hash, Propose>,
     blocks: HashMap<Hash, Block>,
-    prevotes: HashMap<(Round, Hash), Prevote>,
-    precommits: HashMap<(Round, Hash), Precommit>,
+    prevotes: HashMap<(usize, Hash), Prevote>,
+    precommits: HashMap<(usize, Hash), Precommit>,
 
     eventloop: NetworkEventLoop,
 }
