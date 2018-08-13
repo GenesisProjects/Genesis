@@ -5,8 +5,6 @@ pub mod network_eventloop;
 pub mod peer;
 pub mod p2p_controller;
 pub mod socket;
-pub mod pool;
-pub mod pool_manager;
 pub mod session;
 pub mod session_state;
 pub mod utils;
