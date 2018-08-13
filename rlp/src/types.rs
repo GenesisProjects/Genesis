@@ -279,7 +279,7 @@ impl Shl<RLP> for RLP {
 
 
 #[cfg(test)]
-mod rlp_test {
+mod rlp {
     use super::{RLP, RLPError};
 
     #[test]

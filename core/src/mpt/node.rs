@@ -267,7 +267,7 @@ impl<T: RLPSerialize + Clone> RLPSerialize for TrieNode<T> {
 }
 
 #[cfg(test)]
-mod tests {
+mod node {
     use super::*;
 
     #[test]

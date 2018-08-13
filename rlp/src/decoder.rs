@@ -1,11 +1,9 @@
 ///https://blog.csdn.net/ggq89/article/details/78629008
 
-use bytebuffer::*;
 use defines::*;
 use types::*;
-use std::io::{Read, Write, Result};
+use std::io::Result;
 use std::mem::*;
-use std::iter::FromIterator;
 use std::io::{Error, ErrorKind};
 
 #[inline]
@@ -149,7 +147,7 @@ impl Decoder {
                         let (r_rlp, _) = Decoder::decode_helper(input, cur_pos, cur_pos + seg_len - 1usize);
                         let rlp: Option<RLP> = match r_rlp {
                             Ok(rlp) => Some(rlp),
-                            Err(e) => None
+                            Err(_) => None
                         };
                         if rlp.is_none() {
                             return malformed_err();
@@ -170,13 +168,13 @@ impl Decoder {
         let (r, _) = Decoder::decode_helper(input, 0usize, input.len() - 1usize);
         match r {
             Ok(r) => Some(r),
-            Err(e) => None
+            Err(_) => None
         }
     }
 }
 
 #[cfg(test)]
-mod decoder_test {
+mod decoder {
     use super::Decoder;
     use super::{RLP, RLPError};
 

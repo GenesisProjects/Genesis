@@ -12,8 +12,8 @@ fn main() {
     let test_addr = Address::load().unwrap();
     let mut vm = GenVM::new(&test_action, test_addr).unwrap();
 
-    let _ = vm.launch(&mut test_action);
-
+    vm.launch(&mut test_action).unwrap();
+    println!("test started");
     loop {
 
     }

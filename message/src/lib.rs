@@ -53,6 +53,14 @@ impl MessageQueue {
         }
     }
 
+    pub fn size(&self) -> usize {
+        self.queue.len()
+    }
+
+    pub fn limit(&self) -> usize {
+        self.limit
+    }
+
     pub fn enqueue_msg(&mut self, msg: Message) -> Result<usize, &'static str> {
         let cur_size = self.queue.len();
         if cur_size >= self.limit {
@@ -108,6 +116,10 @@ impl MessageChannel {
         }
     }
 
+    pub fn queue_size(&self) -> usize {
+        self.queue.borrow().size()
+    }
+
     pub fn new_with_size(size: usize) -> Self {
         let msg_queue = MessageQueue::new(size);
         MessageChannel {
@@ -148,41 +160,51 @@ impl MessageCenter {
         }
     }
 
-    pub fn subscribe(&mut self, name: &String) -> Arc<(Mutex<MessageChannel>, Condvar)> {
-        let existed = self.channels_exist_by_name(name);
+    pub fn queue_size(&mut self, name: String) -> usize {
+        let existed = self.channels_exist_by_name(name.to_owned());
+        if existed {
+            self.channels_by_name(name.to_owned()).iter().map(|ch| {
+                ch.0.lock().unwrap().queue_size()
+            });
+            1
+        } else { 0 }
+    }
+
+    pub fn subscribe(&mut self, name: String) -> Arc<(Mutex<MessageChannel>, Condvar)> {
+        let existed = self.channels_exist_by_name(name.to_owned());
         if existed {
             let new_channel = MessageChannel::new();
-            let chs = self.channel_map.get_mut(name).unwrap();
+            let chs = self.channel_map.get_mut(&name).unwrap();
             chs.push(Arc::new((Mutex::new(new_channel), Condvar::new() )));
             chs.last_mut().unwrap().clone()
         } else {
             let new_channel = MessageChannel::new();
             self.channel_map.insert(name.to_owned(), vec![Arc::new((Mutex::new(new_channel), Condvar::new()))]);
-            let chs = self.channel_map.get_mut(name).unwrap();
+            let chs = self.channel_map.get_mut(&name).unwrap();
             chs.last_mut().unwrap().clone()
         }
     }
 
-    pub fn unsubscribe(&mut self, name: &String, uid: String) {
-        let existed = self.channels_exist_by_name(name);
+    pub fn unsubscribe(&mut self, name: String, uid: String) {
+        let existed = self.channels_exist_by_name(name.to_owned());
         if existed {
-            let chs = self.channel_map.get_mut(name).unwrap();
+            let chs = self.channel_map.get_mut(&name).unwrap();
             let pos = chs.iter().position(|x| (&((*x).0)).lock().unwrap().uid == uid);
             pos.and_then(|r| { chs.remove(r); Some(r) });
         }
 
-        let chs_len = self.channel_map.get_mut(name).unwrap().len();
+        let chs_len = self.channel_map.get_mut(&name).unwrap().len();
         if chs_len == 0 {
-            self.channel_map.remove(name);
+            self.channel_map.remove(&name);
         }
     }
 
-    pub fn send(&mut self, name: &String, msg: Message) {
-        let existed = self.channels_exist_by_name(name);
+    pub fn send(&mut self, name: String, msg: Message) {
+        let existed = self.channels_exist_by_name(name.to_owned());
         if !existed {
             return;
         } else {
-            let channels = self.channel_map.get_mut(name).unwrap();
+            let channels = self.channel_map.get_mut(&name).unwrap();
             for i in 0 .. channels.len() {
                 let mut ch = channels[i].clone();
                 ch.0.lock().unwrap().send_msg(msg.to_owned());
@@ -191,17 +213,17 @@ impl MessageCenter {
         }
     }
 
-    pub fn channels_by_name(&mut self, name: &String) -> Vec<Arc<(Mutex<MessageChannel>, Condvar)>> {
-        let existed = self.channels_exist_by_name(name);
+    pub fn channels_by_name(&mut self, name: String) -> Vec<Arc<(Mutex<MessageChannel>, Condvar)>> {
+        let existed = self.channels_exist_by_name(name.to_owned());
         if !existed {
             vec![]
         } else {
-            self.channel_map.get_mut(name).unwrap().clone()
+            self.channel_map.get_mut(&name).unwrap().clone()
         }
     }
 
-    pub fn channels_exist_by_name(&self, name: &String) -> bool {
-        let channels = self.channel_map.get(name);
+    pub fn channels_exist_by_name(&self, name: String) -> bool {
+        let channels = self.channel_map.get(&name);
         match channels {
             Some(_) => true,
             None => false

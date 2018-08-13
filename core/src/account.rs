@@ -1,7 +1,7 @@
 use std::fmt;
 use common::hash::*;
 use common::address::*;
-use storage::Storage;
+use storage::{Storage, CHUNK};
 use std::cell::{RefCell, Cell};
 use rlp::RLPSerialize;
 use rlp::types::*;
@@ -17,7 +17,6 @@ pub struct Account {
 }
 
 impl Account {
-
     pub fn new(account_name: &str, storage: Storage) -> Self {
         // TODO: check account name  
         Account{
@@ -30,6 +29,10 @@ impl Account {
         }
     }
 
+    pub fn load(addr: Address) -> Result<Self, ()> {
+        unimplemented!()
+    }
+
     /// return the balance associated with this account.
     pub fn balance(&self) -> u32 {
         self.balance
@@ -37,12 +40,12 @@ impl Account {
 
     /// Get the storage of the account.
     pub fn storage(&self) -> Storage  {
-        self.storage
+        self.storage.to_owned()
     }
 
     /// set the value of the trie's storage with provided `key`.
-    pub fn set_storage(&mut self, key: Hash, val: &[u8])  {
-        self.storage.update(key, value);
+    pub fn set_storage(&mut self, key: Hash, val: CHUNK)  {
+        self.storage.update(key, val);
     }
 
     /// Increase account balance.
@@ -74,13 +77,13 @@ mod tests {
 
     #[test]
     fn new_account() {
-        let account = Account::new("test", Storage::new());
-        assert_eq!(account.balance, 0u32);
+        //let account = Account::new("test", Storage::new());
+        //assert_eq!(account.balance, 0u32);
     }
 
     #[test]
     fn fmt() {
-        println!("{:?}", Account::new("test", Storage::new()));
+        //println!("{:?}", Account::new("test", Storage::new()));
     }
 
 }

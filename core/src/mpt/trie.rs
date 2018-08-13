@@ -4,8 +4,10 @@ use rlp::RLPSerialize;
 use std::cmp::min;
 use std::marker::PhantomData;
 use std::sync::Mutex;
+use std::fmt;
 use super::node::*;
 
+#[derive(Clone)]
 pub struct Trie<T: RLPSerialize + Clone> {
     root: TrieKey,
     db: &'static Mutex<DBManager>,
@@ -35,7 +37,6 @@ impl<T> Trie<T> where T: RLPSerialize + Clone {
 }
 
 const PATH_MAX_LEN: usize = 64usize;
-
 
 macro_rules! mpt_db_delete {
     ($node:expr, $db:expr) => {{
@@ -321,7 +322,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
 }
 
 #[cfg(test)]
-mod tests {
+mod trie {
     use super::*;
     use rlp::types::*;
 
@@ -343,5 +344,67 @@ mod tests {
     #[test]
     fn test_trie() {
         let trie = Trie::<TestObject>::new(&SHARED_MANAGER);
+    }
+
+    #[test]
+    fn test_trie_root() {
+        let trie = Trie::<TestObject>::new(&SHARED_MANAGER);
+        let root = trie.root();
+        assert_eq!(root, zero_hash!());
+    }
+
+    #[test]
+    fn test_trie_insert() {
+        let mut trie = Trie::<String>::new(&SHARED_MANAGER);
+        let path = vec![
+            0x4, 0x8, 0x6, 0x5, 0x6, 0xc, 0x6, 0xc,
+            0x6, 0xf, 0x2, 0x0, 0x5, 0x7, 0x6, 0xf,
+            0x7, 0x2, 0x6, 0xc, 0x6, 0x4
+        ];
+        let val = "Welcome dude".to_string();
+        trie.update(&path, &val);
+
+        let value = trie.get(&path).unwrap();
+        assert_eq!(value, val);
+    }
+
+    #[test]
+    fn test_trie_update() {
+        let mut trie = Trie::<String>::new(&SHARED_MANAGER);
+        let path = vec![
+            0x4, 0x8, 0x6, 0x5, 0x6, 0xc, 0x6, 0xc,
+            0x6, 0xf, 0x2, 0x0, 0x5, 0x7, 0x6, 0xf,
+            0x7, 0x2, 0x6, 0xc, 0x6, 0x4
+        ];
+        let val = "Welcome dude".to_string();
+        trie.update(&path, &val);
+
+        let new_val = "Welcome again dude".to_string();
+        trie.update(&path, &new_val);
+
+        let value = trie.get(&path).unwrap();
+        assert_eq!(value, new_val);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_trie_delete() {
+        let mut trie = Trie::<String>::new(&SHARED_MANAGER);
+        let path = vec![
+            0x4, 0x8, 0x6, 0x5, 0x6, 0xc, 0x6, 0xc,
+            0x6, 0xf, 0x2, 0x0, 0x5, 0x7, 0x6, 0xf,
+            0x7, 0x2, 0x6, 0xc, 0x6, 0x4
+        ];
+        let val = "Welcome dude".to_string();
+        trie.update(&path, &val);
+        trie.delete(&path);
+        let value = trie.get(&path).unwrap();
+        assert_eq!(value, val);
+    }
+}
+
+impl<T> fmt::Debug for Trie<T> where T: RLPSerialize + Clone {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.root)
     }
 }

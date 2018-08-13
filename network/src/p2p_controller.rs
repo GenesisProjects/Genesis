@@ -1,5 +1,6 @@
 use chrono::*;
 use nat::*;
+use net_config::*;
 use network_eventloop::*;
 use peer::*;
 use message::protocol::*;
@@ -23,11 +24,6 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::thread;
 
-pub const UPDATE_TIMEBASE: i64 = 3000;
-pub const CONNECT_TIMEOUT: i64 = 3000;
-pub const EXPIRE: i64 = 1000 * 60;
-pub const CHANNEL_NAME: &'static str = "P2P_CONTROLLER";
-
 /// # P2PController
 /// **Usage**
 /// - p2p network controller
@@ -44,33 +40,51 @@ pub const CHANNEL_NAME: &'static str = "P2P_CONTROLLER";
 /// - 10.   ***ch_pair***:              message channel,
 /// the only way communicate with other controller/thread
 pub struct P2PController {
+    name: String,
     account: Account,
+    height: usize,
+    listener: TcpListener,
+
     peer_list: HashMap<Token, PeerRef>,
     min_required_peers: usize,
     max_allowed_peers: usize,
+
     waiting_list: Vec<SocketAddr>,
     max_waiting_list: usize,
+
     block_list: Vec<SocketAddr>,
     max_blocked_peers: usize,
-    eventloop: NetworkEventLoop,
-    listener: TcpListener,
+
     ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>,
+    config: NetConfig,
+    eventloop: NetworkEventLoop,
     last_updated: DateTime<Utc>,
-    protocol: P2PProtocol
+    protocol: P2PProtocol,
 }
 
 impl P2PController {
-    /// # launch_controller(1)
+    /// # launch_controller
     /// **Usage**
     /// - launch the controller with a new thread
     /// - subscribe a interthread channel
-    /// **Parameters**
-    /// - 1. ***String(name)***: the interthread channel name
     /// ## Examples
     /// ```
     /// ```
     pub fn launch_controller() {
-        P2PController::launch::<P2PController>(CHANNEL_NAME.to_string());
+        P2PController::launch::<P2PController>("P2PController".to_string());
+    }
+
+    /// # launch_controller_with_channel(1)
+    /// **Usage**
+    /// - launch the controller with a new thread
+    /// - subscribe a interthread channel
+    /// **Parameters**
+    /// - 1. ***&'static str(ch)***: the interthread channel name
+    /// ## Examples
+    /// ```
+    /// ```
+    pub fn launch_controller_with_channel(ch: &'static str) {
+        P2PController::launch::<P2PController>(ch.to_string());
     }
 
     /// # connect(&mut self, 1)
@@ -83,7 +97,6 @@ impl P2PController {
     /// ```
     /// ```
     fn connect(&mut self, addr: SocketInfo) -> Result<(PeerRef)> {
-        //TODO: port configuable
         match TcpStream::connect(&addr) {
             Ok(stream) => {
                 Ok(Rc::new(RefCell::new(Peer::new(stream, &addr))))
@@ -104,9 +117,8 @@ impl P2PController {
             init
         });
 
-        //TODO: boostrap peers configurable
         // add bootstrap peers
-        raw_peers_table.push((Some(Account {text: "12345678901234567890123456789013".to_string()}), SocketAddr::from_str("127.0.0.1:19999").unwrap()));
+        raw_peers_table.append(&mut self.config.bootstrap_peers());
 
         // filter out identical elements
         raw_peers_table.sort_by(|&(ref addr_a, _), &(ref addr_b, _)| addr_a.partial_cmp(addr_b).unwrap());
@@ -145,6 +157,11 @@ impl P2PController {
             Some(_) => true,
             _ => false
         }
+    }
+
+    #[inline]
+    fn height(&self) -> usize {
+        self.height
     }
 
     fn peers_persist(&self) -> Result<usize> {
@@ -233,7 +250,7 @@ impl P2PController {
                     // println!("peer event: token {:?}, {:?}, {}",PEER_TOKEN, event, self.eventloop.round);
                     self.get_peer(peer_token).and_then(|ref mut peer_ref| {
                         peer_ref.borrow_mut().session.set_connect(true);
-                        let result = peer_ref.borrow_mut().process();
+                        let result = peer_ref.borrow_mut().process(self.name.to_owned());
                         match result {
                             Ok(_) => {},
                             Err(_) => {
@@ -259,7 +276,8 @@ impl P2PController {
    /// ```
    /// ```
     fn update(&mut self) {
-        if (Utc::now() - self.last_updated).num_milliseconds() < UPDATE_TIMEBASE {
+        let update_timebase = self.config.update_timebase();
+        if (Utc::now() - self.last_updated).num_milliseconds() < update_timebase {
             return;
         }
         self.last_updated = Utc::now();
@@ -281,9 +299,10 @@ impl P2PController {
             self.remove_peer(token);
         }
 
+        let expire = self.config.peer_expire();
         // find all expired token in the peer list
         let expired_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
-            if pair.1.borrow().session.milliseconds_from_last_update() > EXPIRE {
+            if pair.1.borrow().session.milliseconds_from_last_update() > expire {
                 true
             } else {
                 false
@@ -300,8 +319,9 @@ impl P2PController {
         }
 
         // find all connection timeout tokens in the peer list
+        let timeout = self.config.connect_timeout();
         let timeout_tokens: Vec<Token> = self.peer_list.iter().filter(|pair| {
-            if pair.1.borrow().session.milliseconds_connecting() > CONNECT_TIMEOUT {
+            if pair.1.borrow().session.milliseconds_connecting() > timeout {
                 true
             } else {
                 false
@@ -416,8 +436,8 @@ impl Notify for P2PController {
     }
 
     #[inline]
-    fn notify_gossip(protocol: P2PProtocol, peer_ref: PeerRef, table: &PeerTable) {
-        let result = peer_ref.borrow_mut().session.send_event(protocol.gossip(table));
+    fn notify_gossip(protocol: P2PProtocol, peer_ref: PeerRef, table: &PeerTable, self_block_len: usize) {
+        let result = peer_ref.borrow_mut().session.send_event(protocol.gossip(self_block_len, table));
         match result {
             Err(ref e) if e.kind() == ErrorKind::ConnectionAborted => {
                 // EAGAIN
@@ -442,23 +462,25 @@ impl Notify for P2PController {
 
 impl Observe for P2PController {
     fn subscribe(&mut self) {
+        let name = self.name.to_owned();
         self.ch_pair = Some(
             MESSAGE_CENTER
                 .lock()
                 .unwrap()
-                .subscribe(&CHANNEL_NAME.to_string())
+                .subscribe(name)
                 .clone()
         );
     }
 
     fn unsubscribe(&mut self) {
+        let name = self.name.to_owned();
         if let Some(ch_pair) = self.ch_pair.clone() {
             let uid = (*ch_pair).0.lock().unwrap().uid.clone();
             self.ch_pair = None;
             MESSAGE_CENTER
                 .lock()
                 .unwrap()
-                .unsubscribe(&"P2P_CONTROLLER".to_string(), uid);
+                .unsubscribe(name, uid);
         }
 
     }
@@ -497,41 +519,33 @@ impl Observe for P2PController {
 }
 
 impl Thread for P2PController {
-    fn new() -> Result<Self> {
-        //TODO: load port from config
-        let addr = "127.0.0.1:39999".parse().unwrap();
+    fn new(name: String) -> Result<Self> {
+        let config = NetConfig::load();
+
         //TODO: make socket resuseable
-        let server = TcpListener::bind(&addr);
+        let server = TcpListener::bind(&config.server_addr());
         let account = Account::load();
 
         match (server, account) {
             (Ok(server), Some(account)) => {
-                //TODO: load events size from config
-                let event_loop = NetworkEventLoop::new(1024);
-                //TODO: max_allowed_peers configuable
-                let max_allowed_peers: usize = 512;
-                //TODO: max_blocked_peers configuable
-                let max_blocked_peers: usize = 1024;
-                //TODO: max_waiting_list configuable
-                let max_waiting_list: usize = 1024;
-                //TODO: min required # of peers configuable
-                let min_required_peers: usize = 4;
-
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
                 Ok(P2PController {
+                    name: name,
                     account: account.clone(),
+                    height: 0usize,
                     peer_list: peer_list,
-                    min_required_peers: min_required_peers,
-                    max_allowed_peers: max_allowed_peers,
+                    min_required_peers: config.min_required_peer(),
+                    max_allowed_peers: config.max_allowed_peers(),
                     waiting_list: vec![],
-                    max_waiting_list: max_waiting_list,
+                    max_waiting_list: config.max_waitinglist_size(),
                     block_list: vec![],
-                    max_blocked_peers: max_blocked_peers,
-                    eventloop: event_loop,
+                    max_blocked_peers: config.max_blocklist_size(),
+                    eventloop: NetworkEventLoop::new(config.events_size()),
                     listener: server,
                     ch_pair: None,
                     last_updated: Utc::now(),
-                    protocol: P2PProtocol::new()
+                    protocol: P2PProtocol::new(),
+                    config: config
                 })
             },
             (Ok(_), None) => {
@@ -593,7 +607,8 @@ impl Thread for P2PController {
                 Self::notify_gossip(
                     self.protocol.clone(),
                     peer_ref,
-                    &table
+                    &table,
+                    self.height
                 );
             },
             _ => {}
@@ -607,6 +622,27 @@ impl Thread for P2PController {
 
 impl Drop for P2PController {
     fn drop(&mut self) {
+
+    }
+}
+
+
+#[cfg(test)]
+mod p2p {
+    use super::*;
+
+    #[test]
+    fn test_launch() {
+        P2PController::launch_controller_with_channel("server");
+        thread::sleep_ms(1000);
+        assert!(MESSAGE_CENTER
+            .lock()
+            .unwrap()
+            .channels_exist_by_name("server".to_string()));
+    }
+
+    #[test]
+    fn test_start() {
 
     }
 }

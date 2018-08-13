@@ -2,13 +2,9 @@ use chrono::*;
 
 use std::sync::RwLock;
 use std::io::prelude::*;
-use std::io::BufWriter;
 use std::fs::{File, OpenOptions};
-use std::collections::HashMap;
-use std::path::{Path,PathBuf};
+use std::path::PathBuf;
 use std::env;
-
-use config_parser::SETTINGS;
 
 lazy_static! {
     pub static ref LOGGER: RwLock<LogWritter> = {

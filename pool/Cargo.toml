@@ -1,17 +1,13 @@
 [package]
-name = "db"
+name = "gen_pool"
 version = "0.1.0"
 authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
-lazy_static = "1.0.0"
-rocksdb = "0.6.0"
+chrono = "0.4.2"
+slab = "0.4"
+
 
 common = { version = "0.1.0", path = "../common" }
 gen_message = { version = "0.1.0", path = "../message" }
-rlp = { version = "0.1.0", path = "../rlp" }
 gen_utils = { version = "0.1.0", path = "../util" }
-
-[features]
-# Mock DB
-mock = []

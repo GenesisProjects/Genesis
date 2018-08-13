@@ -15,10 +15,11 @@ pub enum ThreadStatus {
 }
 
 pub trait Thread {
-    fn launch<T>(name: String) where T: Observe + Thread {
+    fn launch<T>(name: String) where T: Observe + Thread, Self: Sized {
         // TODO: make stack size configuable
-        thread::Builder::new().stack_size(4 * 1024 * 1024).name(name.to_owned()).spawn(move || {
-            let mut context = T::new();
+        thread::Builder::new().stack_size(64 * 1024 * 1024).name(name.to_owned()).spawn(move || {
+            let mut context = T::new(name);
+
             match &mut context {
                 &mut Ok(ref mut context_ref) => {
                     context_ref.subscribe();
@@ -60,7 +61,6 @@ pub trait Thread {
         }).unwrap();
     }
 
-
     /// run loop
     fn run(&mut self) -> bool;
 
@@ -70,6 +70,6 @@ pub trait Thread {
     /// set status
     fn set_status(&mut self, status: ThreadStatus);
 
-    ///
-    fn new() -> Result<Self> where Self: Sized;
+    /// init instance
+    fn new(name: String) -> Result<Self> where Self: Sized;
 }

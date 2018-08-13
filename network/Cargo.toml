@@ -5,6 +5,7 @@ authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
 bytebuffer = "0.2.1"
+byteorder = "1.2.4"
 chrono = "0.4.2"
 config = "0.8"
 futures = "0.1.21"
@@ -15,8 +16,9 @@ mio = "0.6"
 mio-extras = "2.0.4"
 regex = "1.0.0"
 rust-base58 = "0.0.4"
-serde = "0.9"
-serde_json = "0.9"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0.71"
 slab = "0.2"
 snap = "0.2"
 

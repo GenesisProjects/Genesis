@@ -1,7 +1,7 @@
 use common::address::Address;
-use common::hash::Hash;
+use common::hash::*;
 use std::collections::HashMap;
-use storage::StorageCache;
+use storage::*;
 use super::kernel::{Kernel, KernelRef};
 use super::runtime::*;
 use super::selector::Selector;
@@ -12,6 +12,8 @@ pub const RETURN_INDEX: usize = 0x01;
 pub const CALL_INDEX: usize = 0x02;
 pub const CREATE_INDEX: usize = 0x03;
 pub const TEST_INDEX: usize = 0x04;
+pub const MEM_STAT_INDEX: usize = 0x05;
+pub const CPU_STAT_INDEX: usize = 0x06;
 
 macro_rules! hashmap {
     ($( $key: expr => $val: expr ),*) => {{
@@ -22,7 +24,7 @@ macro_rules! hashmap {
 }
 
 pub trait Api {
-    fn call(&mut self, addr: u32, abi: u32, input_balance: u32) -> RuntimeValue;
+    fn call(&mut self, addr: u32, abi: u32, abi_len: u32, input_balance: u32) -> RuntimeValue;
 
     fn create(&mut self, abi: u32, input_balance: u32) -> RuntimeValue;
 
@@ -35,6 +37,10 @@ pub trait Api {
     fn read_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>;
 
     fn write_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>;
+
+    fn mem_stat(&mut self, amount: i32);
+
+    fn cpu_stat(&mut self, amount: i32);
 }
 
 pub struct SystemCall {
@@ -48,21 +54,25 @@ impl SystemCall {
         }
     }
 
-    fn init_runtime_with_parent(&self, parent_context_ref: RuntimeContextRef, addr: Address, input_balance: u32) -> Result<Runtime, Error> {
+    fn init_runtime_with_parent(
+        &self,
+        parent_context_ref: RuntimeContextRef,
+        addr: Address,
+        input_balance: u32,
+    ) -> Result<Runtime, Error> {
         if input_balance > parent_context_ref.borrow().balance {
             return Err(Error::Validation("Insufficient balance".into()));
         }
         let mut code: Vec<u8> = vec![];
         Kernel::load_contract_account(addr).and_then(|account| {
             Kernel::load_code(&account, &mut code).and_then(|_| {
-                let child_runtime = Runtime::new(
+                Runtime::new(
                     account,
                     parent_context_ref.borrow().depth + 1,
                     &SysCallResolver::new(),
                     &code[..],
                     input_balance,
-                );
-                Ok(child_runtime)
+                )
             })
         })
     }
@@ -108,7 +118,7 @@ impl SystemCall {
 }
 
 impl Api for SystemCall {
-    fn call(&mut self, addr: u32, abi: u32, input_balance: u32) -> RuntimeValue {
+    fn call(&mut self, addr: u32, abi: u32, abi_len: u32, input_balance: u32) -> RuntimeValue {
         let parent = self.kernel.borrow().top_context();
         let result = self.memory_load(addr, 32).and_then(|vec| {
             match Address::try_from(vec) {
@@ -130,7 +140,8 @@ impl Api for SystemCall {
                             new_runtime.module_ref().unwrap(),
                             StorageCache::new(),
                         ) {
-                            let selector = self.memory_load(abi, 32).and_then(|vec| {
+                            let selector = self.memory_load(abi, abi_len as usize).and_then(|vec| {
+                                println!("{:?}", vec);
                                 Ok(Selector::decode(&vec).unwrap())
                             }).unwrap();
 
@@ -202,41 +213,21 @@ impl Api for SystemCall {
     // Read from the storage
     fn read_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>
     {
-        Kernel::load_contract_account(self.kernel.borrow().address()).and_then(|account| {
-            self.memory_load(key, 32).and_then(|vec| {
-                let mut key: Hash = [0u8; 32];
-                let vec = &vec[..key.len()];
-                key.copy_from_slice(vec);
-                let storage = account.storage();
-                match self.kernel
-                    .borrow_mut()
-                    .top_cache_mut()
-                    .read(&key, &storage) {
-                    Ok(chunk) => {
-                        self.memory_set(offset, &chunk[..])
-                    }
-                    Err(e) => {
-                        Err(Error::Validation("Can not read storage".into()))
-                    }
-                }
-            })
-        })
+        unimplemented!()
     }
 
     // Write to storage
     fn write_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>
     {
-        self.memory_load(offset, 32).and_then(|val_vec| {
-            self.memory_load(key, 32).and_then(|key_vec| {
-                Kernel::load_contract_account(self.kernel.borrow().address()).and_then(|account| {
-                    let mut key: Hash = [0u8; 32];
-                    let key_vec = &key_vec[..key.len()];
-                    key.copy_from_slice(key_vec);
-                    account.set_storage(key, &val_vec[..]);
-                    Ok(())
-                })
-            })
-        })
+        unimplemented!()
+    }
+
+    fn mem_stat(&mut self, amount: i32) {
+        unimplemented!()
+    }
+
+    fn cpu_stat(&mut self, amount: i32) {
+        println!("Current block has {} instructions", amount)
     }
 }
 
@@ -261,7 +252,20 @@ impl Externals for SystemCall {
     fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
         match index {
             CALL_INDEX => {
-                Ok(Some(self.call(args.nth(0), args.nth(1), args.nth(2))))
+                Ok(Some(self.call(
+                    args.nth(0),
+                    args.nth(1),
+                    args.nth(2),
+                    args.nth(3)))
+                )
+            }
+            MEM_STAT_INDEX => {
+                self.mem_stat(args.nth(0));
+                Ok(None)
+            }
+            CPU_STAT_INDEX => {
+                self.cpu_stat(args.nth(0));
+                Ok(None)
             }
             _ => panic!("unknown function index {}", index)
         }
@@ -290,8 +294,10 @@ impl SysCallResolver {
     pub fn new() -> SysCallResolver {
         SysCallResolver {
             system_call_table: hashmap![
-                CALL_INDEX => Signature::new(&[I32, I32, I32][..], Some(I32)),
-                TEST_INDEX => Signature::new(&[][..], None)
+                CALL_INDEX => Signature::new(&[I32, I32, I32, I32][..], Some(I32)),
+                TEST_INDEX => Signature::new(&[][..], None),
+                MEM_STAT_INDEX => Signature::new(&[I32][..], None),
+                CPU_STAT_INDEX => Signature::new(&[I32][..], None)
             ]
         }
     }
@@ -333,6 +339,22 @@ impl ModuleImportResolver for SysCallResolver {
                     Some(f) => Ok(f),
                     None => Err(Error::Function(
                         format!("function index: {} is not register in the kernel", TEST_INDEX)
+                    ))
+                }
+            }
+            "mem_stat" => {
+                match self.func_ref(MEM_STAT_INDEX) {
+                    Some(f) => Ok(f),
+                    None => Err(Error::Function(
+                        format!("function index: {} is not register in the kernel", MEM_STAT_INDEX)
+                    ))
+                }
+            }
+            "cpu_stat" => {
+                match self.func_ref(CPU_STAT_INDEX) {
+                    Some(f) => Ok(f),
+                    None => Err(Error::Function(
+                        format!("function index: {} is not register in the kernel", CPU_STAT_INDEX)
                     ))
                 }
             }

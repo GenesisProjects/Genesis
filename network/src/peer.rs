@@ -8,6 +8,7 @@ use common::address::Address as Account;
 use message::protocol::*;
 use nat::*;
 use session::*;
+use session_state::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::net::TcpStream;
@@ -52,7 +53,7 @@ impl Peer {
             token: None,
             ttl: INIT_TTL,
 
-            session: Session::new(socket, addr),
+            session: Session::new(socket, addr).add_handler(),
         }
     }
 
@@ -68,7 +69,7 @@ impl Peer {
                 token: None,
                 ttl: INIT_TTL,
 
-                session: session
+                session: session.add_handler()
             })
         })
     }
@@ -125,8 +126,8 @@ impl Peer {
     }
 
     #[inline]
-    pub fn process(&mut self) -> Result<()> {
-        match self.session.process() {
+    pub fn process(&mut self, name: String) -> Result<()> {
+        match self.session.process(name) {
             Ok(penalty) => {
                 self.ttl = INIT_TTL;
                 if penalty <= self.credit {
@@ -145,18 +146,6 @@ impl Peer {
                 Err(e)
             }
         }
-    }
-}
-
-impl Serialize for Peer {
-    fn serialize<S>(&self, serializer: S) -> SerdeResult<<S as Serializer>::Ok, <S as Serializer>::Error> where S: Serializer {
-        unimplemented!()
-    }
-}
-
-impl Deserialize for Peer {
-    fn deserialize<D>(deserializer: D) -> SerdeResult<Self, <D as Deserializer>::Error> where D: Deserializer {
-        unimplemented!()
     }
 }
 
