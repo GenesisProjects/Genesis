@@ -1,6 +1,6 @@
 use chrono::*;
 use nat::*;
-use net_config::*;
+use p2p_config::*;
 use network_eventloop::*;
 use peer::*;
 use message::protocol::*;
@@ -56,7 +56,7 @@ pub struct P2PController {
     max_blocked_peers: usize,
 
     ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>,
-    config: NetConfig,
+    config: P2PConfig,
     eventloop: NetworkEventLoop,
     last_updated: DateTime<Utc>,
     protocol: P2PProtocol,
@@ -520,7 +520,7 @@ impl Observe for P2PController {
 
 impl Thread for P2PController {
     fn new(name: String) -> Result<Self> {
-        let config = NetConfig::load();
+        let config = P2PConfig::load();
 
         //TODO: make socket resuseable
         let server = TcpListener::bind(&config.server_addr());

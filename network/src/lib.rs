@@ -1,6 +1,6 @@
 pub mod message;
 pub mod nat;
-pub mod net_config;
+pub mod p2p_config;
 pub mod network_eventloop;
 pub mod peer;
 pub mod p2p_controller;

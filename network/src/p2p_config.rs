@@ -7,7 +7,7 @@ pub trait MockConfig {
     fn mock_peer() -> Self;
 }
 
-pub struct NetConfig {
+pub struct P2PConfig {
     server_addr: SocketAddr,
 
     events_size: usize,
@@ -24,7 +24,7 @@ pub struct NetConfig {
     bootstrap_peers: Vec<(Option<Account>, SocketAddr)>
 }
 
-impl NetConfig {
+impl P2PConfig {
     pub fn load() -> Self {
         unimplemented!()
     }
@@ -70,9 +70,9 @@ impl NetConfig {
     }
 }
 
-impl MockConfig for NetConfig {
+impl MockConfig for P2PConfig {
     fn mock() -> Self {
-        NetConfig {
+        P2PConfig {
             server_addr:  SocketAddr::from_str("127.0.0.1:40000").unwrap(),
 
             events_size: 1024,
@@ -96,7 +96,7 @@ impl MockConfig for NetConfig {
     }
 
     fn mock_peer() -> Self {
-        NetConfig {
+        P2PConfig {
             server_addr:  SocketAddr::from_str("127.0.0.1:40001").unwrap(),
 
             events_size: 1024,
