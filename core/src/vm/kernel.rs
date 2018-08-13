@@ -1,5 +1,5 @@
 use account::Account;
-use storage::StorageCache;
+use storage::*;
 
 use common::address::Address;
 
@@ -83,7 +83,7 @@ impl Kernel {
         //unimplemented!()
 
         //TODO: test
-        Ok(Account::new())
+        Ok(Account::new("test", Storage::new()))
     }
 
     #[inline]
