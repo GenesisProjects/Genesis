@@ -8,12 +8,14 @@ use rlp::types::*;
 use std::collections::HashMap;
 use std::ops::Deref;
 
+pub const CHUNK_SIZE: usize = 32;
+
 #[derive(Clone)]
-pub struct CHUNK([u8; 32]);
+pub struct CHUNK([u8; CHUNK_SIZE]);
 
 impl Deref for CHUNK {
-    type Target = [u8; 32];
-    fn deref(&self) -> &[u8; 32] {
+    type Target = [u8; CHUNK_SIZE];
+    fn deref(&self) -> &[u8; CHUNK_SIZE] {
         &self.0
     }
 }
@@ -32,6 +34,7 @@ pub enum StorageError {
 
 }
 
+#[derive(Debug, Clone)]
 pub struct Storage {
     trie: Trie<CHUNK>,
     account_addr: Address,

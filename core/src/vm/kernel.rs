@@ -80,10 +80,9 @@ impl Kernel {
 
     #[inline]
     pub fn load_contract_account(account_addr: Address) -> Result<Account, Error> {
-        //unimplemented!()
-
-        //TODO: test
-        Ok(Account::new("test", Storage::new()))
+        Account::load(account_addr).map_err(|e| {
+            Error::Validation("Can not load account".into())
+        })
     }
 
     #[inline]

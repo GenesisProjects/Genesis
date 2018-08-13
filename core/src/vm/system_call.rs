@@ -1,7 +1,7 @@
 use common::address::Address;
-use common::hash::Hash;
+use common::hash::*;
 use std::collections::HashMap;
-use storage::StorageCache;
+use storage::*;
 use super::kernel::{Kernel, KernelRef};
 use super::runtime::*;
 use super::selector::Selector;
@@ -213,41 +213,13 @@ impl Api for SystemCall {
     // Read from the storage
     fn read_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>
     {
-        Kernel::load_contract_account(self.kernel.borrow().address()).and_then(|account| {
-            self.memory_load(key, 32).and_then(|vec| {
-                let mut key: Hash = [0u8; 32];
-                let vec = &vec[..key.len()];
-                key.copy_from_slice(vec);
-                let storage = account.storage();
-                match self.kernel
-                    .borrow_mut()
-                    .top_cache_mut()
-                    .read(&key, &storage) {
-                    Ok(chunk) => {
-                        self.memory_set(offset, &chunk[..])
-                    }
-                    Err(e) => {
-                        Err(Error::Validation("Can not read storage".into()))
-                    }
-                }
-            })
-        })
+        unimplemented!()
     }
 
     // Write to storage
     fn write_storage(&mut self, key: u32, offset: u32) -> Result<(), Error>
     {
-        self.memory_load(offset, 32).and_then(|val_vec| {
-            self.memory_load(key, 32).and_then(|key_vec| {
-                Kernel::load_contract_account(self.kernel.borrow().address()).and_then(|account| {
-                    let mut key: Hash = [0u8; 32];
-                    let key_vec = &key_vec[..key.len()];
-                    key.copy_from_slice(key_vec);
-                    account.set_storage(key, &val_vec[..]);
-                    Ok(())
-                })
-            })
-        })
+        unimplemented!()
     }
 
     fn mem_stat(&mut self, amount: i32) {
@@ -286,11 +258,11 @@ impl Externals for SystemCall {
                     args.nth(2),
                     args.nth(3)))
                 )
-            },
+            }
             MEM_STAT_INDEX => {
                 self.mem_stat(args.nth(0));
                 Ok(None)
-            },
+            }
             CPU_STAT_INDEX => {
                 self.cpu_stat(args.nth(0));
                 Ok(None)
@@ -369,7 +341,7 @@ impl ModuleImportResolver for SysCallResolver {
                         format!("function index: {} is not register in the kernel", TEST_INDEX)
                     ))
                 }
-            },
+            }
             "mem_stat" => {
                 match self.func_ref(MEM_STAT_INDEX) {
                     Some(f) => Ok(f),
@@ -377,7 +349,7 @@ impl ModuleImportResolver for SysCallResolver {
                         format!("function index: {} is not register in the kernel", MEM_STAT_INDEX)
                     ))
                 }
-            },
+            }
             "cpu_stat" => {
                 match self.func_ref(CPU_STAT_INDEX) {
                     Some(f) => Ok(f),

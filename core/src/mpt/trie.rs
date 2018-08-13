@@ -4,8 +4,10 @@ use rlp::RLPSerialize;
 use std::cmp::min;
 use std::marker::PhantomData;
 use std::sync::Mutex;
+use std::fmt;
 use super::node::*;
 
+#[derive(Clone)]
 pub struct Trie<T: RLPSerialize + Clone> {
     root: TrieKey,
     db: &'static Mutex<DBManager>,
@@ -398,5 +400,11 @@ mod trie {
         trie.delete(&path);
         let value = trie.get(&path).unwrap();
         assert_eq!(value, val);
+    }
+}
+
+impl<T> fmt::Debug for Trie<T> where T: RLPSerialize + Clone {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.root)
     }
 }
