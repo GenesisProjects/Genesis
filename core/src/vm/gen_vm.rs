@@ -1,16 +1,13 @@
-use super::selector::Selector;
+use action::Action;
+use common::address::Address;
+use storage::StorageCache;
 use super::kernel::{Kernel, KernelRef};
 use super::runtime::*;
-use super::system_call::{SystemCall, SysCallResolver};
-
-use action::Action;
-use storage::StorageCache;
-
-use common::address::Address;
-
+use super::selector::Selector;
+use super::system_call::{SysCallResolver, SystemCall};
 use wasmi::*;
 
-pub struct GenVM{
+pub struct GenVM {
     system_call: SystemCall,
     kernel: KernelRef,
 }
@@ -20,7 +17,7 @@ impl GenVM {
         let kernel_ref = Kernel::new(contract);
         let mut vm = GenVM {
             system_call: SystemCall::new_with_kernel(kernel_ref.clone()),
-            kernel: kernel_ref.clone()
+            kernel: kernel_ref.clone(),
         };
         Ok(vm)
     }
@@ -29,14 +26,14 @@ impl GenVM {
         let selector: Selector = Selector::from(action.clone());
         self.init_base_runtime(
             action.addr.clone(),
-            action.balance
+            action.balance,
         ).and_then(|mut runtime| {
             // push stack
             self.kernel.borrow_mut().push_runtime(
                 runtime.context(),
                 runtime.memory_ref(),
                 runtime.module_ref().unwrap(),
-                StorageCache::new()
+                StorageCache::new(),
             );
 
             // exececute
@@ -60,21 +57,21 @@ impl GenVM {
         &mut self,
         runtime: &mut Runtime,
         selector: Selector,
-        time_limit: usize
+        time_limit: usize,
     ) -> Result<RuntimeResult, Error> {
         match runtime.module_ref() {
             Some(module_ref) => {
                 match module_ref.invoke_export(
                     &selector.name()[..],
                     &selector.args(),
-                    &mut self.system_call
+                    &mut self.system_call,
                 ) {
                     Ok(ret) => {
                         Ok(RuntimeResult::new_with_ret(ret))
-                    },
+                    }
                     Err(e) => Err(e)
                 }
-            },
+            }
             None => {
                 Err(Error::Validation("No module ref".into()))
             }

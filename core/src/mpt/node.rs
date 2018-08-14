@@ -266,10 +266,10 @@ impl<T: RLPSerialize + Clone> RLPSerialize for TrieNode<T> {
     }
 }
 
+use super::*;
+
 #[cfg(test)]
 mod node {
-    use super::*;
-
     #[test]
     fn test_nibble2vec() {
         let result = nibble2vec(&vec![

@@ -1,15 +1,11 @@
 use account::Account;
-use storage::*;
-
 use common::address::Address;
-
 use std::cell::RefCell;
-use std::rc::Rc;
 use std::fs::File;
 use std::io::prelude::*;
-
+use std::rc::Rc;
+use storage::*;
 use super::runtime::*;
-
 use wasmi::*;
 
 pub const MAX_STACK_SIZE: usize = 16usize;
@@ -19,7 +15,7 @@ pub type KernelRef = Rc<RefCell<Kernel>>;
 pub struct Kernel {
     stack: Vec<(RuntimeContextRef, Option<MemoryRef>, ModuleRef, StorageCache)>,
     address: Address,
-    result: Option<Result<RuntimeResult, Error>>
+    result: Option<Result<RuntimeResult, Error>>,
 }
 
 impl Kernel {
@@ -27,7 +23,7 @@ impl Kernel {
         Rc::new(RefCell::new(Kernel {
             stack: vec![],
             address: address,
-            result: None
+            result: None,
         }))
     }
 
@@ -37,7 +33,7 @@ impl Kernel {
         context: RuntimeContextRef,
         memory: Option<MemoryRef>,
         module: ModuleRef,
-        cache: StorageCache
+        cache: StorageCache,
     ) -> bool {
         if self.stack.len() > MAX_STACK_SIZE {
             false
@@ -100,5 +96,4 @@ impl Kernel {
     pub fn merge_result(&mut self, new_result: &Result<RuntimeResult, Error>) {
         //unimplemented!()
     }
-
 }

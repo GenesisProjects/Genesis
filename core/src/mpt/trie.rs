@@ -2,9 +2,9 @@ use common::hash::*;
 use db::manager::*;
 use rlp::RLPSerialize;
 use std::cmp::min;
+use std::fmt;
 use std::marker::PhantomData;
 use std::sync::Mutex;
-use std::fmt;
 use super::node::*;
 
 #[derive(Clone)]
@@ -321,11 +321,11 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
     }
 }
 
+use rlp::types::*;
+use super::*;
+
 #[cfg(test)]
 mod trie {
-    use super::*;
-    use rlp::types::*;
-
     #[derive(Clone)]
     struct TestObject {
         name: String
@@ -337,7 +337,7 @@ mod trie {
         }
 
         fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-            Ok(TestObject{ name: String::deserialize(&rlp.to_owned()).unwrap() })
+            Ok(TestObject { name: String::deserialize(&rlp.to_owned()).unwrap() })
         }
     }
 
