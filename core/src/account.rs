@@ -1,7 +1,7 @@
 use std::fmt;
 use common::hash::*;
 use common::address::*;
-use storage::{Storage, CHUNK, StorageCache, AccountStorage};
+use storage::{Storage, CHUNK, StorageCache};
 use std::cell::{RefCell, Cell};
 use rlp::RLPSerialize;
 use rlp::types::*;
@@ -12,10 +12,10 @@ pub struct Account {
     balance: u32,
     name: String,
     storage_root: Hash,
-    storage_cache: RefCell<StorageCache>,
+//    storage_cache: RefCell<StorageCache>,
     storage_changes: HashMap<Hash, CHUNK>,
     code_hash: Hash,
-    address: Cell<Option<Address>>
+    address: RefCell<Option<Address>>
 }
 
 impl Account {
@@ -25,15 +25,19 @@ impl Account {
             balance: 0u32,
             name: account_name.to_string(),
             storage_root: zero_hash!(),
-            storage_cache: Self::clear_storage_cache(),
+//            storage_cache: Self::clear_storage_cache(),
             storage_changes: HashMap::new(),
             code_hash: zero_hash!(),
-            address: Cell::new(None)
+            address: RefCell::new(None)
         }
     }
 
-    pub fn clear_storage_cache() -> RefCell<StorageCache> {
-        RefCell::new(StorageCache::new())
+//    pub fn clear_storage_cache() -> RefCell<StorageCache> {
+//        RefCell::new(StorageCache::new())
+//    }
+
+    pub fn load(addr: Address) -> Result<Self, ()> {
+        unimplemented!()
     }
 
     /// return the balance associated with this account.
@@ -42,9 +46,9 @@ impl Account {
     }
 
     /// Get the storage of the account.
-    pub fn storage(&self) -> Storage  {
-        self.storage.to_owned()
-    }
+//    pub fn storage(&self) -> Storage  {
+//        self.storage.to_owned()
+//    }
 
     /// set the value of the trie's storage with provided `key`.
     pub fn set_storage(&mut self, key: Hash, val: CHUNK)  {

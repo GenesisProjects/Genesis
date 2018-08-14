@@ -10,7 +10,7 @@ use std::ops::Deref;
 
 pub const CHUNK_SIZE: usize = 32;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CHUNK([u8; CHUNK_SIZE]);
 
 impl Deref for CHUNK {
@@ -57,6 +57,7 @@ impl Storage {
     }
 }
 
+#[derive(Debug)]
 pub struct StorageCache {
     data: HashMap<Hash, CHUNK>,
     total_storage_alloc: usize,
