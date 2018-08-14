@@ -13,13 +13,26 @@ pub struct Pool<T> {
 }
 
 impl<T> Pool<T> {
+    /// Init pool with capacity
+    pub fn new(name: String, size: usize) -> Self {
+        Pool {
+            name: name,
+            channels: vec![],
+            slab: Slab::with_capacity(size)
+        }
+    }
+
+    /// Add controller by channel name to notify
     pub fn add_channel(&mut self, name: String) {
         self.channels.push(name);
     }
 
+    /// Remove controller by channel name
     pub fn remove_channel(&mut self, index: usize) {
         self.channels.remove(index);
     }
+
+    /// Find channel index by name
     pub fn channel_index(&mut self, name: String) -> usize {
         self.channels
             .iter()
@@ -29,6 +42,7 @@ impl<T> Pool<T> {
             .0
     }
 
+    /// Notify all channels if recieve a new transaction with message: "new_tx"
     pub fn notify_new_tx_recieved(&self) {
         self.channels
             .iter()
@@ -41,4 +55,6 @@ impl<T> Pool<T> {
                     );
             });
     }
+
+
 }
