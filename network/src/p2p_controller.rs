@@ -487,7 +487,10 @@ impl Observe for P2PController {
 
     fn receive_async(&mut self) -> Option<Message> {
         if let Some(ch_pair) = self.ch_pair.clone() {
-            (*ch_pair).0.lock().unwrap().accept_msg_async()
+            (*ch_pair).0
+                .lock()
+                .unwrap()
+                .accept_msg_async()
         } else {
             None
         }
@@ -497,7 +500,10 @@ impl Observe for P2PController {
         if let Some(ch_pair) = self.ch_pair.clone() {
             let condvar_ref = &((*ch_pair).1);
             let lock_ref = &((*ch_pair).0);
-            if let Some(msg) = lock_ref.lock().unwrap().accept_msg_async().clone() {
+            if let Some(msg) = lock_ref.lock()
+                .unwrap()
+                .accept_msg_async()
+                .clone() {
                 msg
             } else {
                 loop {
