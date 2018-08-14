@@ -2,14 +2,20 @@ pub extern crate common;
 pub extern crate gen_message;
 pub extern crate slab;
 
+use ::common::hash::*;
 use ::common::observe::*;
 use ::slab::Slab;
 use gen_message::*;
+
+use std::collections::{HashMap, BTreeMap};
 
 pub struct Pool<T> {
     name: String,
     channels: Vec<String>,
     slab: Slab<T>,
+
+    slab_key_map: HashMap<Hash, usize>,
+    priority_queue: BTreeMap<usize, Hash>
 }
 
 impl<T> Pool<T> {
@@ -18,7 +24,10 @@ impl<T> Pool<T> {
         Pool {
             name: name,
             channels: vec![],
-            slab: Slab::with_capacity(size)
+            slab: Slab::with_capacity(size),
+
+            slab_key_map: HashMap::new(),
+            priority_queue: BTreeMap::new(),
         }
     }
 

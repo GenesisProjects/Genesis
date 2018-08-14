@@ -321,11 +321,11 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
     }
 }
 
-use rlp::types::*;
-use super::*;
-
 #[cfg(test)]
 mod trie {
+    use rlp::types::*;
+    use super::*;
+
     #[derive(Clone)]
     struct TestObject {
         name: String
