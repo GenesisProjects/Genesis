@@ -1,19 +1,21 @@
 use std::fmt;
 use common::hash::*;
 use common::address::*;
-use storage::{Storage, CHUNK};
+use storage::{Storage, CHUNK, StorageCache, AccountStorage};
 use std::cell::{RefCell, Cell};
 use rlp::RLPSerialize;
 use rlp::types::*;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Account {
     balance: u32,
     name: String,
     storage_root: Hash,
-    storage: Storage,
+    storage_cache: RefCell<StorageCache>,
+    storage_changes: HashMap<Hash, CHUNK>,
     code_hash: Hash,
-    address_hash: RefCell<Option<Address>>
+    address: Cell<Option<Address>>
 }
 
 impl Account {
@@ -23,14 +25,15 @@ impl Account {
             balance: 0u32,
             name: account_name.to_string(),
             storage_root: zero_hash!(),
-            storage,
+            storage_cache: Self::clear_storage_cache(),
+            storage_changes: HashMap::new(),
             code_hash: zero_hash!(),
-            address_hash: RefCell::new(None)
+            address: Cell::new(None)
         }
     }
 
-    pub fn load(addr: Address) -> Result<Self, ()> {
-        unimplemented!()
+    pub fn clear_storage_cache() -> RefCell<StorageCache> {
+        RefCell::new(StorageCache::new())
     }
 
     /// return the balance associated with this account.
@@ -45,7 +48,13 @@ impl Account {
 
     /// set the value of the trie's storage with provided `key`.
     pub fn set_storage(&mut self, key: Hash, val: CHUNK)  {
-        self.storage.update(key, val);
+        self.storage_changes.insert(key, val);
+//        self.storage.update(key, val);
+    }
+
+    /// update storage changes and save to db
+    pub fn commit_storage(&mut self) {
+        unimplemented!()
     }
 
     /// Increase account balance.

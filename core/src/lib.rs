@@ -7,6 +7,7 @@ pub mod storage;
 pub mod transaction;
 pub mod receipt;
 pub mod vm;
+pub mod state;
 
 #[macro_use]
 pub extern crate common;
