@@ -6,6 +6,7 @@ members = [
     "db",
     "message",
     "network",
+    "pool",
     "rlp",
     "role",
     "util"

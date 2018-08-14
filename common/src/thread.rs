@@ -18,11 +18,11 @@ pub trait Thread {
     fn launch<T>(name: String) where T: Observe + Thread, Self: Sized {
         // TODO: make stack size configuable
         thread::Builder::new().stack_size(64 * 1024 * 1024).name(name.to_owned()).spawn(move || {
-            let mut context = T::new(name);
+            let mut context = T::new(name.to_owned());
 
             match &mut context {
                 &mut Ok(ref mut context_ref) => {
-                    context_ref.subscribe();
+                    context_ref.subscribe(name.to_owned());
                     context_ref.set_status(ThreadStatus::Running);
                     loop {
                         let ret = context_ref.run();
@@ -55,7 +55,7 @@ pub trait Thread {
                 }
             }
             let _ = context.and_then(|mut context| {
-                context.unsubscribe();
+                context.unsubscribe(name.to_owned());
                 Ok(context)
             });
         }).unwrap();

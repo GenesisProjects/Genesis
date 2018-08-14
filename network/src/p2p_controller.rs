@@ -461,8 +461,8 @@ impl Notify for P2PController {
 }
 
 impl Observe for P2PController {
-    fn subscribe(&mut self) {
-        let name = self.name.to_owned();
+    fn subscribe(&mut self, name: String) {
+        let name = name.to_owned();
         self.ch_pair = Some(
             MESSAGE_CENTER
                 .lock()
@@ -472,8 +472,8 @@ impl Observe for P2PController {
         );
     }
 
-    fn unsubscribe(&mut self) {
-        let name = self.name.to_owned();
+    fn unsubscribe(&mut self, name: String) {
+        let name = name.to_owned();
         if let Some(ch_pair) = self.ch_pair.clone() {
             let uid = (*ch_pair).0.lock().unwrap().uid.clone();
             self.ch_pair = None;
