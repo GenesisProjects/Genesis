@@ -142,7 +142,21 @@ impl<T> Pool<T> where T: Poolable {
             self.priority_queue.push(score);
             Ok(())
         }
+    }
 
+    /// Pop out a enqueued object
+    /// High score object will first out
+    #[inline]
+    pub fn pop(&mut self) -> Option<T> {
+        match self.priority_queue.pop() {
+            Some(record) => {
+                let hash = record.id;
+                let (_, slab_key) = self.slab_key_map.remove_entry(&hash).unwrap();
+                let obj = self.slab.remove(slab_key);
+                Some(obj)
+            },
+            None => None
+        }
     }
 
 }
