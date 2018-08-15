@@ -200,4 +200,10 @@ impl<T> Pool<T> where T: Poolable {
     pub fn unlock(&mut self) {
         self.locked = false
     }
+
+    /// Count objects in the pool
+    #[inline]
+    pub fn count(&self) -> usize {
+        self.slab.len()
+    }
 }

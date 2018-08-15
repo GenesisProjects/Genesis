@@ -8,11 +8,15 @@ pub mod transaction;
 pub mod receipt;
 pub mod vm;
 pub mod state;
+pub mod tx_pool;
 
 #[macro_use]
 pub extern crate common;
 pub extern crate chrono;
 pub extern crate db;
+pub extern crate gen_pool;
+#[macro_use]
+extern crate lazy_static;
 #[macro_use]
 pub extern crate rlp;
 pub extern crate num;
