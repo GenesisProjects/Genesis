@@ -9,6 +9,7 @@ use gen_message::*;
 
 use std::collections::{HashMap, BinaryHeap};
 use std::cmp::Ordering;
+use std::mem;
 
 pub enum PoolError {
     Duplicate(Hash),
@@ -54,9 +55,13 @@ pub struct Pool<T> where T: Poolable {
     channels: Vec<String>,
     next_round: usize,
 
-    slab: Slab<T>,
-    slab_key_map: HashMap<Hash, usize>,
-    priority_queue: BinaryHeap<ScoreRecord>,
+    pending_slab: Slab<T>,
+    pending_slab_key_map: HashMap<Hash, usize>,
+    pending_priority_queue: BinaryHeap<ScoreRecord>,
+
+    cur_slab: Slab<T>,
+    cur_slab_key_map: HashMap<Hash, usize>,
+    cur_priority_queue: BinaryHeap<ScoreRecord>,
 
     locked: bool
 }
@@ -69,9 +74,13 @@ impl<T> Pool<T> where T: Poolable {
             channels: vec![],
             next_round: next_round,
 
-            slab: Slab::with_capacity(size),
-            slab_key_map: HashMap::new(),
-            priority_queue: BinaryHeap::new(),
+            pending_slab: Slab::with_capacity(size),
+            pending_slab_key_map: HashMap::new(),
+            pending_priority_queue: BinaryHeap::new(),
+
+            cur_slab: Slab::with_capacity(size),
+            cur_slab_key_map: HashMap::new(),
+            cur_priority_queue: BinaryHeap::new(),
 
             locked: false
         }
@@ -115,11 +124,11 @@ impl<T> Pool<T> where T: Poolable {
             });
     }
 
-    /// If the object exist
+    /// If the object exist in pending pool
     #[inline]
     pub fn exist(&self, obj: &T) -> bool {
         let hash = obj.hash();
-        self.slab_key_map.get(&hash).is_some()
+        self.pending_slab_key_map.get(&hash).is_some()
     }
 
     fn check(&self, obj: &T) -> Result<(), PoolError> {
@@ -130,7 +139,7 @@ impl<T> Pool<T> where T: Poolable {
         }
     }
 
-    /// Insert an object into the pool
+    /// Insert an object into the pending pool
     /// Key must be type of [Hash]
     /// If the object has already been stored, do nothing
     #[inline]
@@ -144,9 +153,9 @@ impl<T> Pool<T> where T: Poolable {
         } else {
             let hash = obj.hash();
             let score = obj.score();
-            let slab_key = self.slab.insert(obj);
-            self.slab_key_map.insert(hash, slab_key);
-            self.priority_queue.push(score);
+            let slab_key = self.pending_slab.insert(obj);
+            self.pending_slab_key_map.insert(hash, slab_key);
+            self.pending_priority_queue.push(score);
             Ok(())
         }
     }
@@ -155,37 +164,50 @@ impl<T> Pool<T> where T: Poolable {
     /// High score object will first out
     #[inline]
     pub fn pop(&mut self) -> Option<T> {
-        if self.locked {
-            return None;
-        }
-        match self.priority_queue.pop() {
+        match self.cur_priority_queue.pop() {
             Some(record) => {
                 let hash = record.id;
-                let (_, slab_key) = self.slab_key_map.remove_entry(&hash).unwrap();
-                let obj = self.slab.remove(slab_key);
+                let (_, slab_key) = self.cur_slab_key_map.remove_entry(&hash).unwrap();
+                let obj = self.cur_slab.remove(slab_key);
                 Some(obj)
             },
             None => None
         }
     }
 
-    /// Clear the object pool
+    /// swap the current object pool with pending object pool
     #[inline]
-    pub fn clear(&mut self) -> Result<(), PoolError> {
-        if self.locked {
-            return Err(PoolError::Locked);
-        }
-        self.priority_queue.clear();
-        self.slab.clear();
-        self.slab_key_map.clear();
+    fn swap(&mut self) -> Result<(), PoolError> {
+        mem::swap(&mut self.cur_slab, &mut self.pending_slab);
+        mem::swap(&mut self.cur_slab_key_map, &mut self.pending_slab_key_map);
+        mem::swap(&mut self.cur_priority_queue, &mut self.pending_priority_queue);
+        self.clear_pending();
         Ok(())
     }
 
-    /// Clear the object pool and prepare for next round
+    /// Clear the object pool
+    #[inline]
+    fn clear_cur(&mut self) -> Result<(), PoolError> {
+        self.cur_priority_queue.clear();
+        self.cur_slab.clear();
+        self.cur_slab_key_map.clear();
+        Ok(())
+    }
+
+    /// Clear the pending object pool
+    #[inline]
+    fn clear_pending(&mut self) -> Result<(), PoolError> {
+        self.pending_priority_queue.clear();
+        self.pending_slab.clear();
+        self.pending_slab_key_map.clear();
+        Ok(())
+    }
+
+
+    /// Swap pending and current object pools and prepare for next round
     #[inline]
     pub fn next_round(&mut self) {
-        self.unlock();
-        self.clear();
+        self.swap();
         self.next_round += 1;
     }
 
@@ -201,9 +223,15 @@ impl<T> Pool<T> where T: Poolable {
         self.locked = false
     }
 
-    /// Count objects in the pool
+    /// Count pending objects in the pool
     #[inline]
     pub fn count(&self) -> usize {
-        self.slab.len()
+        self.pending_slab.len()
+    }
+
+    /// Count current objects in the pool
+    #[inline]
+    pub fn count_cur(&self) -> usize {
+        self.cur_slab.len()
     }
 }

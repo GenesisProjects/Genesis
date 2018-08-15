@@ -6,8 +6,7 @@ use std::sync::Mutex;
 
 pub struct TXPoolConfig {
     pool_init_size: usize,
-    name: String,
-    chs: Vec<String>
+    name: String
 }
 
 impl TXPoolConfig {
@@ -45,6 +44,7 @@ impl Poolable for Transaction {
 lazy_static! {
     pub static ref TX_POOL: Mutex<Pool<Transaction>> = {
         let config = TXPoolConfig::load();
-        Mutex::new(Pool::new(config.name(), config.pool_size(), block_chain::cur_round() + 1))
+        let pool = Pool::new(config.name(), config.pool_size(), block_chain::cur_round() + 1);
+        Mutex::new(pool)
     };
 }
