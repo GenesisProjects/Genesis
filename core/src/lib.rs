@@ -1,6 +1,7 @@
 pub mod account;
 pub mod action;
 pub mod block;
+pub mod blockchain;
 pub mod log;
 pub mod mpt;
 pub mod storage;
@@ -9,7 +10,6 @@ pub mod receipt;
 pub mod vm;
 pub mod state;
 pub mod tx_pool;
-
 #[macro_use]
 pub extern crate common;
 pub extern crate chrono;
