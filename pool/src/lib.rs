@@ -12,7 +12,8 @@ use std::cmp::Ordering;
 
 pub enum PoolError {
     Duplicate(Hash),
-    Validation(String)
+    Validation(String),
+    Locked,
 }
 
 pub trait Poolable {
@@ -55,7 +56,9 @@ pub struct Pool<T> where T: Poolable {
 
     slab: Slab<T>,
     slab_key_map: HashMap<Hash, usize>,
-    priority_queue: BinaryHeap<ScoreRecord>
+    priority_queue: BinaryHeap<ScoreRecord>,
+
+    locked: bool
 }
 
 impl<T> Pool<T> where T: Poolable {
@@ -69,6 +72,8 @@ impl<T> Pool<T> where T: Poolable {
             slab: Slab::with_capacity(size),
             slab_key_map: HashMap::new(),
             priority_queue: BinaryHeap::new(),
+
+            locked: false
         }
     }
 
@@ -130,7 +135,9 @@ impl<T> Pool<T> where T: Poolable {
     /// If the object has already been stored, do nothing
     #[inline]
     pub fn push(&mut self, obj: T) -> Result<(), PoolError> {
-        if self.exist(&obj) {
+        if self.locked {
+            Err(PoolError::Locked)
+        } else if self.exist(&obj) {
             Err(PoolError::Duplicate(obj.hash()))
         } else if let Err(e) = self.check(&obj) {
             Err(e)
@@ -148,6 +155,9 @@ impl<T> Pool<T> where T: Poolable {
     /// High score object will first out
     #[inline]
     pub fn pop(&mut self) -> Option<T> {
+        if self.locked {
+            return None;
+        }
         match self.priority_queue.pop() {
             Some(record) => {
                 let hash = record.id;
@@ -159,4 +169,35 @@ impl<T> Pool<T> where T: Poolable {
         }
     }
 
+    /// Clear the object pool
+    #[inline]
+    pub fn clear(&mut self) -> Result<(), PoolError> {
+        if self.locked {
+            return Err(PoolError::Locked);
+        }
+        self.priority_queue.clear();
+        self.slab.clear();
+        self.slab_key_map.clear();
+        Ok(())
+    }
+
+    /// Clear the object pool and prepare for next round
+    #[inline]
+    pub fn next_round(&mut self) {
+        self.unlock();
+        self.clear();
+        self.next_round += 1;
+    }
+
+    /// Lock the pool
+    #[inline]
+    pub fn lock(&mut self) {
+        self.locked = true
+    }
+
+    /// Unlock the pool
+    #[inline]
+    pub fn unlock(&mut self) {
+        self.locked = false
+    }
 }
