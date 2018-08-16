@@ -1,4 +1,4 @@
-use blockchain::block_chain;
+use blockchain;
 use common::hash::Hash;
 use gen_pool::{Pool, Poolable, PoolError, ScoreRecord};
 use std::sync::Mutex;
@@ -33,7 +33,7 @@ impl Poolable for Transaction {
     }
 
     fn round(&self) -> usize {
-        block_chain::round(self.timestamp())
+        blockchain::round(self.timestamp())
     }
 
     fn verify(&self) -> Result<(), PoolError> {
@@ -44,7 +44,7 @@ impl Poolable for Transaction {
 lazy_static! {
     pub static ref TX_POOL: Mutex<Pool<Transaction>> = {
         let config = TXPoolConfig::load();
-        let pool = Pool::new(config.name(), config.pool_size(), block_chain::cur_round() + 1);
+        let pool = Pool::new(config.name(), config.pool_size(), blockchain::cur_round() + 1);
         Mutex::new(pool)
     };
 }

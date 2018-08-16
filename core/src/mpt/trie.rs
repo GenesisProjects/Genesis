@@ -15,6 +15,14 @@ pub struct Trie<T: RLPSerialize + Clone> {
 }
 
 impl<T> Trie<T> where T: RLPSerialize + Clone {
+    pub fn new(db: &'static Mutex<DBManager>) -> Trie<T> {
+        Trie::<T> { root: zero_hash!(), db: db, phantom: PhantomData }
+    }
+
+    pub fn load(root: TrieKey, db: &'static Mutex<DBManager>) -> Trie<T> {
+        Trie::<T> { root: root, db: db, phantom: PhantomData }
+    }
+
     pub fn get(&self, path: &Vec<u8>) -> Option<T> {
         get_helper(&self.root, &vec2nibble(path), self.db)
     }
@@ -25,10 +33,6 @@ impl<T> Trie<T> where T: RLPSerialize + Clone {
 
     pub fn update(&mut self, path: &Vec<u8>, v: &T) {
         self.root = update_helper(&self.root, &vec2nibble(path), v, self.db);
-    }
-
-    pub fn new(db: &'static Mutex<DBManager>) -> Trie<T> {
-        Trie::<T> { root: zero_hash!(), db: db, phantom: PhantomData }
     }
 
     pub fn root(&self) -> TrieKey {
