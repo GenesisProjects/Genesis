@@ -156,6 +156,7 @@ impl<T> Pool<T> where T: Poolable {
             let slab_key = self.pending_slab.insert(obj);
             self.pending_slab_key_map.insert(hash, slab_key);
             self.pending_priority_queue.push(score);
+            self.notify_new_tx_recieved();
             Ok(())
         }
     }
