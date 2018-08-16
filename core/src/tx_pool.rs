@@ -1,12 +1,12 @@
 use blockchain::block_chain;
+use common::hash::Hash;
 use gen_pool::{Pool, Poolable, PoolError, ScoreRecord};
-use transaction::*;
-
 use std::sync::Mutex;
+use transaction::*;
 
 pub struct TXPoolConfig {
     pool_init_size: usize,
-    name: String
+    name: String,
 }
 
 impl TXPoolConfig {
@@ -28,12 +28,12 @@ impl Poolable for Transaction {
         unimplemented!()
     }
 
-    fn hash(&self) -> [u8; 32] {
+    fn hash(&self) -> Hash {
         unimplemented!()
     }
 
     fn round(&self) -> usize {
-        unimplemented!()
+        block_chain::round(self.timestamp())
     }
 
     fn verify(&self) -> Result<(), PoolError> {
