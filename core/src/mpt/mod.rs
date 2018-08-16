@@ -54,9 +54,14 @@ pub mod node;
 ///
 /// // Insert a new transaction into db
 /// let tx = Transaction::mock();
-/// let encoded_rlp = tx.serialize();
-/// tree.update(&encoded_rlp, &tx);
+/// let (key, encoded_rlp) = tx.encrype_sha256();
+///
+/// tree.update(&key, &tx);
 ///
 /// println!("DB updated, the new trie root is {:?}", tree.root());
+///
+/// // Query a transaction
+/// let target_tx = tree.get(&key);
+///
 /// ```
 pub mod trie;
