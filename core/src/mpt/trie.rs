@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 use std::sync::Mutex;
 use super::node::*;
 
+/// Wrapper of DBManager within **Patricia Tree**.
 #[derive(Clone)]
 pub struct Trie<T: RLPSerialize + Clone> {
     root: TrieKey,
@@ -15,45 +16,58 @@ pub struct Trie<T: RLPSerialize + Clone> {
 }
 
 impl<T> Trie<T> where T: RLPSerialize + Clone {
+    /// Initialize an empty trie with a specialized DB
     pub fn new(db: &'static Mutex<DBManager>) -> Trie<T> {
         Trie::<T> { root: zero_hash!(), db: db, phantom: PhantomData }
     }
 
+    /// Initialize a pre-saved trie by hash root a specialized DB
     pub fn load(root: TrieKey, db: &'static Mutex<DBManager>) -> Trie<T> {
         Trie::<T> { root: root, db: db, phantom: PhantomData }
     }
 
+
+    /// Query a stored value by key, the key is also the path of value node in the trie.
+    /// Trie root will be updated.
     pub fn get(&self, path: &Vec<u8>) -> Option<T> {
         get_helper(&self.root, &vec2nibble(path), self.db)
     }
 
+    /// Delete a stored value by key, the key is also the path of value node in the trie.
+    /// Trie root will be updated.
     pub fn delete(&mut self, path: &Vec<u8>) {
         self.root = delete_helper::<T>(&self.root, &vec2nibble(path), self.db);
     }
 
+    /// Updated key with a new value, will create.
+    /// Trie root will be updated.
     pub fn update(&mut self, path: &Vec<u8>, v: &T) {
         self.root = update_helper(&self.root, &vec2nibble(path), v, self.db);
     }
 
+    /// Return the current trie root.
     pub fn root(&self) -> TrieKey {
         self.root.to_owned()
     }
 }
 
+/// The max length of a path in the trie.
 const PATH_MAX_LEN: usize = 64usize;
 
+/// DBManager delete a node
 macro_rules! mpt_db_delete {
     ($node:expr, $db:expr) => {{
         $db.lock().unwrap().delete(&($node).to_vec());
     }};
 }
 
+/// DBManager update a node
 macro_rules! mpt_db_update {
     ($node:expr, $db:expr) => {
         $db.lock().unwrap().put($node)
     };
 }
-
+/// DBManager replace a node with a new node index
 macro_rules! mpt_db_replace {
     ($node:expr, $new_node:expr, $db:expr) => {{
         mpt_db_delete!($node, $db);
@@ -61,12 +75,14 @@ macro_rules! mpt_db_replace {
     }}
 }
 
+/// DBManager get a node
 macro_rules! mpt_db_fetch {
     ($node:expr, $db:expr) => {
         $db.lock().unwrap().get(&($node).to_vec())
     };
 }
 
+/// Get the next nibble of a branch node
 macro_rules! next_nibble {
     ($path:expr) => ({
         $path[0] as usize

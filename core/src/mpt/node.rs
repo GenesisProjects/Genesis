@@ -2,10 +2,16 @@ use common::hash::*;
 use rlp::RLPSerialize;
 use rlp::types::*;
 
+/// Trie node index in DB
 pub type TrieKey = Hash;
+
+/// Trie node encoded path
 pub type EncodedPath = Vec<u8>;
 
+/// The branch num of a branch node
 pub const MAX_BRANCHE_NUM: usize = 16usize;
+
+/// The total num of kind of nibbles
 pub const MAX_NIBBLE_VALUE: u8 = 16u8;
 
 const BRANCH_NODE_RLP_SIZE: usize = 16usize;

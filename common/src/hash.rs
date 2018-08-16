@@ -41,7 +41,7 @@ macro_rules! hash_len {
 }
 
 /// Interface for hashable objects
-pub trait SerializableAndSHA256Hashable: RLPSerialize {
+pub trait SerializableAndSHA256Hashable {
     #[inline]
     fn encrype_sha256(&self) -> Option<(Hash, Vec<u8>)>;
 }
@@ -66,6 +66,11 @@ impl<T> SerializableAndSHA256Hashable for T where T: RLPSerialize {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     #[test]
-    fn test_encrype() {}
+    fn test_encrype() {
+        let test_str: String = "test".into();
+        let (key, encoded_rlp) = test_str.encrype_sha256().unwrap();
+        println!("{:?}", key);
+    }
 }

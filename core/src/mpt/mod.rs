@@ -10,7 +10,7 @@
 /// Patricia Tree Node
 ///
 /// ## Usages
-/// * Implememnt data struct of **Patricia Tree Node**
+/// Implememnt data struct of **Patricia Tree Node**
 /// * Encode node path to nibbles
 /// * Decode nibbles to node path
 /// ### Examples
@@ -34,7 +34,7 @@ pub mod node;
 /// Patricia Tree
 ///
 /// ## Usages
-/// * Implememnt data struct of **Patricia Tree**
+/// Implememnt data struct of **Patricia Tree**
 /// * Query value in the tree by the key
 /// * Update value in the tree by the key
 /// * Delete value in the tree by the key
@@ -54,7 +54,7 @@ pub mod node;
 ///
 /// // Insert a new transaction into db
 /// let tx = Transaction::mock();
-/// let (key, encoded_rlp) = tx.encrype_sha256();
+/// let (key, encoded_rlp) = tx.encrype_sha256().unwrap();
 ///
 /// tree.update(&key, &tx);
 ///
