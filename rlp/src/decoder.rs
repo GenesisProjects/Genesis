@@ -165,6 +165,7 @@ impl Decoder {
         }
     }
 
+    /// Decode bytes array to RLP, return `None` if failed
     pub fn decode(input: &EncodedRLP) -> Option<RLP> {
         let (r, _) = Decoder::decode_helper(input, 0usize, input.len() - 1usize);
         match r {
