@@ -3,6 +3,17 @@ use std::convert::{From, Into};
 use std::string::FromUtf8Error;
 use std::mem::transmute;
 
+/// # Usage
+///
+/// Macro to construct `RLPList`
+///
+/// # Examples
+///
+/// ```
+/// rlp_list![];
+/// rlp_list!["a".into(), "b".into()];
+/// rlp_list![rlp_list![1u32.into(), 2u32.into()], "test".into()];
+/// ```
 #[macro_export]
 macro_rules! rlp_list {
     ($( $rlp: expr ),*) => {{
@@ -12,32 +23,55 @@ macro_rules! rlp_list {
     }}
 }
 
+/// Encoded bytes array
 pub type EncodedRLP = Vec<u8>;
 
+/// RLP error types
 #[derive(Debug)]
 pub enum RLPError {
+    /// Unknown error
     RLPErrorUnknown(&'static str),
 
+    /// Struct type doesn't match the type indicated by RLP
     RLPErrorType,
 
+    /// Data tag doesn't match the tag indicated by RLP
     RLPErrorTagType,
 
+    /// Unable to find the tag field in RLP
     RLPErrorTagMissing,
 
+    /// The length of RLP doesn't match the required one
     RLPErrorWrongNumParams,
 
+    /// Malformed UTF8 coding
     RLPErrorUTF8,
 
+    /// Failed to encode RLP to EncodedRLP
     RLPEncodingErrorUnencodable,
 
+    /// Failed to decode EncodedRLP to RLP
     RLPDecodingErrorMalformed,
 }
 
+/// A **data structure** that can be encoded to a bytes array.
+/// Genesis block chain use this structure to serialize data.
+/// Please refer to: [RLP](https://github.com/ethereum/wiki/wiki/RLP) for more details.
 #[derive(Clone, Debug, PartialEq)]
 pub enum RLP {
     RLPList(Vec<RLP>),
     RLPItem(Vec<u8>),
     RLPEmpty
+}
+
+impl RLP {
+    pub fn len(&self) -> usize {
+        match self {
+            &RLP::RLPList(ref v) => v.len(),
+            &RLP::RLPItem(_) => 1,
+            _ => 0
+        }
+    }
 }
 
 impl Index<usize> for RLP {
@@ -53,20 +87,55 @@ impl Index<usize> for RLP {
     }
 }
 
+impl From<bool> for RLP {
+    fn from(v: bool) -> Self {
+        if v {
+            RLP::RLPItem(vec![1u8])
+        } else {
+            RLP::RLPItem(vec![0u8])
+        }
+    }
+}
+
+impl Into<bool> for RLP {
+    fn into(self) -> bool {
+        match self {
+            RLP::RLPItem(value) => {
+                if value.len() != 1 {
+                    panic!("The total length of vytes array for bool type must be 1")
+                } else {
+                    if value[0] == 0u8 {
+                        false
+                    } else {
+                        true
+                    }
+                }
+            },
+            _ => panic!("Only [RLPItem] can be converted into [bool]")
+        }
+    }
+}
+
 impl From<String> for RLP {
     fn from(v: String) -> Self {
         RLP::RLPItem(v.into_bytes())
     }
 }
 
-impl Into<Result<String, FromUtf8Error>> for RLP {
-    fn into(self) -> Result<String, FromUtf8Error> {
+impl Into<String> for RLP {
+    fn into(self) -> String {
         match self {
             RLP::RLPItem(value) => {
-                String::from_utf8(value)
+                unsafe { String::from_utf8_unchecked(value) }
             },
             _ => panic!("Only [RLPItem] can be converted into [String]")
         }
+    }
+}
+
+impl From<&'static str> for RLP {
+    fn from(v: &'static str) -> Self {
+        RLP::RLPItem(v.to_string().into_bytes())
     }
 }
 

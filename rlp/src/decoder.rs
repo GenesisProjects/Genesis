@@ -9,6 +9,7 @@ use std::io::{Error, ErrorKind};
 #[inline]
 fn malformed_err() -> (Result<RLP>, usize) { (Err(Error::new(ErrorKind::Other, "Malformed input")), 0) }
 
+/// RLP Decoder
 pub struct Decoder;
 
 impl Decoder {
