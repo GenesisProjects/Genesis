@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use common::address::Address;
 use common::key::Signature;
 use num::bigint::BigInt;
@@ -9,14 +10,11 @@ use rlp::types::*;
 ///
 ///
 pub struct TransactionBody {
-    account_nounce: u64,
-    gas_price: BigInt,
-    gas_limit: u64,
+    timestamp: DateTime<Utc>,
     sender: Address,
     recipient: Address,
     amount: BigInt,
-    payload: Vec<u8>,
-    sig: Option<Signature>
+    sig: Option<Signature>,
 }
 
 ///
@@ -31,27 +29,23 @@ impl Transaction {
                from: Address,
                to: Address,
                amount: Option<BigInt>,
-               gas_limit: u64,
-               gas_price: Option<BigInt>,
-               data: &Vec<u8>) -> Box<Self> {
-        Box::new(Transaction {
+               data: &Vec<u8>) -> Self {
+        Transaction {
             tx_body: TransactionBody {
-                account_nounce: nonce,
-                gas_price: match gas_price {
-                    Some(v) => v,
-                    None => BigInt::zero()
-                },
-                gas_limit: gas_limit,
+                timestamp: Utc::now(),
                 sender: from,
                 recipient: to,
                 amount: match amount {
                     Some(v) => v,
                     None => BigInt::zero()
                 },
-                payload: data.to_vec(),
-                sig: None
+                sig: None,
             },
-        })
+        }
+    }
+
+    pub fn timestamp(&self) -> DateTime<Utc> {
+        self.tx_body.timestamp.clone()
     }
 }
 
@@ -65,8 +59,8 @@ impl RLPSerialize for Transaction {
     }
 }
 
-# [cfg(test)]
+#[cfg(test)]
 mod tests {
-    # [test]
+    #[test]
     fn test_transaction() {}
 }
