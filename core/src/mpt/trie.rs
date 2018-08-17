@@ -389,6 +389,30 @@ mod trie {
     }
 
     #[test]
+    fn test_trie_insert_multiple() {
+        let mut trie = Trie::<String>::new(&SHARED_MANAGER);
+        let path1 = vec![
+            0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8
+        ];
+        let val1 = "Welcome dude".to_string();
+
+        let path2 = vec![
+            0x1, 0x2, 0x3, 0x3, 0x5, 0x6, 0x7, 0x8
+        ];
+        let val2 = "Hello".to_string();
+
+        trie.update(&path1, &val1);
+        trie.update(&path2, &val2);
+
+        let value = trie.get(&path1).unwrap();
+        assert_eq!(value, val1);
+
+        let value = trie.get(&path2).unwrap();
+        assert_eq!(value, val2);
+    }
+
+
+    #[test]
     fn test_trie_update() {
         let mut trie = Trie::<String>::new(&SHARED_MANAGER);
         let path = vec![
