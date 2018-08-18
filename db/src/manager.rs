@@ -8,8 +8,9 @@ use std::collections::HashMap;
 
 
 pub struct DBManager {
-    config: &'static mut DBConfig,
-    dbs: HashMap<String, RocksDB>
+//    config: &'static mut DBConfig,
+//    dbs: HashMap<String, RocksDB>
+    db: RocksDB
 }
 
 static DB_NAME: &'static str = "_trie_db";
@@ -19,7 +20,8 @@ impl DBManager {
 //        self.dbs.entry(key.to_string()).or_insert_with(|| {
 //            RocksDB::open(self.config, DB_NAME)
 //        })
-        RocksDB::open(self.config, "_trie_db")
+//        self.db
+        unimplemented!()
     }
     pub fn connect(&self, config: & DBConfig) -> Result<(RocksDB, DBResult), DBError> { unimplemented!() }
 
@@ -35,14 +37,16 @@ impl DBManager {
 lazy_static! {
     //TODO:
     pub static ref SHARED_MANAGER: Mutex<DBManager> = {
-        static mut conf: DBConfig = DBConfig {
+        let mut conf: DBConfig = DBConfig {
             create_if_missing: true,
             max_open_files: 32
         };
+
         unsafe {
             Mutex::new(DBManager{
-                config: &mut conf,
-                dbs: HashMap::new()
+//                config: &mut conf,
+//                dbs: HashMap::new()
+                db: RocksDB::open(&conf, "db/_trie_db")
             })
         }
     };
@@ -60,7 +64,7 @@ pub trait DBManagerOP {
 
 impl DBManagerOP for DBManager {
     fn put<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, value: &T) -> Hash {
-        let db = &self.get_db().db;
+        let db = &self.db.db;
         let (key, encoded_rlp) = value.encrype_sha256().unwrap();
         db.put(&key, encoded_rlp.as_slice()).expect("db put error");
 
@@ -68,12 +72,12 @@ impl DBManagerOP for DBManager {
     }
 
     fn delete(&self, key: &Vec<u8>) {
-        let db= &self.get_db().db;
+        let db= &self.db.db;
         db.delete(key);
     }
 
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {
-        match &self.get_db().db.get(key).unwrap() {
+        match &self.db.db.get(key).unwrap() {
             Some(t) => {
                 let result = t.to_vec();
                 let t= Decoder::decode(&result).unwrap();
