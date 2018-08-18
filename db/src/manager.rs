@@ -59,7 +59,6 @@ pub trait DBManagerOP {
     fn put<T: RLPSerialize>(&self, value: &T) -> Hash;
     fn delete(&self, key: &Vec<u8>);
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;
-    fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T>;
 }
 
 impl DBManagerOP for DBManager {
@@ -85,10 +84,6 @@ impl DBManagerOP for DBManager {
             },
             None => None
         }
-    }
-
-    fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T> {
-        unimplemented!()
     }
 }
 
