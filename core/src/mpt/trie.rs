@@ -252,7 +252,8 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                 let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
                 // compute new nodes for remain paths, attach them to a new branch node
                 let branch_key = if remain_path.len() == remain_cur_path.len() && remain_path.len() == 0 {
-                    let new_leaf_node = &TrieNode::new_leaf_node(path, new_value);
+                    let encoded_path = encode_path(&path, true);
+                    let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, new_value);
                     mpt_db_replace!(node, new_leaf_node, db)
                 } else if remain_cur_path.len() == 0 {
                     let mut new_branches = [zero_hash!(); MAX_BRANCHE_NUM];
