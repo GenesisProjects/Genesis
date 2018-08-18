@@ -1,5 +1,5 @@
 use common::hash::*;
-use rlp::RLPSerialize;
+use rlp::{RLPSerialize, decoder::Decoder};
 use gen_rocksdb::*;
 use ::rocksdb::{DB};
 
@@ -12,14 +12,16 @@ pub struct DBManager {
     dbs: HashMap<String, RocksDB>
 }
 
+static DB_NAME: &'static str = "_trie_db";
+
 impl DBManager {
-    pub fn getDb(&self, key: &str) -> &RocksDB {
-        
+    pub fn get_db(&self) -> RocksDB {
+//        self.dbs.entry(key.to_string()).or_insert_with(|| {
+//            RocksDB::open(self.config, DB_NAME)
+//        })
+        RocksDB::open(self.config, "_trie_db")
     }
-    pub fn connect(&self, config: & DBConfig) -> Result<(RocksDB, DBResult), DBError> {
-        let db = RocksDB::open(config);
-        Ok(( db, DBResult::DBConnectSuccess ))
-    }
+    pub fn connect(&self, config: & DBConfig) -> Result<(RocksDB, DBResult), DBError> { unimplemented!() }
 
     pub fn disconnect(&self) -> Result<DBResult, DBError> {
         unimplemented!()
@@ -57,17 +59,23 @@ pub trait DBManagerOP {
 }
 
 impl DBManagerOP for DBManager {
-    fn put<T: RLPSerialize>(&mut self, value: &T) -> Hash {
-        let (mut db, _) = self.connect(self.config).unwrap();
+    fn put<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, value: &T) -> Hash {
+        let db = &self.get_db().db;
+        let (key, encoded_rlp) = value.encrype_sha256().unwrap();
+        db.put(&key, encoded_rlp.as_slice()).expect("db put error");
+
+        key
     }
 
-    fn delete(&mut self, key: &Vec<u8>) {
-        unimplemented!()
+    fn delete(&self, key: &Vec<u8>) {
+        let db= &self.get_db().db;
+        db.delete(key);
     }
 
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {
-        let (db, _) = self.connect(self.config).unwrap();
-        db.get(key.as_slice())
+        let result = &self.get_db().db.get(key).unwrap().unwrap().to_vec();
+        let t= Decoder::decode(&result).unwrap();
+        Some(T::deserialize(&t).unwrap())
     }
 
     fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T> {
@@ -75,3 +83,15 @@ impl DBManagerOP for DBManager {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn db_insert() {
+        let test_str: String = String::from("test");
+        let db = &SHARED_MANAGER;
+        let r = db.lock().unwrap().put(&test_str);
+        println!("{:?}", r);
+    }
+}

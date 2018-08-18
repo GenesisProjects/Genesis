@@ -1,8 +1,7 @@
-extern crate common;
-extern crate rlp;
-
 use ::rocksdb::{DB, Options};
 use std::{error::Error, fmt, iter::Peekable, mem, path::Path, sync::Arc};
+use rlp::{RLPSerialize, decoder::Decoder};
+use common::hash::*;
 
 /// Database implementation on top of [`RocksDB`](https://rocksdb.org)
 /// backend.
@@ -12,7 +11,7 @@ use std::{error::Error, fmt, iter::Peekable, mem, path::Path, sync::Arc};
 /// use different databases.
 
 pub struct RocksDB {
-    db: Arc<::rocksdb::DB>,
+    pub db: Arc<::rocksdb::DB>,
 }
 
 pub enum DBResult {
@@ -42,7 +41,6 @@ pub struct DBStatus {
 pub struct DBConfig {
     pub create_if_missing: bool,
     pub max_open_files: i32,
-
 }
 
 impl DBConfig {
@@ -56,21 +54,11 @@ impl DBConfig {
 
 
 impl RocksDB {
-    pub fn open(options: &DBConfig) -> Self {
-        let db = DB::open(&options.to_rocksdb(), "rocksdb_test").unwrap();
+    pub fn open(options: &DBConfig, path: &str) -> Self {
+        let db = DB::open(&options.to_rocksdb(), path).unwrap();
         Self { db: Arc::new(db) }
     }
-
-    pub fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
-        let result = self.db.get(key).unwrap().unwrap().to_vec();
-        Some(result)
-    }
-
-    pub fn put() {
-
-    }
 }
-
 
 impl fmt::Debug for RocksDB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
