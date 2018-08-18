@@ -36,7 +36,7 @@ lazy_static! {
     //TODO:
     pub static ref SHARED_MANAGER: Mutex<DBManager> = {
         static mut conf: DBConfig = DBConfig {
-            create_if_missing: false,
+            create_if_missing: true,
             max_open_files: 32
         };
         unsafe {
@@ -73,9 +73,14 @@ impl DBManagerOP for DBManager {
     }
 
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {
-        let result = &self.get_db().db.get(key).unwrap().unwrap().to_vec();
-        let t= Decoder::decode(&result).unwrap();
-        Some(T::deserialize(&t).unwrap())
+        match &self.get_db().db.get(key).unwrap() {
+            Some(t) => {
+                let result = t.to_vec();
+                let t= Decoder::decode(&result).unwrap();
+                Some(T::deserialize(&t).unwrap())
+            },
+            None => None
+        }
     }
 
     fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T> {
