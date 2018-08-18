@@ -2,7 +2,6 @@ extern crate common;
 extern crate rlp;
 
 use ::rocksdb::{DB, Options};
-use manager::*;
 use std::{error::Error, fmt, iter::Peekable, mem, path::Path, sync::Arc};
 
 /// Database implementation on top of [`RocksDB`](https://rocksdb.org)
@@ -14,6 +13,36 @@ use std::{error::Error, fmt, iter::Peekable, mem, path::Path, sync::Arc};
 
 pub struct RocksDB {
     db: Arc<::rocksdb::DB>,
+}
+
+pub enum DBResult {
+    DBConnectSuccess,
+    DBDisconnectSuccess,
+    DBUpdateSuccess,
+    DBFetchSuccess,
+    DBStatusSuccess,
+}
+
+pub enum DBError {
+    DBConnectError{ msg: &'static str },
+    DBDisconnectError { msg: &'static str },
+    DBUpdateError { msg: &'static str },
+    DBFetchError { msg: &'static str },
+    DBStatusError { msg: &'static str },
+}
+
+pub struct DBContext {
+
+}
+
+pub struct DBStatus {
+
+}
+
+pub struct DBConfig {
+    pub create_if_missing: bool,
+    pub max_open_files: i32,
+
 }
 
 impl DBConfig {
@@ -28,8 +57,17 @@ impl DBConfig {
 
 impl RocksDB {
     pub fn open(options: &DBConfig) -> Self {
-        let db = ::rocksdb::DB::open(&options.to_rocksdb(), &"rocksdb/dir").unwrap();
+        let db = DB::open(&options.to_rocksdb(), "rocksdb_test").unwrap();
         Self { db: Arc::new(db) }
+    }
+
+    pub fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
+        let result = self.db.get(key).unwrap().unwrap().to_vec();
+        Some(result)
+    }
+
+    pub fn put() {
+
     }
 }
 
