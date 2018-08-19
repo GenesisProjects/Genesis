@@ -76,7 +76,7 @@ macro_rules! mpt_db_update {
 /// DBManager replace a node with a new node index
 macro_rules! mpt_db_replace {
     ($node:expr, $new_node:expr, $db:expr) => {{
-        mpt_db_delete!($node, $db);
+        //mpt_db_delete!($node, $db);
         mpt_db_update!($new_node, $db)
     }}
 }
@@ -480,11 +480,20 @@ mod trie {
         let val = "Welcome dude".to_string();
         trie.update(&path, &val);
         let (opt_value, nodes) = trie.trace(&path);
-        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@{:?}", nodes);
+        assert_eq!(opt_value.unwrap(), val);
+
         let new_val = "Welcome again dude".to_string();
         trie.update(&path, &new_val);
         let (opt_value, nodes) = trie.trace(&path);
-        println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!{:?}", nodes);
+        assert_eq!(opt_value.unwrap(), new_val);
+
+        let new_path = vec![
+            0x4, 0x8, 0x6, 0x5, 0x6, 0xc, 0x6, 0xc,
+            0x6, 0xf, 0x2, 0x0, 0x5, 0x7, 0x6, 0xf,
+            0x7, 0x2, 0x6, 0xc, 0x6, 0x3
+        ];
+        trie.update(&new_path, &new_val);
+        let (opt_value, nodes) = trie.trace(&new_path);
         assert_eq!(opt_value.unwrap(), new_val);
     }
 

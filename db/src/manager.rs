@@ -66,7 +66,6 @@ impl DBManagerOP for DBManager {
         let db = &self.db.db;
         let (key, encoded_rlp) = value.encrype_sha256().unwrap();
         db.put(&key, encoded_rlp.as_slice()).expect("db put error");
-
         key
     }
 
