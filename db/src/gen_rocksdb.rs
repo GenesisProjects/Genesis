@@ -1,9 +1,7 @@
-extern crate common;
-extern crate rlp;
-
 use ::rocksdb::{DB, Options};
-use manager::*;
 use std::{error::Error, fmt, iter::Peekable, mem, path::Path, sync::Arc};
+use rlp::{RLPSerialize, decoder::Decoder};
+use common::hash::*;
 
 /// Database implementation on top of [`RocksDB`](https://rocksdb.org)
 /// backend.
@@ -13,7 +11,36 @@ use std::{error::Error, fmt, iter::Peekable, mem, path::Path, sync::Arc};
 /// use different databases.
 
 pub struct RocksDB {
-    db: Arc<::rocksdb::DB>,
+    pub db: Arc<::rocksdb::DB>,
+}
+
+pub enum DBResult {
+    DBConnectSuccess,
+    DBDisconnectSuccess,
+    DBUpdateSuccess,
+    DBFetchSuccess,
+    DBStatusSuccess,
+}
+
+pub enum DBError {
+    DBConnectError{ msg: &'static str },
+    DBDisconnectError { msg: &'static str },
+    DBUpdateError { msg: &'static str },
+    DBFetchError { msg: &'static str },
+    DBStatusError { msg: &'static str },
+}
+
+pub struct DBContext {
+
+}
+
+pub struct DBStatus {
+
+}
+
+pub struct DBConfig {
+    pub create_if_missing: bool,
+    pub max_open_files: i32,
 }
 
 impl DBConfig {
@@ -27,12 +54,11 @@ impl DBConfig {
 
 
 impl RocksDB {
-    pub fn open(options: &DBConfig) -> Self {
-        let db = ::rocksdb::DB::open(&options.to_rocksdb(), &"rocksdb/dir").unwrap();
+    pub fn open(options: &DBConfig, path: &str) -> Self {
+        let db = DB::open(&options.to_rocksdb(), path).unwrap();
         Self { db: Arc::new(db) }
     }
 }
-
 
 impl fmt::Debug for RocksDB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

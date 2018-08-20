@@ -28,9 +28,15 @@ impl<T> Trie<T> where T: RLPSerialize + Clone {
 
 
     /// Query a stored value by key, the key is also the path of value node in the trie.
-    /// Trie root will be updated.
     pub fn get(&self, path: &Vec<u8>) -> Option<T> {
         get_helper(&self.root, &vec2nibble(path), self.db)
+    }
+
+    /// Trace the value and all node on its path.
+    pub fn trace(&self, path: &Vec<u8>) -> (Option<T>, Vec<TrieNode<T>>) {
+        let mut result: Vec<TrieNode<T>> = vec![];
+        let value = get_helper_with_trace(&self.root, &vec2nibble(path), self.db, &mut result);
+        (value, result)
     }
 
     /// Delete a stored value by key, the key is also the path of value node in the trie.
@@ -70,7 +76,7 @@ macro_rules! mpt_db_update {
 /// DBManager replace a node with a new node index
 macro_rules! mpt_db_replace {
     ($node:expr, $new_node:expr, $db:expr) => {{
-        mpt_db_delete!($node, $db);
+        //mpt_db_delete!($node, $db);
         mpt_db_update!($new_node, $db)
     }}
 }
@@ -107,7 +113,8 @@ fn cmp_path(path1: &Vec<u8>, path2: &Vec<u8>) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
 }
 
 fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mutex<DBManager>) -> Option<T> {
-    let node_type = mpt_db_fetch!(node, db);
+    let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
+
     match node_type {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
             if let &Some(ref value) = value {
@@ -149,8 +156,57 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mute
     }
 }
 
+fn get_helper_with_trace<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mutex<DBManager>, nodes: &mut Vec<TrieNode<T>>) -> Option<T> {
+    let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
+    match node_type {
+        Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
+            nodes.push(node_type.clone().unwrap());
+            if let &Some(ref value) = value {
+                if path.len() == 0 {
+                    Some(value.to_owned())
+                } else {
+                    let nibble = next_nibble!(path);
+                    assert!((nibble as u8) < MAX_NIBBLE_VALUE, "Invalid nibble");
+                    let next_node = branches[nibble];
+                    get_helper_with_trace(&next_node, &path[1..path.len()].to_vec(), db, nodes)
+                }
+            } else {
+                if path.len() == 0 {
+                    None
+                } else {
+                    let nibble = next_nibble!(path);
+                    assert!((nibble as u8) < MAX_NIBBLE_VALUE, "Invalid nibble");
+                    let next_node = branches[nibble];
+                    get_helper_with_trace(&next_node, &path[1..path.len()].to_vec(), db, nodes)
+                }
+            }
+        }
+        Some(TrieNode::ExtensionNode { ref encoded_path, ref key }) => {
+            nodes.push(node_type.clone().unwrap());
+            // decode the path for the node
+            let (ref cur_path, _terminated) = decode_path(encoded_path);
+            let (_shared_path, _remain_cur_path, remain_path) = cmp_path(cur_path, path);
+            get_helper_with_trace(key, &remain_path, db, nodes)
+        }
+        Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
+            nodes.push(node_type.clone().unwrap());
+            // decode the path for the node
+            let (ref cur_path, _terminated) = decode_path(encoded_path);
+            let (_shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
+            if remain_cur_path.len() == 0 && remain_path.len() == 0 {
+                Some(value.to_owned())
+            } else { None }
+        }
+        None => {
+            nodes.push(TrieNode::EMPTY);
+            None
+        }
+        _ => panic!("Unknown error!")
+    }
+}
+
 fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mutex<DBManager>) -> TrieKey {
-    let node_type = mpt_db_fetch!(node, db);
+    let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
     match node_type {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
             let mut new_branches: [TrieKey; MAX_BRANCHE_NUM] = [zero_hash!(); MAX_BRANCHE_NUM];
@@ -205,7 +261,7 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &M
 }
 
 fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T, db: &Mutex<DBManager>) -> TrieKey {
-    let node_type = mpt_db_fetch!(node, db);
+    let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
     match node_type {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
             if path.len() == 0 {
@@ -224,10 +280,10 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T,
             }
         }
         Some(TrieNode::LeafNode::<T> { encoded_path: _, value: _ }) => {
-            update_kv_node_helper(node, path, v, db)
+            update_kv_node_helper(node_type.clone(), path, v, db)
         }
         Some(TrieNode::ExtensionNode::<T> { encoded_path: _, key: _ }) => {
-            update_kv_node_helper(node, path, v, db)
+            update_kv_node_helper(node_type.clone(), path, v, db)
         }
         None => {
             let encoded_path = encode_path(&path, true);
@@ -238,9 +294,8 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T,
     }
 }
 
-fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, new_value: &T, db: &Mutex<DBManager>) -> TrieKey {
-    let node_type = mpt_db_fetch!(node, db);
-    match node_type {
+fn update_kv_node_helper<T: RLPSerialize + Clone>(node: Option<TrieNode<T>>, path: &Vec<u8>, new_value: &T, db: &Mutex<DBManager>) -> TrieKey {
+    match node {
         // if the node is a leaf node
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
             // decode the path for the node
@@ -252,8 +307,10 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                 let (shared_path, remain_cur_path, remain_path) = cmp_path(cur_path, path);
                 // compute new nodes for remain paths, attach them to a new branch node
                 let branch_key = if remain_path.len() == remain_cur_path.len() && remain_path.len() == 0 {
-                    let new_leaf_node = &TrieNode::new_leaf_node(path, new_value);
-                    mpt_db_replace!(node, new_leaf_node, db)
+                    let encoded_path = encode_path(&path, true);
+                    let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, new_value);
+                    // return new leaf node if the key is the same
+                    return mpt_db_replace!(node, new_leaf_node, db)
                 } else if remain_cur_path.len() == 0 {
                     let mut new_branches = [zero_hash!(); MAX_BRANCHE_NUM];
                     let encoded_path = encode_path(&remain_path[1..remain_path.len()].to_vec(), true);
@@ -284,7 +341,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                     mpt_db_replace!(node, new_branch_node, db)
                 };
                 // if the share path is empty, then return the branch node, else make a new extension node point to the branch node.
-                if shared_path.len() == 0 { branch_key } else {
+                if remain_cur_path.len() == 0 { branch_key } else {
                     let encoded_path = encode_path(&shared_path, false);
                     let new_extension_node = &TrieNode::<T>::new_extension_node(&encoded_path, &branch_key);
                     mpt_db_update!(new_extension_node, db)
@@ -422,14 +479,28 @@ mod trie {
         ];
         let val = "Welcome dude".to_string();
         trie.update(&path, &val);
+        let (opt_value, nodes) = trie.trace(&path);
+        println!("@@@@{:?}", nodes);
+        println!("@@@@{:?}", trie.root());
+        assert_eq!(opt_value.unwrap(), val);
 
         let new_val = "Welcome again dude".to_string();
         trie.update(&path, &new_val);
+        let (opt_value, nodes) = trie.trace(&path);
+        println!("####{:?}", nodes);
+        println!("####{:?}", trie.root());
+        assert_eq!(opt_value.unwrap(), new_val);
 
-        println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!{:?}", trie.get(&path));
+        let new_path = vec![
+            0x4, 0x8, 0x6, 0x5, 0x6, 0xc, 0x6, 0xc,
+            0x6, 0xf, 0x2, 0x0, 0x5, 0x7, 0x6, 0xf,
+            0x7, 0x2, 0x6, 0xc, 0x6, 0x3
+        ];
+        trie.update(&new_path, &new_val);
+        let (opt_value, nodes) = trie.trace(&new_path);
+        assert_eq!(opt_value.unwrap(), new_val);
 
-        let value = trie.get(&path).unwrap();
-        assert_eq!(value, new_val);
+
     }
 
     #[test]
@@ -443,6 +514,7 @@ mod trie {
         let val = "Welcome dude".to_string();
         trie.update(&path, &val);
         trie.delete(&path);
+        assert_eq!(trie.get(&path), None)
     }
 }
 
