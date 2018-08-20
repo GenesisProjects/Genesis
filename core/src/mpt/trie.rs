@@ -168,7 +168,7 @@ fn get_helper_with_trace<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                     let nibble = next_nibble!(path);
                     assert!((nibble as u8) < MAX_NIBBLE_VALUE, "Invalid nibble");
                     let next_node = branches[nibble];
-                    get_helper(&next_node, &path[1..path.len()].to_vec(), db)
+                    get_helper_with_trace(&next_node, &path[1..path.len()].to_vec(), db, nodes)
                 }
             } else {
                 if path.len() == 0 {
@@ -177,7 +177,7 @@ fn get_helper_with_trace<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                     let nibble = next_nibble!(path);
                     assert!((nibble as u8) < MAX_NIBBLE_VALUE, "Invalid nibble");
                     let next_node = branches[nibble];
-                    get_helper(&next_node, &path[1..path.len()].to_vec(), db)
+                    get_helper_with_trace(&next_node, &path[1..path.len()].to_vec(), db, nodes)
                 }
             }
         }
@@ -186,7 +186,7 @@ fn get_helper_with_trace<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
             // decode the path for the node
             let (ref cur_path, _terminated) = decode_path(encoded_path);
             let (_shared_path, _remain_cur_path, remain_path) = cmp_path(cur_path, path);
-            get_helper(key, &remain_path, db)
+            get_helper_with_trace(key, &remain_path, db, nodes)
         }
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
             nodes.push(node_type.clone().unwrap());
@@ -480,11 +480,13 @@ mod trie {
         let val = "Welcome dude".to_string();
         trie.update(&path, &val);
         let (opt_value, nodes) = trie.trace(&path);
+        println!("@@@@{:?}", nodes);
         assert_eq!(opt_value.unwrap(), val);
 
         let new_val = "Welcome again dude".to_string();
         trie.update(&path, &new_val);
         let (opt_value, nodes) = trie.trace(&path);
+        println!("####{:?}", nodes);
         assert_eq!(opt_value.unwrap(), new_val);
 
         let new_path = vec![
