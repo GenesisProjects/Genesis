@@ -497,7 +497,6 @@ mod trie {
         ];
         trie.update(&new_path, &new_val);
         let (opt_value, nodes) = trie.trace(&new_path);
-        assert!(false);
         assert_eq!(opt_value.unwrap(), new_val);
     }
 
