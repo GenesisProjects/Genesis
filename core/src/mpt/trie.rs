@@ -280,10 +280,10 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T,
             }
         }
         Some(TrieNode::LeafNode::<T> { encoded_path: _, value: _ }) => {
-            update_kv_node_helper(node, path, v, db)
+            update_kv_node_helper(node_type.clone(), path, v, db)
         }
         Some(TrieNode::ExtensionNode::<T> { encoded_path: _, key: _ }) => {
-            update_kv_node_helper(node, path, v, db)
+            update_kv_node_helper(node_type.clone(), path, v, db)
         }
         None => {
             let encoded_path = encode_path(&path, true);
@@ -294,9 +294,8 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T,
     }
 }
 
-fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, new_value: &T, db: &Mutex<DBManager>) -> TrieKey {
-    let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
-    match node_type {
+fn update_kv_node_helper<T: RLPSerialize + Clone>(node: Option<TrieNode<T>>, path: &Vec<u8>, new_value: &T, db: &Mutex<DBManager>) -> TrieKey {
+    match node {
         // if the node is a leaf node
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
             // decode the path for the node
@@ -482,12 +481,14 @@ mod trie {
         trie.update(&path, &val);
         let (opt_value, nodes) = trie.trace(&path);
         println!("@@@@{:?}", nodes);
+        println!("@@@@{:?}", trie.root());
         assert_eq!(opt_value.unwrap(), val);
 
         let new_val = "Welcome again dude".to_string();
         trie.update(&path, &new_val);
         let (opt_value, nodes) = trie.trace(&path);
         println!("####{:?}", nodes);
+        println!("####{:?}", trie.root());
         assert_eq!(opt_value.unwrap(), new_val);
 
         let new_path = vec![
@@ -498,6 +499,8 @@ mod trie {
         trie.update(&new_path, &new_val);
         let (opt_value, nodes) = trie.trace(&new_path);
         assert_eq!(opt_value.unwrap(), new_val);
+
+
     }
 
     #[test]
