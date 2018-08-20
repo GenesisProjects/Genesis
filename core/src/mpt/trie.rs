@@ -310,7 +310,8 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                 let branch_key = if remain_path.len() == remain_cur_path.len() && remain_path.len() == 0 {
                     let encoded_path = encode_path(&path, true);
                     let new_leaf_node = &TrieNode::new_leaf_node(&encoded_path, new_value);
-                    mpt_db_replace!(node, new_leaf_node, db)
+                    // return new leaf node if the key is the same
+                    return mpt_db_replace!(node, new_leaf_node, db)
                 } else if remain_cur_path.len() == 0 {
                     let mut new_branches = [zero_hash!(); MAX_BRANCHE_NUM];
                     let encoded_path = encode_path(&remain_path[1..remain_path.len()].to_vec(), true);
@@ -341,7 +342,7 @@ fn update_kv_node_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
                     mpt_db_replace!(node, new_branch_node, db)
                 };
                 // if the share path is empty, then return the branch node, else make a new extension node point to the branch node.
-                if shared_path.len() == 0 { branch_key } else {
+                if remain_cur_path.len() == 0 { branch_key } else {
                     let encoded_path = encode_path(&shared_path, false);
                     let new_extension_node = &TrieNode::<T>::new_extension_node(&encoded_path, &branch_key);
                     mpt_db_update!(new_extension_node, db)
@@ -496,6 +497,7 @@ mod trie {
         ];
         trie.update(&new_path, &new_val);
         let (opt_value, nodes) = trie.trace(&new_path);
+        assert!(false);
         assert_eq!(opt_value.unwrap(), new_val);
     }
 
