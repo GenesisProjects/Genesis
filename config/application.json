@@ -1,3 +1,10 @@
 {
-  "event_queue_size" : 1024
+  "event_queue_size" : 1024,
+  "db": {
+    "test": {
+      "path": "~/.genesis/data/test_trie",
+      "create_if_missing": true,
+      "max_open_files": 32
+    }
+  }
 }

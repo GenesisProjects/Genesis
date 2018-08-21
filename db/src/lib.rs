@@ -1,4 +1,5 @@
 pub extern crate rlp;
+extern crate config;
 
 #[macro_use]
 pub extern crate lazy_static;

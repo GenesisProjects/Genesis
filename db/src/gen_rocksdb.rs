@@ -60,6 +60,37 @@ impl RocksDB {
     }
 }
 
+trait DBOP {
+    fn put<T: RLPSerialize>(&self, value: &T) -> Hash;
+    fn delete(&self, key: &Vec<u8>);
+    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;
+}
+
+impl DBOP for RocksDB {
+    fn put<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, value: &T) -> Hash {
+        let db = &self.db;
+        let (key, encoded_rlp) = value.encrype_sha256().unwrap();
+        db.put(&key, encoded_rlp.as_slice()).expect("db put error");
+        key
+    }
+
+    fn delete(&self, key: &Vec<u8>) {
+        let db= &self.db;
+        db.delete(key);
+    }
+
+    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {
+        match &self.db.get(key).unwrap() {
+            Some(t) => {
+                let result = t.to_vec();
+                let t= Decoder::decode(&result).unwrap();
+                Some(T::deserialize(&t).unwrap())
+            },
+            None => None
+        }
+    }
+}
+
 impl fmt::Debug for RocksDB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "RocksDB(..)")
