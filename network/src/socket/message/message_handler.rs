@@ -1,19 +1,17 @@
-use session::Session;
-use message::defines::SocketMessage;
-
+use super::defines::SocketMessage;
 use std::collections::HashMap;
 
-pub type SocketMessageCallback = fn(session: &mut Session, msg: &SocketMessage, name: String) -> bool;
+pub type SocketMessageCallback<T> = fn(session: &mut T, msg: &SocketMessage, name: String) -> bool;
 
 #[derive(Clone)]
-pub struct SocketMessageHandler(HashMap<String, SocketMessageCallback>);
+pub struct SocketMessageHandler<T>(HashMap<String, SocketMessageCallback<T>>);
 
-impl SocketMessageHandler {
+impl<T> SocketMessageHandler<T> {
     pub fn new() -> Self {
         SocketMessageHandler(HashMap::new())
     }
 
-    pub fn add_event_handler(&mut self, event: String, callback: SocketMessageCallback) {
+    pub fn add_event_handler(&mut self, event: String, callback: SocketMessageCallback<T>) {
         self.0.insert(event, callback);
     }
 
@@ -24,7 +22,7 @@ impl SocketMessageHandler {
     pub fn process_event(
         &mut self,
         event: String,
-        session: &mut Session,
+        session: &mut T,
         msg: &SocketMessage) -> bool {
         if let Some(f) = self.0.get(&event) {
             f(session, msg, event.to_owned())

@@ -10,10 +10,12 @@ use std::net::SocketAddr;
 use std::rc::Rc;
 
 use gen_message::{MESSAGE_CENTER, Message};
-use message::defines::*;
-use message::protocol::*;
-use message::message_handler::SocketMessageHandler;
+
+use socket::message::defines::*;
+use socket::message::message_handler::SocketMessageHandler;
 use socket::*;
+
+use super::protocol::*;
 
 pub const CMD_ERR_PENALTY: u32 = 100u32;
 pub const DATA_TRANS_ERR_PENALTY: u32 = 200u32;
@@ -160,7 +162,7 @@ pub struct Session {
     table: PeerTable,
     block_info: Option<BlockInfo>,
 
-    pub handler: Rc<RefCell<SocketMessageHandler>>
+    pub handler: Rc<RefCell<SocketMessageHandler<Session>>>
 }
 
 impl Session {

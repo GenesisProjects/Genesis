@@ -1,11 +1,11 @@
 use common::thread::ThreadStatus;
 use mio::*;
 use mio::net::TcpListener;
-use peer::*;
 
 use std::io::*;
 use std::sync::Mutex;
 use std::time::Duration;
+use std::marker::PhantomData;
 
 pub const SERVER_TOKEN: Token = Token(0);
 /// The poll will give up cpu to let p2p controller update
@@ -43,15 +43,16 @@ pub fn token_generator() -> Token {
 /// ## Examples
 /// ```
 /// ```
-pub struct NetworkEventLoop {
+pub struct NetworkEventLoop<T> {
     pub events: Events,
     pub events_size: usize,
     pub round: usize,
     pub status: ThreadStatus,
     poll: Poll,
+    phantom: PhantomData<T>
 }
 
-impl NetworkEventLoop {
+impl<T> NetworkEventLoop<T> where T: Evented {
     pub fn new(events_size: usize) -> Self {
         // Event storage
         let events = Events::with_capacity(events_size);
@@ -64,6 +65,7 @@ impl NetworkEventLoop {
             events_size: events_size,
             poll: poll,
             status: ThreadStatus::Stop,
+            phantom: PhantomData
         }
     }
 
@@ -72,7 +74,7 @@ impl NetworkEventLoop {
         let _ = self.poll.register(listener, new_token, Ready::readable(), PollOpt::edge());
     }
 
-    pub fn register_peer(&self, peer: &Peer) -> Result<(Token)> {
+    pub fn register_peer(&self, peer: &T) -> Result<(Token)> {
         let new_token = token_generator();
         match self.poll.register(peer, new_token, Ready::readable(), PollOpt::edge()) {
             Ok(_) => Ok(new_token),
@@ -81,21 +83,18 @@ impl NetworkEventLoop {
 
     }
 
-    pub fn reregister_peer(&self, token: Token, peer: &Peer) {
+    pub fn reregister_peer(&self, token: Token, peer: &T) {
         let _ = self.poll.reregister(peer, token, Ready::readable(), PollOpt::edge());
     }
 
-    pub fn deregister(&self, peer: &Peer) {
+    pub fn deregister(&self, peer: &T) {
         let _ = self.poll.deregister(peer);
     }
 
-    /// # next_tick(&mut self)
-    /// **Usage**
-    /// - fetch new events, called by a thread at beginning of each loop-cycle.
-    /// **Result**
-    /// Result<usize>: num of new events
-    /// ## Examples
+    /// Fetch new I/O ready events from sockets registered in the eventloop.
+    /// Return number of ready sockets
     /// ```
+    ///
     /// ```
     pub fn next_tick(&mut self) -> Result<usize> {
         //TODO: make loop span configurable

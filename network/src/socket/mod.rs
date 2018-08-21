@@ -1,8 +1,10 @@
+pub mod message;
+
 use byteorder::{BigEndian, ReadBytesExt};
-use message::defines::*;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
 use serde_json;
+use self::message::defines::*;
 
 use std::io::{Error, ErrorKind, Read, Write};
 use std::io::Result as STDResult;
@@ -68,31 +70,6 @@ impl PeerSocket {
 
     #[inline]
     pub fn receive_data(&mut self, remain_size: usize) -> STDResult<Vec<u8>> {
-        /*let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
-        match self.stream.read(&mut temp_buf) {
-            Ok(size) => {
-                // if the read size is larger than remain_size, read the overflow bytes
-                // into the line cache
-                if size > remain_size {
-                    self.read_buffer.write(&temp_buf[..remain_size])?;
-                    let mut vec = temp_buf[remain_size..size].to_vec();
-                    let ret = match self.read_buffer.read_to_end(&mut vec) {
-                        Ok(_) => Ok(vec.clone()),
-                        Err(e) => Err(e)
-                    };
-                    self.read_buffer.write(&vec[..])?;
-                    ret
-                } else {
-                    self.read_buffer.write(&temp_buf[..size])?;
-                    let mut vec: Vec<u8> = vec![];
-                    match self.read_buffer.read_to_end(&mut vec) {
-                        Ok(_) => Ok(vec),
-                        Err(e) => Err(e)
-                    }
-                }
-            }
-            Err(e) => Err(e)
-        }*/
         unimplemented!()
     }
 

@@ -2,4 +2,3 @@
 
 pub mod defines;
 pub mod message_handler;
-pub mod protocol;

@@ -1,12 +1,9 @@
-pub mod message;
 pub mod nat;
-pub mod p2p_config;
-pub mod network_eventloop;
-pub mod peer;
-pub mod p2p_controller;
+pub mod eventloop;
+pub mod bft;
+pub mod p2p;
 pub mod socket;
-pub mod session;
-pub mod session_state;
+
 pub mod utils;
 
 pub extern crate byteorder;

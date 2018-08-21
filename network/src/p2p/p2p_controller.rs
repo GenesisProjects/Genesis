@@ -1,10 +1,11 @@
 use chrono::*;
 use nat::*;
-use p2p_config::*;
-use network_eventloop::*;
-use peer::*;
-use message::protocol::*;
-use session::*;
+use eventloop::*;
+
+use super::peer::*;
+use super::protocol::*;
+use super::p2p_config::*;
+use super::session::*;
 
 use common::address::Address as Account;
 use common::gen_message::*;
@@ -57,7 +58,7 @@ pub struct P2PController {
 
     ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>,
     config: P2PConfig,
-    eventloop: NetworkEventLoop,
+    eventloop: NetworkEventLoop<Peer>,
     last_updated: DateTime<Utc>,
     protocol: P2PProtocol,
 }

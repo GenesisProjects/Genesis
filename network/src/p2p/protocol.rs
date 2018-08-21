@@ -1,16 +1,13 @@
 use chrono::prelude::*;
-
 use common::address::Address as Account;
 use common::hash::Hash;
 use gen_core::transaction::Transaction;
-
-use message::defines::*;
 use nat::*;
-use peer::PeerRef;
-
+use socket::message::defines::*;
 use std::net::SocketAddr;
+use super::peer::*;
 
-const MAX_DELAY:i64 = 30i64;
+const MAX_DELAY: i64 = 30i64;
 
 pub trait Notify {
     /// # notify_bootstrap(&mut self, 1)
@@ -38,141 +35,26 @@ pub trait Notify {
     fn heartbeat(protocol: P2PProtocol, peer_ref: PeerRef);
 }
 
-pub trait Consensus {
-    /// # notify_propose(&mut self, 1)
-    /// **Usage**
-    /// - send propose message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn notify_propose(protocol: P2PProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
-
-    /// # notify_prevote(&mut self, 1)
-    /// **Usage**
-    /// - send prevote message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn notify_prevote(protocol: P2PProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
-
-    /// # notify_precommit(&mut self, 1)
-    /// **Usage**
-    /// - send precommit message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn notify_precommit(protocol: P2PProtocol, round: usize, propose_hash: Hash, block_hash: Hash, table: &PeerTable);
-
-    /// # notify_tnx_request(&mut self, 1)
-    /// **Usage**
-    /// - send tnxs request message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn notify_transactions_request(protocol: P2PProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable);
-
-    /// # handle_consensus(&mut self, 1)
-    /// **Usage**
-    /// - handle consensus message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn handle_consensus(&mut self, msg: SocketMessage);
-
-    /// # handle_propose(&mut self, 1)
-    /// **Usage**
-    /// - handle propose message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn handle_propose(&mut self, propose: Propose);
-
-    /// # handle_prevote(&mut self, 1)
-    /// **Usage**
-    /// - handle prevote message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn handle_prevote(&mut self, propose: Prevote);
-
-    /// # handle_precommit(&mut self, 1)
-    /// **Usage**
-    /// - handle precommit message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn handle_precommit(&mut self, propose: Precommit);
-
-    /// # handle_tnx_request(&mut self, 1)
-    /// **Usage**
-    /// - handle tnx request message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn handle_transactions_request(&mut self, tnxs: Vec<Hash>);
-}
-
 #[derive(Clone, Debug)]
 pub struct BlockInfo {
     pub block_len: usize,
     pub last_block_num: usize,
     pub last_block_hash: Hash,
 
-    pub estimated_round: usize
-}
-
-pub struct Propose {
-    /// The validator id.
-    validator: Hash,
-    /// The height to which the message is related.
-    height: usize,
-    /// The round to which the message is related.
-    round: usize,
-    /// Hash of the previous block.
-    prev_hash: Hash,
-    /// The list of transactions to include in the next block.
-    transactions: Vec<Hash>,
-}
-
-pub struct Prevote {
-    /// The validator id.
-    validator: Account,
-    /// The height to which the message is related.
-    height: usize,
-    /// The round to which the message is related.
-    round: usize,
-    /// Hash of the corresponding `Propose`.
-    propose_hash: Hash,
-    /// Locked round.
-    locked_round: usize,
-}
-
-pub struct Precommit {
-    /// The validator id.
-    validator: Account,
-    /// The height to which the message is related.
-    height: usize,
-    /// The round to which the message is related.
-    round: usize,
-    /// Hash of the corresponding `Propose`.
-    propose_hash: Hash,
-    /// Hash of the new block.
-    block_hash: Hash,
-    /// Time of the `Precommit`.
-    time: DateTime<Utc>,
+    pub estimated_round: usize,
 }
 
 #[derive(Debug)]
 pub struct PeerTable {
     pub table: Vec<(Option<Account>, SocketInfo)>,
-    pub limit: usize
+    pub limit: usize,
 }
 
 impl Clone for PeerTable {
     fn clone(&self) -> Self {
         PeerTable {
             table: self.table.iter().map(|peer_info| peer_info.clone()).collect(),
-            limit: self.limit
+            limit: self.limit,
         }
     }
 }
@@ -182,7 +64,7 @@ impl PeerTable {
         // TODO: make limit configuable
         PeerTable {
             table: vec![],
-            limit: 512
+            limit: 512,
         }
     }
 
@@ -205,7 +87,7 @@ impl PeerTable {
                 })
                 .collect()
             ,
-            limit: 512
+            limit: 512,
         }
     }
 
@@ -265,7 +147,7 @@ impl P2PProtocol {
                     return false;
                 }
 
-                if ! (self.verify_version(0usize, msg)
+                if !(self.verify_version(0usize, msg)
                     && Self::verify_account(1usize, msg)
                     && Self::verify_timestamp(2usize, msg)) {
                     return false;
@@ -273,18 +155,18 @@ impl P2PProtocol {
 
                 for arg in &msg.args()[3..] {
                     match arg {
-                        &SocketMessageArg::String { ref value } => {},
+                        &SocketMessageArg::String { ref value } => {}
                         _ => { return false; }
                     }
                 };
                 return true;
-            },
+            }
             "GOSSIP" => {
                 if msg.args().len() < 4 {
                     return false;
                 }
 
-                if ! (self.verify_version(0usize, msg)
+                if !(self.verify_version(0usize, msg)
                     && Self::verify_account(1usize, msg)
                     && Self::verify_timestamp(2usize, msg)) {
                     return false;
@@ -292,18 +174,18 @@ impl P2PProtocol {
 
                 for arg in &msg.args()[3..] {
                     match arg {
-                        &SocketMessageArg::String { ref value } => {},
+                        &SocketMessageArg::String { ref value } => {}
                         _ => { return false; }
                     }
                 };
                 return true;
-            },
+            }
             "REJECT" => {
                 if msg.args().len() != 4 {
                     return false;
                 }
 
-                if ! (self.verify_version(0usize, msg)
+                if !(self.verify_version(0usize, msg)
                     && Self::verify_account(1usize, msg)
                     && Self::verify_timestamp(2usize, msg)) {
                     return false;
@@ -313,13 +195,13 @@ impl P2PProtocol {
                     Some(_) => true,
                     None => false
                 }
-            },
+            }
             "REQUEST_BLOCK_INFO" => {
                 if msg.args().len() != 5 {
                     return false;
                 }
 
-                if ! (self.verify_version(0usize, msg)
+                if !(self.verify_version(0usize, msg)
                     && Self::verify_account(1usize, msg)
                     && Self::verify_timestamp(2usize, msg)) {
                     return false;
@@ -334,13 +216,13 @@ impl P2PProtocol {
                     None => false
                 };
                 ret
-            },
+            }
             "REQUEST_BLOCK" => {
                 if msg.args().len() != 5 {
                     return false;
                 }
 
-                if ! (self.verify_version(0usize, msg)
+                if !(self.verify_version(0usize, msg)
                     && Self::verify_account(1usize, msg)
                     && Self::verify_timestamp(2usize, msg)) {
                     return false;
@@ -355,7 +237,7 @@ impl P2PProtocol {
                     None => false
                 };
                 ret
-            },
+            }
             _ => false
         }
     }
@@ -364,7 +246,7 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "BOOTSTRAP".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -373,7 +255,7 @@ impl P2PProtocol {
             << Utc::now().into();
 
         for &(_, ref addr) in &table.table {
-            let addr:SocketAddr = addr.clone();
+            let addr: SocketAddr = addr.clone();
             msg = msg << SocketMessageArg::String { value: addr.to_string() };
         }
 
@@ -386,10 +268,10 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "GOSSIP".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
-        let args: Vec<SocketMessageArg>  = vec![];
-        msg = msg <<  SocketMessageArg::Vesion {
+        let args: Vec<SocketMessageArg> = vec![];
+        msg = msg << SocketMessageArg::Vesion {
             value: self.vesion.to_owned()
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
@@ -411,7 +293,7 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "REJECT".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -428,11 +310,10 @@ impl P2PProtocol {
     pub fn request_block_info(&self,
                               self_block_len: usize,
                               self_last_hash: Hash) -> SocketMessage {
-
         let mut msg = SocketMessage::new(
             "REQUEST_BLOCK_INFO".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -452,7 +333,7 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "BLOCK_INFO".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -473,7 +354,7 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "REQUEST_TNX".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -494,7 +375,7 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "TNX".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -511,11 +392,11 @@ impl P2PProtocol {
     }
 
     pub fn request_sync_info(&self,
-                      block_info: &BlockInfo) -> SocketMessage {
+                             block_info: &BlockInfo) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "REQUEST_SYNC_INFO".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -535,7 +416,7 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "SYNC_INFO".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -560,7 +441,7 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "UNSECCESS_SYNC_INFO".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -582,7 +463,7 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "REQUEST_TRANS".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -599,11 +480,11 @@ impl P2PProtocol {
     }
 
     pub fn transmission_prepared(&self,
-                                size: usize) -> SocketMessage {
+                                 size: usize) -> SocketMessage {
         let mut msg = SocketMessage::new(
             "TRANS_PREPARED".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -621,7 +502,7 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "TRANS_NOT_READY".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -639,7 +520,7 @@ impl P2PProtocol {
         let mut msg = SocketMessage::new(
             "TRANS_ACCEPT".to_string(),
             vec![],
-            vec![]
+            vec![],
         );
 
         msg = msg << SocketMessageArg::Vesion {
@@ -653,5 +534,4 @@ impl P2PProtocol {
     pub fn heartbeat(&self) -> SocketMessage {
         SocketMessage::heartbeat()
     }
-
 }
