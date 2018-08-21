@@ -35,12 +35,12 @@ pub enum StorageError {
 }
 
 #[derive(Debug, Clone)]
-pub struct Storage {
-    trie: Trie<CHUNK>,
+pub struct Storage<'db> {
+    trie: Trie<'db, CHUNK>,
     account_addr: Address,
 }
 
-impl Storage {
+impl<'db> Storage<'db> {
     pub fn get(&self, key: Hash) -> Option<CHUNK> {
         let vec = (&key[..]).to_vec();
         self.trie.get(&vec)

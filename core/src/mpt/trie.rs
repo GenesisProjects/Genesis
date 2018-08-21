@@ -1,5 +1,6 @@
 use common::hash::*;
 use db::manager::*;
+use db::gen_rocksdb::*;
 use rlp::RLPSerialize;
 use std::cmp::min;
 use std::fmt;
@@ -9,20 +10,20 @@ use super::node::*;
 
 /// Wrapper of DBManager within **Patricia Tree**.
 #[derive(Clone)]
-pub struct Trie<T: RLPSerialize + Clone> {
+pub struct Trie<'db, T: RLPSerialize + Clone> {
     root: TrieKey,
-    db: &'static Mutex<DBManager>,
+    db: &'db RocksDB,
     phantom: PhantomData<T>,
 }
 
-impl<T> Trie<T> where T: RLPSerialize + Clone {
+impl<'db, T> Trie<'db, T> where T: RLPSerialize + Clone {
     /// Initialize an empty trie with a specialized DB
-    pub fn new(db: &'static Mutex<DBManager>) -> Trie<T> {
+    pub fn new(db: &'db RocksDB) -> Trie<T> {
         Trie::<T> { root: zero_hash!(), db: db, phantom: PhantomData }
     }
 
     /// Initialize a pre-saved trie by hash root a specialized DB
-    pub fn load(root: TrieKey, db: &'static Mutex<DBManager>) -> Trie<T> {
+    pub fn load(root: TrieKey, db: &'db RocksDB) -> Trie<T> {
         Trie::<T> { root: root, db: db, phantom: PhantomData }
     }
 
@@ -63,14 +64,14 @@ const PATH_MAX_LEN: usize = 64usize;
 /// DBManager delete a node
 macro_rules! mpt_db_delete {
     ($node:expr, $db:expr) => {{
-        $db.lock().unwrap().delete(&($node).to_vec());
+        $db.delete(&($node).to_vec());
     }};
 }
 
 /// DBManager update a node
 macro_rules! mpt_db_update {
     ($node:expr, $db:expr) => {
-        $db.lock().unwrap().put($node)
+        $db.put($node)
     };
 }
 /// DBManager replace a node with a new node index
@@ -84,7 +85,7 @@ macro_rules! mpt_db_replace {
 /// DBManager get a node
 macro_rules! mpt_db_fetch {
     ($node:expr, $db:expr) => {
-        $db.lock().unwrap().get(&($node).to_vec())
+        $db.get(&($node).to_vec())
     };
 }
 
@@ -112,7 +113,7 @@ fn cmp_path(path1: &Vec<u8>, path2: &Vec<u8>) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
     )
 }
 
-fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mutex<DBManager>) -> Option<T> {
+fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &RocksDB) -> Option<T> {
     let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
 
     match node_type {
@@ -156,7 +157,7 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mute
     }
 }
 
-fn get_helper_with_trace<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mutex<DBManager>, nodes: &mut Vec<TrieNode<T>>) -> Option<T> {
+fn get_helper_with_trace<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &RocksDB, nodes: &mut Vec<TrieNode<T>>) -> Option<T> {
     let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
     match node_type {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
@@ -205,7 +206,7 @@ fn get_helper_with_trace<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
     }
 }
 
-fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Mutex<DBManager>) -> TrieKey {
+fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &RocksDB) -> TrieKey {
     let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
     match node_type {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
@@ -260,7 +261,7 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &M
     }
 }
 
-fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T, db: &Mutex<DBManager>) -> TrieKey {
+fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T, db: &RocksDB) -> TrieKey {
     let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
     match node_type {
         Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
@@ -294,7 +295,7 @@ fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T,
     }
 }
 
-fn update_kv_node_helper<T: RLPSerialize + Clone>(node: Option<TrieNode<T>>, path: &Vec<u8>, new_value: &T, db: &Mutex<DBManager>) -> TrieKey {
+fn update_kv_node_helper<T: RLPSerialize + Clone>(node: Option<TrieNode<T>>, path: &Vec<u8>, new_value: &T, db: &RocksDB) -> TrieKey {
     match node {
         // if the node is a leaf node
         Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
@@ -420,19 +421,25 @@ mod trie {
 
     #[test]
     fn test_trie() {
-        let trie = Trie::<TestObject>::new(&SHARED_MANAGER);
+        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let test_db = manager.get_db("test");
+        let trie = Trie::<TestObject>::new(test_db);
     }
 
     #[test]
     fn test_trie_root() {
-        let trie = Trie::<TestObject>::new(&SHARED_MANAGER);
+        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let test_db = manager.get_db("test");
+        let trie = Trie::<TestObject>::new(&test_db);
         let root = trie.root();
         assert_eq!(root, zero_hash!());
     }
 
     #[test]
     fn test_trie_insert() {
-        let mut trie = Trie::<String>::new(&SHARED_MANAGER);
+        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let test_db = manager.get_db("test");
+        let mut trie = Trie::<String>::new(&test_db);
         let path = vec![
             0x4, 0x8, 0x6, 0x5, 0x6, 0xc, 0x6, 0xc,
             0x6, 0xf, 0x2, 0x0, 0x5, 0x7, 0x6, 0xf,
@@ -447,7 +454,9 @@ mod trie {
 
     #[test]
     fn test_trie_insert_multiple() {
-        let mut trie = Trie::<String>::new(&SHARED_MANAGER);
+        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let test_db = manager.get_db("test");
+        let mut trie = Trie::<String>::new(&test_db);
         let path1 = vec![
             0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8
         ];
@@ -471,7 +480,9 @@ mod trie {
 
     #[test]
     fn test_trie_update() {
-        let mut trie = Trie::<String>::new(&SHARED_MANAGER);
+        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let test_db = manager.get_db("test");
+        let mut trie = Trie::<String>::new(&test_db);
         let path = vec![
             0x4, 0x8, 0x6, 0x5, 0x6, 0xc, 0x6, 0xc,
             0x6, 0xf, 0x2, 0x0, 0x5, 0x7, 0x6, 0xf,
@@ -505,7 +516,9 @@ mod trie {
 
     #[test]
     fn test_trie_delete() {
-        let mut trie = Trie::<String>::new(&SHARED_MANAGER);
+        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let test_db = manager.get_db("test");
+        let mut trie = Trie::<String>::new(&test_db);
         let path = vec![
             0x4, 0x8, 0x6, 0x5, 0x6, 0xc, 0x6, 0xc,
             0x6, 0xf, 0x2, 0x0, 0x5, 0x7, 0x6, 0xf,
@@ -518,7 +531,7 @@ mod trie {
     }
 }
 
-impl<T> fmt::Debug for Trie<T> where T: RLPSerialize + Clone {
+impl<'db, T> fmt::Debug for Trie<'db, T> where T: RLPSerialize + Clone {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.root)
     }

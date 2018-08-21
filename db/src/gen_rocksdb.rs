@@ -60,7 +60,7 @@ impl RocksDB {
     }
 }
 
-trait DBOP {
+pub trait DBOP {
     fn put<T: RLPSerialize>(&self, value: &T) -> Hash;
     fn delete(&self, key: &Vec<u8>);
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;

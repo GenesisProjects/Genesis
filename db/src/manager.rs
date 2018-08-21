@@ -110,7 +110,18 @@ mod tests {
     fn get_test_db() {
         let mut m = &SHARED_MANAGER;
         let mut c = m.lock().unwrap();
-        let r = c.get_db("test");
+        let d = c.get_db("test");
+        println!("{:?}", d);
+    }
+
+    #[test]
+    fn test_db_insert() {
+        let mut m = &SHARED_MANAGER;
+        let mut c = m.lock().unwrap();
+        let db = c.get_db("test");
+
+        let test_str = String::from("test");
+        let r = db.put(&test_str);
         println!("{:?}", r);
     }
 
