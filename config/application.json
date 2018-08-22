@@ -2,7 +2,17 @@
   "event_queue_size" : 1024,
   "db": {
     "test": {
-      "path": "~/.genesis/data/test_trie",
+      "path": "~/.genesis/data/test",
+      "create_if_missing": true,
+      "max_open_files": 32
+    },
+    "storage": {
+      "path": "~/.genesis/data/storage",
+      "create_if_missing": true,
+      "max_open_files": 32
+    },
+    "state": {
+      "path": "~/.genesis/data/state",
       "create_if_missing": true,
       "max_open_files": 32
     }
