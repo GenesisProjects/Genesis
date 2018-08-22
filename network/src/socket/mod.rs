@@ -1,12 +1,14 @@
 //! TCP Socket Wrapper
 //!
 //! Genesis use this crate to send peer to peer messages.
-//! All I/O operations are **asynchronous**
+//! All I/O operations are **non-blocking**
 //!
 //! # Examples
 //! ```
+//! // Show general usage of PeerSocket
 //! use gen_network::socket::PeerSocket;
 //! use gen_network::socket::message::defines::*;
+//! use mio::tcp::TcpStream;
 //!
 //! // Connect to another peer
 //! let mut socket = PeerSocket::connect("127.0.0.1:30001".into()).unwrap();
@@ -14,7 +16,7 @@
 //! // Send a socket message
 //! socket.send_msg(SocketMessage::heartbeat());
 //!
-//! // Recieve socket messages from another peer
+//! // Receive socket messages from another peer
 //! match self.socket.receive_msgs() {
 //!     // Get messages successful
 //!     Ok(msgs) => {
@@ -32,7 +34,45 @@
 //!     }
 //! }
 //! ```
-
+//! ```
+//! // Integrated with event loop
+//! use gen_network::socket::PeerSocket;
+//! use gen_network::socket::message::defines::*;
+//! use gen_network::eventloop::*;
+//!
+//! // Connect to another peer
+//! let mut socket = PeerSocket::connect("127.0.0.1:30001".into()).unwrap();
+//!
+//! // Register into an event loop
+//! let mut eventloop: NetworkEventLoop<PeerSocket> = NetworkEventLoop::new(1024);
+//! let token = eventloop.register_peer(&socket).unwrap();
+//!
+//! // Event loop fetch events in next tick
+//! eventloop.next_tick();
+//!
+//! // Try to receive new socket messages if the socket is ready
+//! for event in &(eventloop.events) {
+//!     if event.token() == token {
+//!         match socket.receive_msgs() {
+//!             // Get messages successful
+//!             Ok(msgs) => {
+//!                 for msg in msgs {
+//!                     println!(msg);
+//!                 }
+//!             },
+//!             // Socket is not available right now
+//!             Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+//!                 println!("Socket is not ready anymore, please try again in the next tick");
+//!             },
+//!             // IO exception
+//!             Err(e) => {
+//!                 panic!("Exception: {:?}", e);
+//!             }
+//!         }
+//!     }
+//! }
+//! ```
+//!
 use byteorder::{BigEndian, ReadBytesExt};
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
@@ -46,9 +86,11 @@ use std::str;
 
 pub mod message;
 
-pub const MAX_LINE_CAHCE_LEN: usize = 1024 * 1024 * 4;
+const MAX_LINE_CAHCE_LEN: usize = 1024 * 1024 * 4;
+const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 1024;
+
+/// The max mio data window size.
 pub const MIO_WINDOW_SIZE: usize = 1024;
-pub const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 1024;
 
 /// A non-blocking TCP socket between peer and peer.
 /// The data send by socket is sealed within [SocketMessage](message/defines/SocketMessage.t.html)..
