@@ -35,7 +35,7 @@
 use super::defines::SocketMessage;
 use std::collections::HashMap;
 
-/// Callback function pointer.
+/// Callback function.
 /// ## Params:
 /// *session - caller
 /// *name - caller name, generally the channel name of the caller.
@@ -49,6 +49,8 @@ pub trait EventRegister {
     fn add_handler(self) -> Self;
 }
 
+/// Add/Del `SocketMessageCallback`.
+/// Invoke `SocketMessageCallback` by `event` string.
 #[derive(Clone)]
 pub struct SocketMessageHandler<T>(HashMap<String, SocketMessageCallback<T>>);
 
@@ -57,14 +59,18 @@ impl<T> SocketMessageHandler<T> {
         SocketMessageHandler(HashMap::new())
     }
 
+    /// Add a `SocketMessageCallback` with an `event` name.
     pub fn add_event_handler(&mut self, event: String, callback: SocketMessageCallback<T>) {
         self.0.insert(event, callback);
     }
 
+    /// Remove a `SocketMessageCallback` by the `event` name.
     pub fn remove_event_handler(&mut self, event: String) {
         self.0.remove(&event);
     }
 
+    /// Process an event.
+    /// Select the relative `SocketMessageCallback` to invoke.
     pub fn process_event(
         &mut self,
         event: String,
