@@ -126,7 +126,7 @@ impl PeerSocket {
     }
 
     /// Receive list of socket messages from the socket.
-    /// Will return `Err(ErrorKind::WouldBlock)` if the socket is not ready yet, should try again.
+    /// Will return `Err(ErrorKind::WouldBlock)` if the socket is not ready yet, please try again.
     /// If return another I/O exceptions, socket could be broken.
     #[inline]
     pub fn receive_msgs(&mut self) -> STDResult<Vec<SocketMessage>> {
@@ -141,6 +141,7 @@ impl PeerSocket {
         }
     }
 
+    // Try to fetch messages from the socket buffer.
     fn fetch_messages_from_buffer(&mut self) -> STDResult<Vec<SocketMessage>> {
         let buff_size = self.read_buffer.len() as u64;
         let mut lines: Vec<Vec<u8>> = vec![];
@@ -180,12 +181,14 @@ impl PeerSocket {
         }).collect::<Vec<SocketMessage>>())
     }
 
+    // Flush the current line buffer back to read_buffer
     #[inline]
     fn flush_line_cache(&mut self) {
         self.read_buffer.write_all(&self.line_cache[..]).unwrap();
         self.line_cache = vec![];
     }
 
+    // Clean the line cache
     #[inline]
     fn clean_line_cache(&mut self) {
         self.line_cache = vec![];
@@ -193,20 +196,24 @@ impl PeerSocket {
 }
 
 impl Evented for PeerSocket {
+    // Call this function to register the socket to the event loop after initialized.
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> STDResult<()> {
         self.stream.register(poll, token, interest, opts)
     }
 
+    // Call this function to reregister the socket if socket I/O faild.
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> STDResult<()> {
         self.stream.reregister(poll, token, interest, opts)
     }
 
+    // Call this function before drop the socket, it is optional.
     fn deregister(&self, poll: &Poll) -> STDResult<()> {
         self.stream.deregister(poll)
     }
 }
 
 impl Drop for PeerSocket {
+    // Shut down connection if socket dropped.
     fn drop(&mut self) {
         self.stream.shutdown(Shutdown::Both).unwrap();
     }
