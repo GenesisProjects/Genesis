@@ -6,6 +6,7 @@ use std::result::Result as SerdeResult;
 
 use common::address::Address as Account;
 use nat::*;
+use socket::message::message_handler::*;
 
 use super::protocol::*;
 use super::session::*;

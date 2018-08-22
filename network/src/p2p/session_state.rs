@@ -1,13 +1,9 @@
 use gen_message::{Message, MESSAGE_CENTER};
 use socket::message::defines::*;
-use socket::message::message_handler::SocketMessageHandler;
+use socket::message::message_handler::*;
 
 use super::session::*;
 use super::protocol::*;
-
-pub trait EventRegister {
-    fn add_handler(self) -> Self;
-}
 
 impl EventRegister for Session {
     fn add_handler(self) -> Self {
