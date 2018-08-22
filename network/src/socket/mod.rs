@@ -1,21 +1,58 @@
-pub mod message;
+//! TCP Socket Wrapper
+//!
+//! Genesis use this crate to send peer to peer messages.
+//! All I/O operations are **asynchronous**
+//!
+//! # Examples
+//! ```
+//! use gen_network::socket::PeerSocket;
+//! use gen_network::socket::message::defines::*;
+//!
+//! // Connect to another peer
+//! let mut socket = PeerSocket::connect("127.0.0.1:30001".into()).unwrap();
+//!
+//! // Send a socket message
+//! socket.send_msg(SocketMessage::heartbeat());
+//!
+//! // Recieve socket messages from another peer
+//! match self.socket.receive_msgs() {
+//!     // Get messages successful
+//!     Ok(msgs) => {
+//!         for msg in msgs {
+//!             println!(msg);
+//!         }
+//!     },
+//!     // Socket is not available right now
+//!     Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+//!         println!("Socket is not ready anymore, please try again in the next tick");
+//!     },
+//!     // IO exception
+//!     Err(e) => {
+//!        panic!("Exception: {:?}", e);
+//!     }
+//! }
+//! ```
 
 use byteorder::{BigEndian, ReadBytesExt};
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
-use serde_json;
 use self::message::defines::*;
-
+use serde_json;
 use std::io::{Error, ErrorKind, Read, Write};
 use std::io::Result as STDResult;
-use std::net::{Shutdown, SocketAddr};
 use std::mem::transmute;
+use std::net::{Shutdown, SocketAddr};
 use std::str;
+
+pub mod message;
 
 pub const MAX_LINE_CAHCE_LEN: usize = 1024 * 1024 * 4;
 pub const MIO_WINDOW_SIZE: usize = 1024;
 pub const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 1024;
 
+/// A non-blocking TCP socket between peer and peer.
+/// The data send by socket is sealed within [SocketMessage](message/defines/SocketMessage.t.html)..
+/// PeerSocket only support `ipv4` address now.
 #[derive(Debug)]
 pub struct PeerSocket {
     stream: TcpStream,
@@ -25,6 +62,7 @@ pub struct PeerSocket {
 }
 
 impl PeerSocket {
+    /// Init a peer socket with mio [TcpStream](../../mio/tcp/TcpStream.t.html)
     #[inline]
     pub fn new(socket: TcpStream) -> Self {
         // set the socket to nodelay mode
@@ -38,6 +76,8 @@ impl PeerSocket {
         }
     }
 
+    /// Establish a connection to the a socket address directly.
+    /// Will return standard I/O Exception if failed.
     #[inline]
     pub fn connect(addr: &SocketAddr) -> STDResult<Self> {
         match TcpStream::connect(addr) {
@@ -51,28 +91,19 @@ impl PeerSocket {
         }
     }
 
+    /// Send binary data directly into the socket.
+    #[deprecated(since="0.1.0", note="please use `send_msg` instead")]
     #[inline]
-    pub fn send_data(&mut self, data: &[u8]) -> STDResult<usize> {
-        let mut new_data = data[..].to_vec();
-        self.write_buffer.append(&mut new_data);
-        match self.stream.write(&self.write_buffer[..]) {
-            Ok(size) => {
-                self.write_buffer.drain(0..size);
-                if self.write_buffer.len() > MAX_WRITE_BUFF_SIZE {
-                    Err(Error::new(ErrorKind::ConnectionAborted, "Buffer overflow"))
-                } else {
-                    Ok(size)
-                }
-            }
-            Err(e) => Err(e)
-        }
-    }
+    pub fn send_data(&mut self, data: &[u8]) -> STDResult<usize> { unimplemented!() }
 
+    /// Receive binary data directly from the socket
+    #[deprecated(since="0.1.0", note="please use `receive_msgs` instead")]
     #[inline]
     pub fn receive_data(&mut self, remain_size: usize) -> STDResult<Vec<u8>> {
         unimplemented!()
     }
 
+    /// Send socket message to the socket.
     #[inline]
     pub fn send_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
         // println!("data1 {:?}", &msg);
@@ -94,6 +125,9 @@ impl PeerSocket {
         }
     }
 
+    /// Receive list of socket messages from the socket.
+    /// Will return `Err(ErrorKind::WouldBlock)` if the socket is not ready yet, should try again.
+    /// If return another I/O exceptions, socket could be broken.
     #[inline]
     pub fn receive_msgs(&mut self) -> STDResult<Vec<SocketMessage>> {
         let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
@@ -137,7 +171,7 @@ impl PeerSocket {
         }
 
         Ok(lines.into_iter().map(|line| {
-            let line_string = unsafe{ String::from_utf8_unchecked(line) };
+            let line_string = unsafe { String::from_utf8_unchecked(line) };
             let line_str = line_string.as_str();
             match serde_json::from_str(line_str) {
                 Ok(r) => r,
