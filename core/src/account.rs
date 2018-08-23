@@ -73,6 +73,18 @@ impl Account {
         self.balance
     }
 
+    pub fn nonce(&self) -> u32 {
+        self.nonce
+    }
+
+    pub fn code_hash(&self) -> Hash {
+        self.code_hash.to_owned()
+    }
+
+    pub fn storage_root(&self) -> Hash {
+        self.storage_root.to_owned()
+    }
+
     /// Get the storage of the account.
 //    pub fn storage(&self) -> Storage  {
 //        self.storage.to_owned()
@@ -117,27 +129,32 @@ impl RLPSerialize for Account {
     }
 
     fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
-        println!("{:?}", rlp[3]);
-        Ok(Account::new("test"))
+        if rlp.len() != 6 {
+            Err(RLPError::RLPErrorWrongNumParams)
+        } else {
+            let m_type: String = rlp[0].clone().into();
+            if m_type != "Account".to_string() {
+                Err(RLPError::RLPErrorType)
+            } else {
+                let storage_root_string: String = rlp[3].clone().into();
+                let mut storage_root: Hash = zero_hash!();
+                let code_hash_string: String = rlp[4].clone().into();
+                let mut code_hash: Hash = zero_hash!();
 
-//        if rlp.len() != 4 {
-//            Err(RLPError::RLPErrorWrongNumParams)
-//        } else {
-//            let m_type: String = rlp[0].clone().into();
-//            if m_type != "Account".to_string() {
-//                Err(RLPError::RLPErrorType)
-//            } else {
-//                let base_account = BaseAccount {
-//                    nonce: rlp[1].clone().into(),
-//                    balance: rlp[2].clone().into(),
-//                    storage_root: rlp[3].clone().into().as_bytes(),
-//                    code_hash: rlp[4].clone().into().as_bytes(),
-//                    name: rlp[5].clone().into()
-//                };
-//
-//                Ok(Account::from(base_account))
-//            }
-//        }
+                storage_root.copy_from_slice(storage_root_string.as_bytes());
+                code_hash.copy_from_slice(code_hash_string.as_bytes());
+
+                let base_account = BaseAccount {
+                    nonce: rlp[1].clone().into(),
+                    balance: rlp[2].clone().into(),
+                    storage_root,
+                    code_hash,
+                    name: rlp[5].clone().into()
+                };
+
+                Ok(Account::from(base_account))
+            }
+        }
     }
 }
 
@@ -149,6 +166,16 @@ mod tests {
     fn new_account() {
         let account = Account::new("test");
         assert_eq!(account.balance, 0u32);
+    }
+
+    #[test]
+    fn rlp_test() {
+        let a = Account::new("test");
+        let b = Account::deserialize(&a.serialize().unwrap()).unwrap();
+        assert_eq!(a.balance(), b.balance());
+        assert_eq!(a.nonce(), b.nonce());
+        assert_eq!(a.code_hash(), b.code_hash());
+        assert_eq!(a.storage_root(), b.storage_root());
     }
 
     #[test]
