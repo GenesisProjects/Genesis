@@ -14,42 +14,24 @@ use std::sync::Mutex;
 use std::time::Duration;
 use std::marker::PhantomData;
 
+/// The mio token for tcp connection listener
 pub const SERVER_TOKEN: Token = Token(0);
 /// The poll will give up cpu to let p2p controller update
 pub const TIMEOUT_MILISECOND: u64 = 3000u64;
 
 lazy_static! {
-    pub static ref TOKEN_SEQ: Mutex<usize> = {
+    static ref TOKEN_SEQ: Mutex<usize> = {
         Mutex::new(1usize)
     };
 }
 
-/// # token_generator(0)
-/// **Usage**
-/// - generate a unique token
-/// **Return**
-/// - 1. ***[[Token]]***
-/// ## Examples
-/// ```
-/// ```
-pub fn token_generator() -> Token {
+fn token_generator() -> Token {
     let mut seq = TOKEN_SEQ.lock().unwrap();
     let token = Token(*seq);
     *seq += 1;
     token
 }
 
-/// # NetworkEventLoop
-/// **Usage**
-/// - a implementation of the mio, polled by [[common::thread::Thread]]
-/// **Parameters**
-/// - 1. ***events***       events queue
-/// - 2. ***round***        current round
-/// - 3. ***status***       instance of [[ThreadStatus]]
-/// - 4. ***poll***         instance of [[Poll]]
-/// ## Examples
-/// ```
-/// ```
 pub struct NetworkEventLoop<T> {
     pub events: Events,
     pub events_size: usize,
