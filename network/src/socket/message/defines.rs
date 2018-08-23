@@ -1,3 +1,5 @@
+//! Handle message with callback functions.
+
 use std::ops::*;
 
 use common::address::Address as Account;
@@ -37,10 +39,29 @@ impl From<DateTime<Utc>> for SocketMessageArg {
     }
 }
 
+/// # Example
+/// ```
+/// let mut msg = SocketMessage::new(
+///     "GOSSIP".to_string(),
+///     vec![],
+///     vec![],
+/// );
+/// let args: Vec<SocketMessageArg> = vec![];
+/// msg = msg << SocketMessageArg::Vesion {
+///     value: self.vesion.to_owned()
+/// } << Account::load().expect("Can not load account").into()
+///     << Utc::now().into()
+/// << SocketMessageArg::Int {
+///     value: self_block_len as i32
+/// };
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SocketMessage {
+    /// Event name
     event: String,
+    /// Argument list
     arg: Vec<SocketMessageArg>,
+    /// External data payload
     payload: Vec<u8>
 }
 
