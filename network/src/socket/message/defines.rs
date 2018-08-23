@@ -1,4 +1,4 @@
-//! Handle message with callback functions.
+//! Socket message components definition.
 
 use std::ops::*;
 
@@ -39,19 +39,19 @@ impl From<DateTime<Utc>> for SocketMessageArg {
     }
 }
 
-/// # Example
+/// Socket message.
+/// The following example shows how to build a message.
+///
 /// ```
 /// let mut msg = SocketMessage::new(
-///     "GOSSIP".to_string(),
+///     "TEST".to_string(),
 ///     vec![],
 ///     vec![],
 /// );
 /// let args: Vec<SocketMessageArg> = vec![];
-/// msg = msg << SocketMessageArg::Vesion {
-///     value: self.vesion.to_owned()
-/// } << Account::load().expect("Can not load account").into()
-///     << Utc::now().into()
-/// << SocketMessageArg::Int {
+///
+/// // Message builder
+/// msg = msg << Account::load().expect("Can not load account").into() << Utc::now().into() << SocketMessageArg::Int {
 ///     value: self_block_len as i32
 /// };
 /// ```
