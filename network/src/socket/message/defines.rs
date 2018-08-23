@@ -84,6 +84,8 @@ impl SocketMessage {
         }
     }
 
+    /// Fetch integer argument with the index.
+    /// Return `None` if type dismatch.
     pub fn int_at(&self, index: usize) -> Option<i32> {
         match self.arg[index] {
             SocketMessageArg::Int { value } => Some(value),
@@ -91,6 +93,8 @@ impl SocketMessage {
         }
     }
 
+    /// Fetch string argument with the index.
+    /// Return `None` if type dismatch.
     pub fn string_at(&self, index: usize) -> Option<String> {
         match &self.arg[index] {
             &SocketMessageArg::String { ref value } => Some(value.clone()),
@@ -98,6 +102,8 @@ impl SocketMessage {
         }
     }
 
+    /// Fetch account address argument with the index.
+    /// Return `None` if type dismatch.
     pub fn account_at(&self, index: usize) -> Option<Account> {
         match &self.arg[index] {
             &SocketMessageArg::Account { ref value } => {
@@ -111,6 +117,8 @@ impl SocketMessage {
         }
     }
 
+    /// Fetch sha256 hash argument with the index.
+    /// Return `None` if type dismatch.
     pub fn hash_at(&self, index: usize) -> Option<Hash> {
         match self.arg[index] {
             SocketMessageArg::Hash { value } => Some(value),
@@ -118,6 +126,8 @@ impl SocketMessage {
         }
     }
 
+    /// Fetch `Version` argument with the index.
+    /// Return `None` if type dismatch.
     pub fn version_at(&self, index: usize) -> Option<String> {
         match &self.arg[index] {
             &SocketMessageArg::Vesion { ref value } => Some(value.clone()),
@@ -125,6 +135,8 @@ impl SocketMessage {
         }
     }
 
+    /// Fetch Utc timestamp argument with the index.
+    /// Return `None` if type dismatch.
     pub fn timestamp_at(&self, index: usize) -> Option<DateTime<Utc>> {
         match self.arg[index] {
             SocketMessageArg::Timestamp { ref value } => {
@@ -140,14 +152,17 @@ impl SocketMessage {
         }
     }
 
+    /// Return socket message event name
     pub fn event(&self) -> String {
         self.event.to_owned()
     }
 
+    /// Return list of `SocketMessageArg`
     pub fn args(&self) -> Vec<SocketMessageArg> {
         self.arg.to_owned()
     }
 
+    /// Build a heartbeat message.
     pub fn heartbeat() -> Self {
         SocketMessage {
             event: "HEARTBEAT".to_string(),
@@ -156,6 +171,7 @@ impl SocketMessage {
         }
     }
 
+    /// Build a exception message.
     pub fn exception(reason: &str) -> Self {
         SocketMessage {
             event: "EXCEPTION".to_string(),
