@@ -47,7 +47,7 @@ pub struct ConsensusController {
     precommits: HashMap<(Round, Hash), Votes<Precommit>>,
     requests: HashMap<RequestData, RequestState>,
     blocks: HashMap<Hash, BlockState>,
-    queued_msgs: Vec<ConsensusMessage>,
+    queued_msgs: RefCell<MessageQueue>,
     unknown_txs: HashMap<Hash, Vec<Hash>>,
     unknown_proposes_with_precommits: HashMap<Hash, Vec<(Round, Hash)>>,
 
@@ -101,7 +101,7 @@ impl ConsensusController {
     }
 }
 
-impl Consensus for ConsensusController {
+impl Notify for ConsensusController {
     fn notify_propose(protocol: P2PProtocol, round: usize, propose_hash: Hash, table: &PeerTable) {
         unimplemented!()
     }
@@ -118,24 +118,7 @@ impl Consensus for ConsensusController {
         unimplemented!()
     }
 
-    fn handle_consensus(&mut self, msg: SocketMessage) {
-        unimplemented!()
-    }
-
-
-    fn handle_propose(&mut self, propose: Propose) {
-        unimplemented!()
-    }
-
-    fn handle_prevote(&mut self, propose: Prevote) {
-        unimplemented!()
-    }
-
-    fn handle_precommit(&mut self, propose: Precommit) {
-        unimplemented!()
-    }
-
-    fn handle_transactions_request(&mut self, tnxs: Vec<Hash>) {
+    fn notify_transactions(protocol: P2PProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable) {
         unimplemented!()
     }
 }
@@ -209,19 +192,7 @@ impl Thread for ConsensusController {
         match (server, account) {
             (Ok(server), Some(account)) => {
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
-                Ok(ConsensusController {
-                    account: account.clone(),
-                    height: 0usize,
-                    round: 0usize,
-                    locked_round: 0usize,
-                    locked_propose: Hash,
-                    last_hash: Hash,
-                    proposes: HashMap::new(),
-                    blocks: HashMap::new(),
-                    prevotes: HashMap::new(),
-                    precommits: HashMap::new(),
-                    eventloop: NetworkEventLoop::new(config.events_size()),
-                })
+                unimplemented!()
             },
             (Ok(_), None) => {
                 Err(Error::from(ErrorKind::ConnectionRefused))

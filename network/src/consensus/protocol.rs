@@ -9,14 +9,14 @@ use super::peer::*;
 
 const MAX_DELAY: i64 = 30i64;
 
-pub trait Consensus {
+pub trait Notify {
     /// # notify_propose(&mut self, 1)
     /// **Usage**
     /// - send propose message
     /// ## Examples
     /// ```
     /// ```
-    fn notify_propose(protocol: P2PProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
+    fn notify_propose(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
 
     /// # notify_prevote(&mut self, 1)
     /// **Usage**
@@ -24,7 +24,7 @@ pub trait Consensus {
     /// ## Examples
     /// ```
     /// ```
-    fn notify_prevote(protocol: P2PProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
+    fn notify_prevote(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
 
     /// # notify_precommit(&mut self, 1)
     /// **Usage**
@@ -32,7 +32,7 @@ pub trait Consensus {
     /// ## Examples
     /// ```
     /// ```
-    fn notify_precommit(protocol: P2PProtocol, round: usize, propose_hash: Hash, block_hash: Hash, table: &PeerTable);
+    fn notify_precommit(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, block_hash: Hash, table: &PeerTable);
 
     /// # notify_tnx_request(&mut self, 1)
     /// **Usage**
@@ -40,47 +40,15 @@ pub trait Consensus {
     /// ## Examples
     /// ```
     /// ```
-    fn notify_transactions_request(protocol: P2PProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable);
+    fn notify_transactions_request(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable);
 
-    /// # handle_consensus(&mut self, 1)
+    /// # notify_tnxs(&mut self, 1)
     /// **Usage**
-    /// - handle consensus message
+    /// - send raw tnxs message
     /// ## Examples
     /// ```
     /// ```
-    fn handle_consensus(&mut self, msg: SocketMessage);
-
-    /// # handle_propose(&mut self, 1)
-    /// **Usage**
-    /// - handle propose message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn handle_propose(&mut self, propose: Propose);
-
-    /// # handle_prevote(&mut self, 1)
-    /// **Usage**
-    /// - handle prevote message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn handle_prevote(&mut self, propose: Prevote);
-
-    /// # handle_precommit(&mut self, 1)
-    /// **Usage**
-    /// - handle precommit message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn handle_precommit(&mut self, propose: Precommit);
-
-    /// # handle_tnx_request(&mut self, 1)
-    /// **Usage**
-    /// - handle tnx request message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn handle_transactions_request(&mut self, tnxs: Vec<Hash>);
+    fn notify_transactions(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable);
 }
 
 /// Current node status.
@@ -135,4 +103,85 @@ struct Precommit {
     block_hash: Hash,
     /// Time of the `Precommit`.
     time: DateTime<Utc>,
+}
+
+/// # ConsensusProtocol
+/// **Usage**
+/// - basic protocols, implemented to generate [[SocketMessage]]
+/// **Member**
+/// - 1.    ***vesion***:       current client version.
+/// - 2.    ***account***:      current validator account.
+/// - 3.    ***key_pair***:     client public/private keypair.
+#[derive(Debug, Clone)]
+pub struct ConsensusProtocol {
+    vesion: String,
+}
+
+impl ConsensusProtocol {
+    pub fn new() -> Self {
+        //TODO: make version number configurable
+        ConsensusProtocol {
+            vesion: "0.0.0".to_string(),
+        }
+    }
+
+    fn verify_version(&self, index: usize, msg: &SocketMessage) -> bool {
+        if let Some(v) = msg.version_at(index) {
+            self.vesion == v
+        } else {
+            false
+        }
+    }
+
+    fn verify_account(index: usize, msg: &SocketMessage) -> bool {
+        if let Some(v) = msg.account_at(index) {
+            v.text.len() == 32
+        } else {
+            false
+        }
+    }
+
+    fn verify_timestamp(index: usize, msg: &SocketMessage) -> bool {
+        if let Some(v) = msg.timestamp_at(index) {
+            (Utc::now() - v).num_seconds() < MAX_DELAY
+        } else {
+            false
+        }
+    }
+
+    pub fn verify(&self, msg: &SocketMessage) -> bool {
+        match msg.event().as_str() {
+            "NOTIFY_PROPOSE" => {
+                if msg.args().len() < 4 {
+                    return false;
+                }
+
+                if !(self.verify_version(0usize, msg)
+                    && Self::verify_account(1usize, msg)
+                    && Self::verify_timestamp(2usize, msg)) {
+                    return false;
+                }
+
+                for arg in &msg.args()[3..] {
+                    match arg {
+                        &SocketMessageArg::String { ref value } => {}
+                        _ => { return false; }
+                    }
+                };
+                return true;
+            }
+            "NOTIFY_PREVOTE" => {
+                return true;
+            }
+            "NOTIFY_PRECOMMIT" => {
+                return true;
+            }
+            "NOTIFY_TNX_REQUEST" => {
+                return true;
+            }
+            "NOTIFY_TNX" => {
+                return true;
+            }
+        }
+    }
 }
