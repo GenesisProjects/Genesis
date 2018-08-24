@@ -16,5 +16,28 @@
       "create_if_missing": true,
       "max_open_files": 32
     }
+  },
+
+  "network": {
+    "p2p": {
+      "port": 39999,
+      "events_size": 1024,
+      "max_allowed_peers": 100,
+      "max_blocklist_size": 1024,
+      "max_waitinglist_size": 1024,
+      "min_required_peer": 4,
+      "update_timebase": 3000,
+      "connect_timeout": 3000,
+      "peer_expire": 60000,
+      "bootstrap_peers": [
+        "127.0.0.1:40001",
+        "127.0.0.1:40002",
+        "127.0.0.1:40003",
+        "127.0.0.1:40004"
+      ]
+    },
+    "bft": {
+
+    }
   }
 }

@@ -6,7 +6,7 @@
 //!     .lock()
 //!     .unwrap()
 //!     .subscribe(ch_name)
-//!     .clone()
+//!     .clone();
 //!
 //! ```
 
