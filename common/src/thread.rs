@@ -41,6 +41,7 @@ pub trait Thread {
                         if let Some(msg) = context_ref.receive_async() {
                             let forward_msg = msg.clone();
                             match msg.msg.as_ref() {
+                                // Handle thread controll message
                                 "start" => {
                                     context_ref.set_status(ThreadStatus::Running);
                                 },
@@ -50,6 +51,7 @@ pub trait Thread {
                                 "stop" => {
                                     context_ref.set_status(ThreadStatus::Stop);
                                 },
+                                // Handle other thread message
                                 _ => {
                                     context_ref.msg_handler(forward_msg);
                                 },
@@ -85,6 +87,6 @@ pub trait Thread {
     /// get status
     fn get_status(&self) -> ThreadStatus;
 
-    /// init instance
+    /// init context instance
     fn new(name: String) -> Result<Self> where Self: Sized;
 }

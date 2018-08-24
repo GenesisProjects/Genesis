@@ -464,6 +464,7 @@ impl Notify for P2PController {
 impl Observe for P2PController {
     fn subscribe(&mut self, name: String) {
         let name = name.to_owned();
+        // Subscribe the channel, store the channel reference.
         self.ch_pair = Some(
             MESSAGE_CENTER
                 .lock()
@@ -508,11 +509,13 @@ impl Observe for P2PController {
                 msg
             } else {
                 loop {
+                    // Wait if the conditional variable has been notified.
                     let msg = condvar_ref
                         .wait(lock_ref.lock().unwrap())
                         .unwrap()
                         .accept_msg_async();
 
+                    // If didn't get message, wait again.
                     match msg {
                         Some(msg) => { return msg; }
                         None => { continue; }

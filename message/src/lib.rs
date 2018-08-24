@@ -1,3 +1,15 @@
+//! This crate allows Genesis send message async between different thread.
+//!
+//! ```
+//! let ch_name = "test".to_string();
+//! let ch_pair = MESSAGE_CENTER
+//!     .lock()
+//!     .unwrap()
+//!     .subscribe(ch_name)
+//!     .clone()
+//!
+//! ```
+
 #[macro_use]
 extern crate lazy_static;
 extern crate rand;
@@ -8,6 +20,7 @@ use std::collections::{LinkedList, HashMap};
 
 const DEFAULT_MSG_QUEUE_SIZE: usize = 1024;
 
+/// Message center singleton
 lazy_static! {
     pub static ref MESSAGE_CENTER: Mutex<MessageCenter> = {
         Mutex::new(MessageCenter::new())
@@ -23,7 +36,7 @@ fn random_string(length: usize) -> String {
     result
 }
 
-///
+/// Inter-thread message
 #[derive(Debug, Clone)]
 pub struct Message {
     pub op: u16,
@@ -39,7 +52,7 @@ impl Message {
     }
 }
 
-///
+/// Message queue will buffer unprocessed messages.
 pub struct MessageQueue {
     queue: LinkedList<Message>,
     limit: usize
