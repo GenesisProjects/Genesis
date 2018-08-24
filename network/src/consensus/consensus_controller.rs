@@ -28,7 +28,6 @@ pub struct ConsensusController {
     // Node config
     name: String,
     account: Account,
-    height: usize,
     listener: TcpListener,
     consensus_public_key: PublicKey,
     consensus_secret_key: SecretKey,
@@ -39,6 +38,8 @@ pub struct ConsensusController {
     protocol: ConsensusProtocol,
 
     // Round
+    height: usize,
+    height_start_time: DateTime<Utc>,
     round: usize,
     locked_round: usize,
     locked_propose: Option<Hash>,
@@ -116,6 +117,26 @@ impl ConsensusController {
             },
             Err(e) => Err(e)
         }
+    }
+
+    /// Returns current height.
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    /// Returns start time of the current height.
+    pub fn height_start_time(&self) -> SystemTime {
+        self.height_start_time
+    }
+
+    /// Returns the current round.
+    pub fn round(&self) -> usize {
+        self.round
+    }
+
+    /// Returns a hash of the last block.
+    pub fn last_hash(&self) -> Hash {
+        self.last_hash
     }
 }
 
@@ -215,7 +236,6 @@ impl Thread for ConsensusController {
                 Ok(ConsensusController {
                     name: name,
                     account: account,
-                    height: 0,
                     listener: server,
                     consensus_public_key: None,
                     consensus_secret_key: None,
@@ -224,6 +244,8 @@ impl Thread for ConsensusController {
                     eventloop: NetworkEventLoop::new(config.events_size()),
                     last_updated: Utc::now(),
                     protocol: ConsensusProtocol::new(),
+                    height: 0,
+                    height_start_time: Utc::now(),
                     round: 0,
                     locked_round: 0,
                     locked_propose: None,
