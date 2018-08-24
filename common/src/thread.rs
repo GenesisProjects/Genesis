@@ -1,3 +1,6 @@
+//! Trait allows a thread running with a run loop
+//!
+
 use std::io::*;
 use std::thread;
 use std::time::Duration;
@@ -7,14 +10,23 @@ use gen_message::Message;
 
 pub const LOOP_PERIOD: u64 = 100u64;
 
+
+/// Thread status
 #[derive(Copy, Clone)]
 pub enum ThreadStatus {
+    // Event loop is running
     Running,
+    // Event loop has been killed
     Stop,
+    // Event loop is on-hold
     Pause
 }
 
+/// Thread trait
 pub trait Thread {
+    /// Launch a run loop.
+    /// Will create a thread context (controller) instance.
+    /// The thread will subscribe to the channel `name`.
     fn launch<T>(name: String) where T: Observe + Thread, Self: Sized {
         // TODO: make stack size configuable
         thread::Builder::new().stack_size(64 * 1024 * 1024).name(name.to_owned()).spawn(move || {
@@ -69,6 +81,9 @@ pub trait Thread {
 
     /// set status
     fn set_status(&mut self, status: ThreadStatus);
+
+    /// get status
+    fn get_status(&self) -> ThreadStatus;
 
     /// init instance
     fn new(name: String) -> Result<Self> where Self: Sized;

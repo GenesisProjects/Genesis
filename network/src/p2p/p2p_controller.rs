@@ -625,6 +625,10 @@ impl Thread for P2PController {
     fn set_status(&mut self, status: ThreadStatus) {
         self.eventloop.status = status;
     }
+
+    fn get_status(&self) -> ThreadStatus {
+        self.eventloop.status
+    }
 }
 
 impl Drop for P2PController {

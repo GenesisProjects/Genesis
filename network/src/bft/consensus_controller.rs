@@ -125,6 +125,10 @@ impl Thread for ConsensusController {
     fn msg_handler(&mut self, msg: Message) {
         unimplemented!()
     }
+
+    fn get_status(&self) -> ThreadStatus {
+        unimplemented!()
+    }
 }
 
 impl Drop for ConsensusController {
