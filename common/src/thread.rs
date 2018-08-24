@@ -85,6 +85,6 @@ pub trait Thread {
     /// get status
     fn get_status(&self) -> ThreadStatus;
 
-    /// init instance
+    /// init context instance
     fn new(name: String) -> Result<Self> where Self: Sized;
 }
