@@ -52,7 +52,7 @@ pub trait Notify {
 }
 
 /// Current node status.
-struct Status {
+pub struct Status {
     /// The sender's public key.
     from: Account,
     /// The height to which the message is related.
@@ -62,7 +62,7 @@ struct Status {
 }
 
 /// Proposal for a new block.
-struct Propose {
+pub struct Propose {
     /// The validator account.
     validator: Account,
     /// The height to which the message is related.
@@ -76,7 +76,7 @@ struct Propose {
 }
 
 /// Pre-vote for a new block.
-struct Prevote {
+pub struct Prevote {
     /// The validator account.
     validator: Account,
     /// The height to which the message is related.
@@ -90,7 +90,7 @@ struct Prevote {
 }
 
 /// Pre-commit for a proposal.
-struct Precommit {
+pub struct Precommit {
     /// The validator account.
     validator: Account,
     /// The height to which the message is related.

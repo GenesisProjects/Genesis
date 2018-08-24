@@ -2,6 +2,10 @@ use chrono::*;
 use nat::*;
 use eventloop::*;
 
+use super::peer::*;
+use super::protocol::*;
+use super::consensus_config_config::*;
+
 use common::address::Address as Account;
 use common::gen_message::*;
 use common::thread::{Thread, ThreadStatus};
@@ -29,11 +33,10 @@ pub struct ConsensusController {
     consensus_public_key: PublicKey,
     consensus_secret_key: SecretKey,
     peer_list: HashMap<Token, PeerRef>,
-    ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>,
     config: ConsensusConfig,
     eventloop: NetworkEventLoop<Peer>,
     last_updated: DateTime<Utc>,
-    protocol: P2PProtocol,
+    protocol: ConsensusProtocol,
 
     // Round
     round: usize,
@@ -50,11 +53,26 @@ pub struct ConsensusController {
     queued_msgs: RefCell<MessageQueue>,
     unknown_txs: HashMap<Hash, Vec<Hash>>,
     unknown_proposes_with_precommits: HashMap<Hash, Vec<(Round, Hash)>>,
+}
 
-    // Maximum of node height in consensus messages.
-    nodes_max_height: BTreeMap<PublicKey, Height>,
-    validators_rounds: BTreeMap<ValidatorId, Round>,
-    incomplete_block: Option<IncompleteBlock>,
+/// State of a propose with unknown txs set and block hash
+#[derive(Debug)]
+pub struct ProposeState {
+    propose: Propose,
+    unknown_txs: HashSet<Hash>,
+    block_hash: Option<Hash>,
+    // Whether the message has been saved to the consensus messages' cache or not.
+    is_saved: bool,
+}
+
+/// State of a block.
+#[derive(Clone, Debug)]
+pub struct BlockState {
+    hash: Hash,
+    // Changes that should be made for block committing.
+    patch: Patch,
+    txs: Vec<Hash>,
+    proposer_id: ValidatorId,
 }
 
 impl ConsensusController {
@@ -183,7 +201,8 @@ impl Observe for ConsensusController {
 
 impl Thread for ConsensusController {
     fn new(name: String) -> Result<Self> {
-        let config = NetConfig::load();
+        let config = ConsensusConfig::load();
+        let msg_queue = MessageQueue::new(DEFAULT_MSG_QUEUE_SIZE);
 
         //TODO: make socket resuseable
         let server = TcpListener::bind(&config.server_addr());
@@ -192,7 +211,32 @@ impl Thread for ConsensusController {
         match (server, account) {
             (Ok(server), Some(account)) => {
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
-                unimplemented!()
+                //TODO: load peer list from config
+                Ok(ConsensusController {
+                    name: name,
+                    account: account,
+                    height: 0,
+                    listener: server,
+                    consensus_public_key: None,
+                    consensus_secret_key: None,
+                    peer_list: peer_list,
+                    config: config,
+                    eventloop: NetworkEventLoop::new(config.events_size()),
+                    last_updated: Utc::now(),
+                    protocol: ConsensusProtocol::new(),
+                    round: 0,
+                    locked_round: 0,
+                    locked_propose: None,
+                    last_hash: Hash,
+                    proposes: HashMap::new(),
+                    prevotes: HashMap::new(),
+                    precommits: HashMap::new(),
+                    requests: HashMap::new(),
+                    blocks: HashMap::new(),
+                    queued_msgs: RefCell::new(msg_queue),
+                    unknown_txs: HashMap::new(),
+                    unknown_proposes_with_precommits: HashMap::new(),
+                })
             },
             (Ok(_), None) => {
                 Err(Error::from(ErrorKind::ConnectionRefused))
