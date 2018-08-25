@@ -74,6 +74,71 @@ pub struct BlockState {
     proposer_id: usize,
 }
 
+/// `VoteMessage` trait represents voting messages such as `Precommit` and `Prevote`.
+pub trait VoteMessage: Message + Clone {
+    /// Return validator if of the message.
+    fn validator(&self) -> Account;
+}
+
+impl VoteMessage for Precommit {
+    fn validator(&self) -> Account {
+        self.validator()
+    }
+}
+
+impl VoteMessage for Prevote {
+    fn validator(&self) -> Account {
+        self.validator()
+    }
+}
+
+/// Contains voting messages alongside with there validator ids.
+#[derive(Debug)]
+pub struct Votes<T: VoteMessage> {
+    messages: Vec<T>,
+    validators: HashSet<Account>,
+    count: usize,
+}
+
+impl<T> Votes<T>
+    where
+        T: VoteMessage,
+{
+    /// Creates a new `Votes` instance with a specified validators number.
+    pub fn new(validators_len: usize) -> Self {
+        Self {
+            messages: Vec::new(),
+            validators: HashSet::new(),
+            count: 0,
+        }
+    }
+
+    /// Inserts a new message if it hasn't been inserted yet.
+    pub fn insert(&mut self, message: &T) {
+        let voter = message.validator();
+        if !self.validators.contains(&voter) {
+            self.count += 1;
+            self.validators.insert(voter.clone());
+            self.messages.push(message.clone());
+        }
+    }
+
+    /// Returns validators.
+    pub fn validators(&self) -> &BitVec {
+        &self.validators
+    }
+
+    /// Returns number of contained messages.
+    pub fn count(&self) -> usize {
+        self.count
+    }
+
+    /// Returns messages.
+    pub fn messages(&self) -> &Vec<T> {
+        &self.messages
+    }
+}
+
 impl ValidatorState {
     /// Creates new `ValidatorState` with given validator id.
     pub fn new(account: Account) -> Self {
