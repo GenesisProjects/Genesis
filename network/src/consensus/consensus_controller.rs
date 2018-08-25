@@ -5,18 +5,19 @@ use eventloop::*;
 use super::peer::*;
 use super::protocol::*;
 use super::node_state::*;
-use super::consensus_config_config::*;
+use super::consensus_config::*;
 
 use common::address::Address as Account;
 use common::gen_message::*;
 use common::thread::{Thread, ThreadStatus};
 use common::observe::Observe;
+use common::hash::*;
 
 use mio::*;
 use mio::net::{TcpListener, TcpStream};
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::*;
 use std::rc::Rc;
 use std::sync::{Mutex, Arc, Condvar};
@@ -30,8 +31,6 @@ pub struct ConsensusController<'a> {
     name: String,
     account: Account,
     listener: TcpListener,
-    consensus_public_key: PublicKey,
-    consensus_secret_key: SecretKey,
     peer_list: HashMap<Token, PeerRef>,
     config: ConsensusConfig,
     eventloop: NetworkEventLoop<Peer<'a>>,
@@ -54,9 +53,9 @@ pub struct ProposeState {
 pub struct BlockState {
     hash: Hash,
     // Changes that should be made for block committing.
-    patch: Patch,
+    // Todo add patch: Patch,
     txs: Vec<Hash>,
-    proposer_id: ValidatorId,
+    proposer: Account,
 }
 
 impl ConsensusController {
@@ -159,7 +158,7 @@ impl ConsensusController {
     }
 
     /// Returns start time of the current height.
-    pub fn height_start_time(&self) -> SystemTime {
+    pub fn height_start_time(&self) -> DateTime<Utc> {
         self.height_start_time
     }
 
@@ -175,30 +174,31 @@ impl ConsensusController {
 }
 
 impl Notify for ConsensusController {
-    fn notify_propose(protocol: P2PProtocol, round: usize, propose_hash: Hash, table: &PeerTable) {
+    fn notify_propose(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, table: &PeerTable) {
         unimplemented!()
     }
 
-    fn notify_prevote(protocol: P2PProtocol, round: usize, propose_hash: Hash, table: &PeerTable) {
+    fn notify_prevote(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, table: &PeerTable) {
         unimplemented!()
     }
 
-    fn notify_precommit(protocol: P2PProtocol, round: usize, propose_hash: Hash, block_hash: Hash, table: &PeerTable) {
+    fn notify_precommit(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, block_hash: Hash, table: &PeerTable) {
         unimplemented!()
     }
 
-    fn notify_transactions_request(protocol: P2PProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable) {
+    fn notify_transactions_request(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable) {
         unimplemented!()
     }
 
-    fn notify_transactions(protocol: P2PProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable) {
+    fn notify_transactions(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable) {
         unimplemented!()
     }
 }
 
 impl Observe for ConsensusController {
-    fn subscribe(&mut self) {
-        let name = self.name.to_owned();
+    fn subscribe(&mut self, name: String) {
+        let name = name.to_owned();
+        // Subscribe the channel, store the channel reference.
         self.ch_pair = Some(
             MESSAGE_CENTER
                 .lock()
@@ -208,8 +208,8 @@ impl Observe for ConsensusController {
         );
     }
 
-    fn unsubscribe(&mut self) {
-        let name = self.name.to_owned();
+    fn unsubscribe(&mut self, name: String) {
+        let name = name.to_owned();
         if let Some(ch_pair) = self.ch_pair.clone() {
             let uid = (*ch_pair).0.lock().unwrap().uid.clone();
             self.ch_pair = None;
@@ -223,7 +223,10 @@ impl Observe for ConsensusController {
 
     fn receive_async(&mut self) -> Option<Message> {
         if let Some(ch_pair) = self.ch_pair.clone() {
-            (*ch_pair).0.lock().unwrap().accept_msg_async()
+            (*ch_pair).0
+                .lock()
+                .unwrap()
+                .accept_msg_async()
         } else {
             None
         }
@@ -233,15 +236,20 @@ impl Observe for ConsensusController {
         if let Some(ch_pair) = self.ch_pair.clone() {
             let condvar_ref = &((*ch_pair).1);
             let lock_ref = &((*ch_pair).0);
-            if let Some(msg) = lock_ref.lock().unwrap().accept_msg_async().clone() {
+            if let Some(msg) = lock_ref.lock()
+                .unwrap()
+                .accept_msg_async()
+                .clone() {
                 msg
             } else {
                 loop {
+                    // Wait if the conditional variable has been notified.
                     let msg = condvar_ref
                         .wait(lock_ref.lock().unwrap())
                         .unwrap()
                         .accept_msg_async();
 
+                    // If didn't get message, wait again.
                     match msg {
                         Some(msg) => { return msg; }
                         None => { continue; }
@@ -266,6 +274,12 @@ impl Thread for ConsensusController {
         match (server, account) {
             (Ok(server), Some(account)) => {
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
+                let keys = config.validator_keys();
+                let validator = config
+                    .validator_keys()
+                    .into_iter()
+                    .position(|(acc, addr)| acc == account)
+                    .map(|id| ValidatorId(id as u16));
                 let state = NodeState::new(account, None, 0, Utc::now());
 
                 Ok(ConsensusController {
@@ -273,8 +287,6 @@ impl Thread for ConsensusController {
                     name: name,
                     account: account,
                     listener: server,
-                    consensus_public_key: None,
-                    consensus_secret_key: None,
                     peer_list: peer_list,
                     config: config,
                     eventloop: NetworkEventLoop::new(config.events_size()),
@@ -314,8 +326,48 @@ impl Thread for ConsensusController {
         }
     }
 
+    /// # msg_handler(&mut self, 1)
+    /// **Usage**
+    /// - consume message from the inter-controller message channel,
+    /// - tranform the inter-controller message into [[P2PMessage]]
+    /// - send the [[P2PMessage]] by calling [[]]
+    /// ## Examples
+    /// ```
+    /// ```
+    fn msg_handler(&mut self, msg: Message) {
+        match msg.msg.as_ref() {
+            "gossip" => {
+                let token = Token(msg.op as usize);
+                let mut peer_ref = self.peer_list.get(&token);
+                if let None = peer_ref {
+                    return;
+                }
+
+                let peer_ref = peer_ref.unwrap().clone();
+
+                // generate hosts list
+                let hosts: Vec<String> = self.peer_list.iter()
+                    .map(|pair| {
+                        pair.1.borrow().addr().to_string()
+                    }).collect();
+                let table = PeerTable::new_with_hosts(hosts);
+                Self::notify_gossip(
+                    self.protocol.clone(),
+                    peer_ref,
+                    &table,
+                    self.height
+                );
+            },
+            _ => {}
+        }
+    }
+
     fn set_status(&mut self, status: ThreadStatus) {
         self.eventloop.status = status;
+    }
+
+    fn get_status(&self) -> ThreadStatus {
+        self.eventloop.status
     }
 }
 

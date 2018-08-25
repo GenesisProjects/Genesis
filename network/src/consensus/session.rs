@@ -193,7 +193,7 @@ impl Session {
             context: TaskContext::new(0usize, TaskType::None),
             connected: false,
             mode: SessionMode::Command,
-            protocol: P2PProtocol::new(),
+            protocol: ConsensusProtocol::new(),
 
             table: PeerTable::new(),
             block_info: None,
@@ -230,7 +230,7 @@ impl Session {
                     context: TaskContext::new(0usize, TaskType::None),
                     connected: false,
                     mode: SessionMode::Command,
-                    protocol: P2PProtocol::new(),
+                    protocol: ConsensusProtocol::new(),
 
                     table: PeerTable::new(),
                     block_info: None,

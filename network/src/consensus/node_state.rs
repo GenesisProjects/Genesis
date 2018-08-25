@@ -4,18 +4,19 @@ use eventloop::*;
 
 use super::peer::*;
 use super::protocol::*;
-use super::consensus_config_config::*;
+use super::consensus_config::*;
 
 use common::address::Address as Account;
 use common::gen_message::*;
 use common::thread::{Thread, ThreadStatus};
 use common::observe::Observe;
+use common::hash::*;
 
 use mio::*;
 use mio::net::{TcpListener, TcpStream};
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::*;
 use std::rc::Rc;
 use std::sync::{Mutex, Arc, Condvar};
@@ -158,8 +159,8 @@ impl NodeState {
             validator_state: validator_id.map(ValidatorState::new),
             height: last_height,
             height_start_time,
-            round: Round::zero(),
-            locked_round: Round::zero(),
+            round: 0,
+            locked_round: 0,
             locked_propose: None,
             last_hash,
             proposes: HashMap::new(),

@@ -105,6 +105,12 @@ pub struct Precommit {
     time: DateTime<Utc>,
 }
 
+#[derive(Debug)]
+pub struct PeerTable {
+    pub table: Vec<(Option<Account>, SocketInfo)>,
+    pub limit: usize,
+}
+
 /// # ConsensusProtocol
 /// **Usage**
 /// - basic protocols, implemented to generate [[SocketMessage]]
