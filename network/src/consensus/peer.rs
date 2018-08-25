@@ -10,6 +10,7 @@ use socket::message::message_handler::*;
 
 use super::protocol::*;
 use super::session::*;
+use super::node_state::*;
 use super::session_state::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};

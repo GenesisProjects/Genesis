@@ -158,10 +158,9 @@ pub struct Session<'a> {
     context: TaskContext,
     connected: bool,
     mode: SessionMode,
-    protocol: P2PProtocol,
+    protocol: ConsensusProtocol,
 
     table: PeerTable,
-    block_info: Option<BlockInfo>,
 
     state: &'a mut NodeState,
     pub handler: Rc<RefCell<SocketMessageHandler<Session<'a>>>>
@@ -196,8 +195,6 @@ impl Session {
             protocol: ConsensusProtocol::new(),
 
             table: PeerTable::new(),
-            block_info: None,
-
             state: state,
             handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
         }
@@ -233,7 +230,6 @@ impl Session {
                     protocol: ConsensusProtocol::new(),
 
                     table: PeerTable::new(),
-                    block_info: None,
                     state: state,
                     handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
                 })
@@ -270,13 +266,8 @@ impl Session {
     }
 
     #[inline]
-    pub fn protocol(&self) -> P2PProtocol {
+    pub fn protocol(&self) -> ConsensusProtocol {
         self.protocol.clone()
-    }
-
-    #[inline]
-    pub fn block_info(&self) -> Option<BlockInfo> {
-        self.block_info.clone()
     }
 
     #[inline]

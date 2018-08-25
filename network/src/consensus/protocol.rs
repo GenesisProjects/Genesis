@@ -86,7 +86,7 @@ pub struct Prevote {
     /// Hash of the corresponding `Propose`.
     propose_hash: Hash,
     /// Locked round.
-    locked_round: Round,
+    locked_round: usize,
 }
 
 /// Pre-commit for a proposal.

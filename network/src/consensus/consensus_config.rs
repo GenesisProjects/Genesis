@@ -96,7 +96,7 @@ impl ConsensusConfig {
 
 impl MockConfig for ConsensusConfig {
     fn mock() -> Self {
-        P2PConfig {
+        ConsensusConfig {
             server_addr:  SocketAddr::from_str("127.0.0.1:40000").unwrap(),
 
             events_size: 1024,

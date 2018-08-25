@@ -37,13 +37,13 @@ pub struct NodeState {
 
     // Messages.
     proposes: HashMap<Hash, ProposeState>,
-    prevotes: HashMap<(Round, Hash), Votes<Prevote>>,
-    precommits: HashMap<(Round, Hash), Votes<Precommit>>,
+    prevotes: HashMap<(usize, Hash), Votes<Prevote>>,
+    precommits: HashMap<(usize, Hash), Votes<Precommit>>,
     requests: HashMap<RequestData, RequestState>,
     blocks: HashMap<Hash, BlockState>,
     queued_msgs: RefCell<MessageQueue>,
     unknown_txs: HashMap<Hash, Vec<Hash>>,
-    unknown_proposes_with_precommits: HashMap<Hash, Vec<(Round, Hash)>>,
+    unknown_proposes_with_precommits: HashMap<Hash, Vec<(usize, Hash)>>,
 }
 
 /// State of a validator-node.

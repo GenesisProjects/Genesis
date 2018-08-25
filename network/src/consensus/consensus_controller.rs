@@ -278,9 +278,9 @@ impl Thread for ConsensusController {
                 let validator = config
                     .validator_keys()
                     .into_iter()
-                    .position(|(key, addr)| key.unwrap() == account)
-                    .map(|id| ValidatorId(id as u16));
-                let state = NodeState::new(account, None, 0, Utc::now());
+                    .find(|(key, addr)| key.unwrap() == account)
+                    .map(|(Some(key), addr)| key);
+                let state = NodeState::new(validator.unwrap(), None, 0, Utc::now());
 
                 Ok(ConsensusController {
                     state: state,
