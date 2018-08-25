@@ -18,9 +18,6 @@ use mio::net::TcpStream;
 
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
-pub type PeerRef = Rc<RefCell<Peer<'static>>>;
-pub type WeakPeerRef = Weak<RefCell<Peer<'static>>>;
-
 pub const INIT_CREDIT: u32 = 800u32;
 pub const INIT_TTL: u32 = 255u32;
 
@@ -46,7 +43,7 @@ pub struct Peer<'a> {
 
 impl<'a> Peer<'a> {
     #[inline]
-    pub fn new(socket: TcpStream, addr: &SocketAddr, state: &mut NodeState) -> Self {
+    pub fn new(socket: TcpStream, addr: &SocketAddr, state: &'a mut NodeState) -> Self {
         Peer {
             bootstraped: false,
             ip_addr: addr.clone(),
@@ -61,7 +58,7 @@ impl<'a> Peer<'a> {
     }
 
     #[inline]
-    pub fn connect(addr: &SocketAddr, state: &mut NodeState) -> Result<Self> {
+    pub fn connect(addr: &SocketAddr, state: &'a mut NodeState) -> Result<Self> {
         Session::connect(addr, state).and_then(|session| {
             Ok(Peer {
                 bootstraped: false,

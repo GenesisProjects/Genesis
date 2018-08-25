@@ -52,6 +52,7 @@ pub trait Notify {
 }
 
 /// Current node status.
+#[derive(Debug, Clone)]
 pub struct Status {
     /// The sender's public key.
     from: Account,
@@ -62,6 +63,7 @@ pub struct Status {
 }
 
 /// Proposal for a new block.
+#[derive(Debug, Clone)]
 pub struct Propose {
     /// The validator account.
     validator: Account,
@@ -72,10 +74,11 @@ pub struct Propose {
     /// Hash of the previous block.
     prev_hash: Hash,
     /// The list of transactions to include in the next block.
-    transactions: [Hash],
+    transactions: Vec<Hash>,
 }
 
 /// Pre-vote for a new block.
+#[derive(Debug, Clone)]
 pub struct Prevote {
     /// The validator account.
     validator: Account,
@@ -90,6 +93,7 @@ pub struct Prevote {
 }
 
 /// Pre-commit for a proposal.
+#[derive(Debug, Clone)]
 pub struct Precommit {
     /// The validator account.
     validator: Account,
@@ -109,6 +113,52 @@ pub struct Precommit {
 pub struct PeerTable {
     pub table: Vec<(Option<Account>, SocketInfo)>,
     pub limit: usize,
+}
+
+impl Clone for PeerTable {
+    fn clone(&self) -> Self {
+        PeerTable {
+            table: self.table.iter().map(|peer_info| peer_info.clone()).collect(),
+            limit: self.limit,
+        }
+    }
+}
+
+impl PeerTable {
+    pub fn new() -> Self {
+        // TODO: make limit configuable
+        PeerTable {
+            table: vec![],
+            limit: 512,
+        }
+    }
+
+    pub fn new_with_hosts(hosts: Vec<String>) -> Self {
+        // TODO: make limit configuable
+        PeerTable {
+            table: hosts
+                .into_iter()
+                .map(|host| {
+                    socket_info(host)
+                })
+                .filter(|socket_result| {
+                    match socket_result {
+                        &Ok(_) => true,
+                        &Err(_) => false
+                    }
+                })
+                .map(|socket_result| {
+                    (None, socket_result.unwrap())
+                })
+                .collect()
+            ,
+            limit: 512,
+        }
+    }
+
+    pub fn table(&self) -> Vec<(Option<Account>, SocketInfo)> {
+        self.clone().table
+    }
 }
 
 /// # ConsensusProtocol

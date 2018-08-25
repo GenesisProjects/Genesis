@@ -181,7 +181,7 @@ impl<'a> Session<'a> {
     /// ## Examples
     /// ```
     /// ```
-    pub fn new(socket: TcpStream, addr: &SocketAddr, state: &mut NodeState) -> Self {
+    pub fn new(socket: TcpStream, addr: &SocketAddr, state: &'a mut NodeState) -> Self {
         Session {
             token: None,
             socket: PeerSocket::new(socket),
@@ -195,7 +195,7 @@ impl<'a> Session<'a> {
             protocol: ConsensusProtocol::new(),
 
             table: PeerTable::new(),
-            state: state,
+            state,
             handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
         }
     }
@@ -214,7 +214,7 @@ impl<'a> Session<'a> {
     /// ## Examples
     /// ```
     /// ```
-    pub fn connect(addr: &SocketAddr, state: &mut NodeState) -> Result<Self> {
+    pub fn connect(addr: &SocketAddr, state: &'a mut NodeState) -> Result<Self> {
         match PeerSocket::connect(addr) {
             Ok(r) => {
                 Ok(Session {
@@ -230,7 +230,7 @@ impl<'a> Session<'a> {
                     protocol: ConsensusProtocol::new(),
 
                     table: PeerTable::new(),
-                    state: state,
+                    state,
                     handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
                 })
             },
