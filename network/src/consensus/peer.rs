@@ -44,7 +44,7 @@ pub struct Peer<'a> {
     pub session: Session<'a>
 }
 
-impl Peer {
+impl<'a> Peer<'a> {
     #[inline]
     pub fn new(socket: TcpStream, addr: &SocketAddr, state: &mut NodeState) -> Self {
         Peer {
@@ -61,7 +61,7 @@ impl Peer {
     }
 
     #[inline]
-    pub fn connect(addr: &SocketAddr, state: NodeState) -> Result<Self> {
+    pub fn connect(addr: &SocketAddr, state: &mut NodeState) -> Result<Self> {
         Session::connect(addr, state).and_then(|session| {
             Ok(Peer {
                 bootstraped: false,
@@ -152,7 +152,7 @@ impl Peer {
     }
 }
 
-impl Evented for Peer {
+impl<'a> Evented for Peer<'a> {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()> {
         self.session.register(poll, token, interest, opts)
     }

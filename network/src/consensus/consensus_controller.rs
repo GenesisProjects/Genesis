@@ -38,27 +38,7 @@ pub struct ConsensusController<'a> {
     protocol: ConsensusProtocol,
 }
 
-/// State of a propose with unknown txs set and block hash
-#[derive(Debug)]
-pub struct ProposeState {
-    propose: Propose,
-    unknown_txs: HashSet<Hash>,
-    block_hash: Option<Hash>,
-    // Whether the message has been saved to the consensus messages' cache or not.
-    is_saved: bool,
-}
-
-/// State of a block.
-#[derive(Clone, Debug)]
-pub struct BlockState {
-    hash: Hash,
-    // Changes that should be made for block committing.
-    // Todo add patch: Patch,
-    txs: Vec<Hash>,
-    proposer: Account,
-}
-
-impl ConsensusController {
+impl<'a> ConsensusController<'a> {
     /// # launch_controller
     /// **Usage**
     /// - launch the controller with a new thread
@@ -173,7 +153,7 @@ impl ConsensusController {
     }
 }
 
-impl Notify for ConsensusController {
+impl<'a> Notify for ConsensusController<'a> {
     fn notify_propose(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, table: &PeerTable) {
         unimplemented!()
     }
@@ -195,7 +175,7 @@ impl Notify for ConsensusController {
     }
 }
 
-impl Observe for ConsensusController {
+impl<'a> Observe for ConsensusController<'a> {
     fn subscribe(&mut self, name: String) {
         let name = name.to_owned();
         // Subscribe the channel, store the channel reference.
@@ -262,7 +242,7 @@ impl Observe for ConsensusController {
     }
 }
 
-impl Thread for ConsensusController {
+impl<'a> Thread for ConsensusController<'a> {
     fn new(name: String) -> Result<Self> {
         let config = ConsensusConfig::load();
         let msg_queue = MessageQueue::new(1024);
@@ -371,7 +351,7 @@ impl Thread for ConsensusController {
     }
 }
 
-impl Drop for ConsensusController {
+impl<'a> Drop for ConsensusController<'a> {
     fn drop(&mut self) {
 
     }

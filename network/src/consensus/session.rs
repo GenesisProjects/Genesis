@@ -166,7 +166,7 @@ pub struct Session<'a> {
     pub handler: Rc<RefCell<SocketMessageHandler<Session<'a>>>>
 }
 
-impl Session {
+impl<'a> Session<'a> {
     /// # new(2)
     /// **Usage**
     /// - accept the connection and init a new session by incoming socket,
@@ -430,7 +430,7 @@ impl Session {
 
 }
 
-impl Evented for Session {
+impl<'a> Evented for Session<'a> {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()> {
         self.socket.register(poll, token, interest, opts)
     }
@@ -445,13 +445,13 @@ impl Evented for Session {
     }
 }
 
-impl fmt::Debug for Session {
+impl<'a> fmt::Debug for Session<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Session")
     }
 }
 
-impl Drop for Session {
+impl<'a> Drop for Session<'a> {
     fn drop(&mut self) {
         println!("session: {:?} drop here", self.token);
     }
