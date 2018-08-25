@@ -1,19 +1,11 @@
+#![macro_escape]
+
 use std::ops::{Index, Shl};
 use std::convert::{From, Into};
 use std::string::FromUtf8Error;
 use std::mem::transmute;
 
-/// # Usage
-///
 /// Macro to construct `RLPList`
-///
-/// # Examples
-///
-/// ```
-/// rlp_list![];
-/// rlp_list!["a".into(), "b".into()];
-/// rlp_list![rlp_list![1u32.into(), 2u32.into()], "test".into()];
-/// ```
 #[macro_export]
 macro_rules! rlp_list {
     ($( $rlp: expr ),*) => {{

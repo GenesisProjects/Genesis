@@ -1,6 +1,8 @@
 //! This crate allows Genesis send message async between different thread.
 //!
 //! ```
+//! use gen_message::MESSAGE_CENTER;
+//!
 //! let ch_name = "test".to_string();
 //! let ch_pair = MESSAGE_CENTER
 //!     .lock()
