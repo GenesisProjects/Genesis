@@ -25,6 +25,7 @@ use std::time::Duration;
 use std::thread;
 
 pub struct NodeState {
+    validator_state: Option<ValidatorState>,
     // Round
     height: usize,
     height_start_time: DateTime<Utc>,
@@ -47,9 +48,9 @@ pub struct NodeState {
 /// State of a validator-node.
 #[derive(Debug, Clone)]
 pub struct ValidatorState {
-    id: ValidatorId,
-    our_prevotes: HashMap<Round, Prevote>,
-    our_precommits: HashMap<Round, Precommit>,
+    account: Account,
+    owned_prevotes: HashMap<usize, Prevote>,
+    owned_precommits: HashMap<usize, Precommit>,
 }
 
 /// State of a propose with unknown txs set and block hash
@@ -70,6 +71,38 @@ pub struct BlockState {
     patch: Patch,
     txs: Vec<Hash>,
     proposer_id: usize,
+}
+
+impl ValidatorState {
+    /// Creates new `ValidatorState` with given validator id.
+    pub fn new(account: Account) -> Self {
+        Self {
+            account,
+            owned_precommits: HashMap::new(),
+            owned_prevotes: HashMap::new(),
+        }
+    }
+
+    /// Returns validator id.
+    pub fn account(&self) -> Account {
+        self.account
+    }
+
+    /// Sets new validator id.
+    pub fn set_validator_account(&mut self, account: Account) {
+        self.account = account;
+    }
+
+    /// Checks if the node has pre-vote for the specified round.
+    pub fn have_prevote(&self, round: usize) -> bool {
+        self.our_prevotes.get(&round).is_some()
+    }
+
+    /// Clears pre-commits and pre-votes.
+    pub fn clear(&mut self) {
+        self.owned_precommits.clear();
+        self.owned_prevotes.clear();
+    }
 }
 
 impl ProposeState {
@@ -111,5 +144,36 @@ impl ProposeState {
     /// Marks Propose as saved to the consensus messages cache
     pub fn set_saved(&mut self, saved: bool) {
         self.is_saved = saved;
+    }
+}
+
+impl NodeState {
+    pub fn new(
+        validator: Account,
+        last_hash: Hash,
+        last_height: usize,
+        height_start_time: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            validator_state: validator_id.map(ValidatorState::new),
+            height: last_height,
+            height_start_time,
+            round: Round::zero(),
+            locked_round: Round::zero(),
+            locked_propose: None,
+            last_hash,
+            proposes: HashMap::new(),
+            blocks: HashMap::new(),
+            prevotes: HashMap::new(),
+            precommits: HashMap::new(),
+            unknown_txs: HashMap::new(),
+            unknown_proposes_with_precommits: HashMap::new(),
+            requests: HashMap::new(),
+        }
+    }
+
+    /// Returns `ValidatorState` if the node is validator.
+    pub fn validator_state(&self) -> &Option<ValidatorState> {
+        &self.validator_state
     }
 }
