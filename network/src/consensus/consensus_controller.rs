@@ -4,6 +4,7 @@ use eventloop::*;
 
 use super::peer::*;
 use super::protocol::*;
+use super::node_state::*;
 use super::consensus_config_config::*;
 
 use common::address::Address as Account;
@@ -25,7 +26,7 @@ use std::time::Duration;
 use std::thread;
 
 pub struct ConsensusController {
-    // Node config
+    state: NodeState,
     name: String,
     account: Account,
     listener: TcpListener,
@@ -36,24 +37,6 @@ pub struct ConsensusController {
     eventloop: NetworkEventLoop<Peer>,
     last_updated: DateTime<Utc>,
     protocol: ConsensusProtocol,
-
-    // Round
-    height: usize,
-    height_start_time: DateTime<Utc>,
-    round: usize,
-    locked_round: usize,
-    locked_propose: Option<Hash>,
-    last_hash: Hash,
-
-    // Messages.
-    proposes: HashMap<Hash, ProposeState>,
-    prevotes: HashMap<(Round, Hash), Votes<Prevote>>,
-    precommits: HashMap<(Round, Hash), Votes<Precommit>>,
-    requests: HashMap<RequestData, RequestState>,
-    blocks: HashMap<Hash, BlockState>,
-    queued_msgs: RefCell<MessageQueue>,
-    unknown_txs: HashMap<Hash, Vec<Hash>>,
-    unknown_proposes_with_precommits: HashMap<Hash, Vec<(Round, Hash)>>,
 }
 
 /// State of a propose with unknown txs set and block hash
@@ -116,6 +99,57 @@ impl ConsensusController {
                 Ok(Rc::new(RefCell::new(Peer::new(stream, &addr))))
             },
             Err(e) => Err(e)
+        }
+    }
+
+    /// Init validators list.
+    fn init_peers_table(&mut self) {
+        let mut raw_peers_table = self.peer_list.values().map(|peer_ref| {
+            peer_ref.borrow().peer_table()
+        }).fold(Vec::<(Option<Account>, SocketInfo)>::new(), |mut init, ref mut table: Vec<(Option<Account>,SocketInfo)>| {
+            init.append(table);
+            init
+        });
+
+        // add bootstrap peers
+        raw_peers_table.append(&mut self.config.bootstrap_peers());
+
+        // filter out self
+        raw_peers_table = raw_peers_table.into_iter().filter(|&(ref addr, _)| {
+            if let Some(ref account) = *addr {
+                account.clone() != self.account
+            } else {
+                true
+            }
+        }).collect();
+
+        let sockets = raw_peers_table.into_iter()
+            .map(|(ref _account, ref addr)| {
+                addr.clone()
+            }).collect();
+
+        let peers: Vec<(Token, PeerRef)> = sockets.into_iter()
+            .map(|addr| {
+                let peer_ref = self.connect(addr).unwrap();
+                thread::sleep(Duration::from_millis(20));
+                let ret = (self.eventloop.register_peer(&peer_ref.borrow()), peer_ref.clone());
+                ret
+            })
+            .filter(|result| {
+                match &result.0 {
+                    &Ok(_) => true,
+                    &Err(_) => false
+                }
+            })
+            .map(|result| {
+                (result.0.unwrap(), result.1)
+            })
+            .collect();
+
+        // register new peers to the eventloop, add into peer list
+        for (ref token, ref peer_ref) in peers {
+            peer_ref.borrow_mut().set_token(token.clone());
+            self.peer_list.insert(token.clone(), peer_ref.clone());
         }
     }
 
@@ -232,18 +266,7 @@ impl Thread for ConsensusController {
         match (server, account) {
             (Ok(server), Some(account)) => {
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
-                //TODO: load peer list from config
-                Ok(ConsensusController {
-                    name: name,
-                    account: account,
-                    listener: server,
-                    consensus_public_key: None,
-                    consensus_secret_key: None,
-                    peer_list: peer_list,
-                    config: config,
-                    eventloop: NetworkEventLoop::new(config.events_size()),
-                    last_updated: Utc::now(),
-                    protocol: ConsensusProtocol::new(),
+                let state = NodeState {
                     height: 0,
                     height_start_time: Utc::now(),
                     round: 0,
@@ -258,6 +281,20 @@ impl Thread for ConsensusController {
                     queued_msgs: RefCell::new(msg_queue),
                     unknown_txs: HashMap::new(),
                     unknown_proposes_with_precommits: HashMap::new(),
+                };
+
+                Ok(ConsensusController {
+                    state: state,
+                    name: name,
+                    account: account,
+                    listener: server,
+                    consensus_public_key: None,
+                    consensus_secret_key: None,
+                    peer_list: peer_list,
+                    config: config,
+                    eventloop: NetworkEventLoop::new(config.events_size()),
+                    last_updated: Utc::now(),
+                    protocol: ConsensusProtocol::new(),
                 })
             },
             (Ok(_), None) => {
@@ -271,6 +308,7 @@ impl Thread for ConsensusController {
 
     fn run(&mut self) -> bool {
         self.eventloop.register_server(&self.listener);
+        self.init_peers_table();
         // fetch the next tick
         let result = self.eventloop.next_tick();
         self.update();
