@@ -266,22 +266,7 @@ impl Thread for ConsensusController {
         match (server, account) {
             (Ok(server), Some(account)) => {
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
-                let state = NodeState {
-                    height: 0,
-                    height_start_time: Utc::now(),
-                    round: 0,
-                    locked_round: 0,
-                    locked_propose: None,
-                    last_hash: Hash,
-                    proposes: HashMap::new(),
-                    prevotes: HashMap::new(),
-                    precommits: HashMap::new(),
-                    requests: HashMap::new(),
-                    blocks: HashMap::new(),
-                    queued_msgs: RefCell::new(msg_queue),
-                    unknown_txs: HashMap::new(),
-                    unknown_proposes_with_precommits: HashMap::new(),
-                };
+                let state = NodeState::new(account, None, 0, Utc::now());
 
                 Ok(ConsensusController {
                     state: state,
