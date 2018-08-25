@@ -44,6 +44,14 @@ pub struct NodeState {
     unknown_proposes_with_precommits: HashMap<Hash, Vec<(Round, Hash)>>,
 }
 
+/// State of a validator-node.
+#[derive(Debug, Clone)]
+pub struct ValidatorState {
+    id: ValidatorId,
+    our_prevotes: HashMap<Round, Prevote>,
+    our_precommits: HashMap<Round, Precommit>,
+}
+
 /// State of a propose with unknown txs set and block hash
 #[derive(Debug)]
 pub struct ProposeState {
@@ -61,5 +69,47 @@ pub struct BlockState {
     // Changes that should be made for block committing.
     patch: Patch,
     txs: Vec<Hash>,
-    proposer_id: ValidatorId,
+    proposer_id: usize,
+}
+
+impl ProposeState {
+    /// Returns hash of the propose.
+    pub fn hash(&self) -> Hash {
+        self.propose.hash()
+    }
+
+    /// Returns block hash propose was executed.
+    pub fn block_hash(&self) -> Option<Hash> {
+        self.block_hash
+    }
+
+    /// Set block hash on propose execute.
+    pub fn set_block_hash(&mut self, block_hash: Hash) {
+        self.block_hash = Some(block_hash)
+    }
+
+    /// Returns propose-message.
+    pub fn message(&self) -> &Propose {
+        &self.propose
+    }
+
+    /// Returns unknown transactions of the propose.
+    pub fn unknown_txs(&self) -> &HashSet<Hash> {
+        &self.unknown_txs
+    }
+
+    /// Returns `true` if there are unknown transactions in the propose.
+    pub fn has_unknown_txs(&self) -> bool {
+        !self.unknown_txs.is_empty()
+    }
+
+    /// Indicates whether Propose has been saved to the consensus messages cache
+    pub fn is_saved(&self) -> bool {
+        self.is_saved
+    }
+
+    /// Marks Propose as saved to the consensus messages cache
+    pub fn set_saved(&mut self, saved: bool) {
+        self.is_saved = saved;
+    }
 }

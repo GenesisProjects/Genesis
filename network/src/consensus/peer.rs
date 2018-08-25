@@ -45,7 +45,7 @@ pub struct Peer<'a> {
 
 impl Peer {
     #[inline]
-    pub fn new(socket: TcpStream, addr: &SocketAddr, state: NodeState) -> Self {
+    pub fn new(socket: TcpStream, addr: &SocketAddr, state: &mut NodeState) -> Self {
         Peer {
             bootstraped: false,
             ip_addr: addr.clone(),

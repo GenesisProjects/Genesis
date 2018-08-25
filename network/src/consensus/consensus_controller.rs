@@ -25,7 +25,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::thread;
 
-pub struct ConsensusController {
+pub struct ConsensusController<'a> {
     state: NodeState,
     name: String,
     account: Account,
@@ -34,7 +34,7 @@ pub struct ConsensusController {
     consensus_secret_key: SecretKey,
     peer_list: HashMap<Token, PeerRef>,
     config: ConsensusConfig,
-    eventloop: NetworkEventLoop<Peer>,
+    eventloop: NetworkEventLoop<Peer<'a>>,
     last_updated: DateTime<Utc>,
     protocol: ConsensusProtocol,
 }
@@ -93,10 +93,10 @@ impl ConsensusController {
     /// ## Examples
     /// ```
     /// ```
-    fn connect(&mut self, addr: SocketInfo) -> Result<(PeerRef)> {
+    fn connect(&mut self, addr: SocketInfo, state: &mut NodeState) -> Result<(PeerRef)> {
         match TcpStream::connect(&addr) {
             Ok(stream) => {
-                Ok(Rc::new(RefCell::new(Peer::new(stream, &addr))))
+                Ok(Rc::new(RefCell::new(Peer::new(stream, &addr, state))))
             },
             Err(e) => Err(e)
         }
@@ -130,7 +130,7 @@ impl ConsensusController {
 
         let peers: Vec<(Token, PeerRef)> = sockets.into_iter()
             .map(|addr| {
-                let peer_ref = self.connect(addr).unwrap();
+                let peer_ref = self.connect(addr, &mut self.state).unwrap();
                 thread::sleep(Duration::from_millis(20));
                 let ret = (self.eventloop.register_peer(&peer_ref.borrow()), peer_ref.clone());
                 ret

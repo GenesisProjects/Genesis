@@ -182,7 +182,7 @@ impl Session {
     /// ## Examples
     /// ```
     /// ```
-    pub fn new(socket: TcpStream, addr: &SocketAddr, state: NodeState) -> Self {
+    pub fn new(socket: TcpStream, addr: &SocketAddr, state: &mut NodeState) -> Self {
         Session {
             token: None,
             socket: PeerSocket::new(socket),
@@ -217,7 +217,7 @@ impl Session {
     /// ## Examples
     /// ```
     /// ```
-    pub fn connect(addr: &SocketAddr, state: NodeState) -> Result<Self> {
+    pub fn connect(addr: &SocketAddr, state: &mut NodeState) -> Result<Self> {
         match PeerSocket::connect(addr) {
             Ok(r) => {
                 Ok(Session {
@@ -257,6 +257,11 @@ impl Session {
     #[inline]
     pub fn status(&self) -> SessionStatus {
         self.status.clone()
+    }
+
+    #[inline]
+    pub fn state(&self) -> &mut NodeState {
+        self.state
     }
 
     #[inline]
