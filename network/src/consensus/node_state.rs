@@ -39,7 +39,7 @@ pub struct NodeState {
     proposes: HashMap<Hash, ProposeState>,
     prevotes: HashMap<(usize, Hash), Votes<Prevote>>,
     precommits: HashMap<(usize, Hash), Votes<Precommit>>,
-    requests: HashMap<RequestData, RequestState>,
+    //requests: HashMap<RequestData, RequestState>,
     blocks: HashMap<Hash, BlockState>,
     queued_msgs: RefCell<MessageQueue>,
     unknown_txs: HashMap<Hash, Vec<Hash>>,
@@ -69,13 +69,13 @@ pub struct ProposeState {
 pub struct BlockState {
     hash: Hash,
     // Changes that should be made for block committing.
-    patch: Patch,
+    // patch: Patch,
     txs: Vec<Hash>,
     proposer_id: usize,
 }
 
 /// `VoteMessage` trait represents voting messages such as `Precommit` and `Prevote`.
-pub trait VoteMessage: Message + Clone {
+pub trait VoteMessage {
     /// Return validator if of the message.
     fn validator(&self) -> Account;
 }
@@ -124,7 +124,7 @@ impl<T> Votes<T>
     }
 
     /// Returns validators.
-    pub fn validators(&self) -> &BitVec {
+    pub fn validators(&self) -> &HashSet<Account> {
         &self.validators
     }
 
@@ -221,7 +221,7 @@ impl NodeState {
         height_start_time: DateTime<Utc>,
     ) -> Self {
         Self {
-            validator_state: validator_id.map(ValidatorState::new),
+            validator_state: validator.map(ValidatorState::new),
             height: last_height,
             height_start_time,
             round: 0,
@@ -234,7 +234,7 @@ impl NodeState {
             precommits: HashMap::new(),
             unknown_txs: HashMap::new(),
             unknown_proposes_with_precommits: HashMap::new(),
-            requests: HashMap::new(),
+            //requests: HashMap::new(),
         }
     }
 
