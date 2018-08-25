@@ -12,6 +12,7 @@
 //! ```
 //! use rlp::encoder::Encoder;
 //! use rlp::decoder::Decoder;
+//! #[macro_use]
 //! use rlp::types::{RLP, RLPError};
 //!
 //!
@@ -48,6 +49,7 @@
 //!
 //! ## example
 //! ```
+//! use rlp::types::{RLP, RLPError};
 //! use rlp::RLPSerialize;
 //! struct Student {
 //!     name: String,
@@ -58,12 +60,9 @@
 //! impl RLPSerialize for Student {
 //!     fn serialize(&self) -> Result<RLP, RLPError> {
 //!         Ok(
-//!             rlp_list![
-//!                 "Student".into(),
-//!                 self.name.to_owned().into(),
-//!                 self.age.into(),
-//!                 self.graduated.into()
-//!             ]
+//!             RLP::RLPList(
+//!                 vec!["Student".into(),self.name.to_owned().into(),self.age.into(), self.graduated.into()]
+//!             )
 //!         )
 //!     }
 //!

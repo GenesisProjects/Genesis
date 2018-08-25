@@ -15,7 +15,11 @@
 /// * Decode nibbles to node path
 /// ### Examples
 /// ```
-/// use mpt::node::*;
+/// #[macro_use]
+/// extern crate common;
+///
+/// use common::hash::*;
+/// use gen_core::mpt::node::*;
 ///
 /// // Instantialize leaf node
 /// let leaf_node: TrieNode<String> = TrieNode::new_leaf_node(&encoded_path, &"test".to_string());
