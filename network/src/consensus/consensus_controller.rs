@@ -265,7 +265,7 @@ impl Observe for ConsensusController {
 impl Thread for ConsensusController {
     fn new(name: String) -> Result<Self> {
         let config = ConsensusConfig::load();
-        let msg_queue = MessageQueue::new(DEFAULT_MSG_QUEUE_SIZE);
+        let msg_queue = MessageQueue::new(1024);
 
         //TODO: make socket resuseable
         let server = TcpListener::bind(&config.server_addr());
@@ -278,7 +278,7 @@ impl Thread for ConsensusController {
                 let validator = config
                     .validator_keys()
                     .into_iter()
-                    .position(|(acc, addr)| acc == account)
+                    .position(|(key, addr)| key.unwrap() == account)
                     .map(|id| ValidatorId(id as u16));
                 let state = NodeState::new(account, None, 0, Utc::now());
 
