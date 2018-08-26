@@ -1,3 +1,19 @@
-fn main() {
+extern crate gen_network;
+extern crate common;
 
+use gen_network::utils::*;
+use gen_network::nat::*;
+use gen_network::consensus::consensus_controller::*;
+use common::thread::Thread;
+use std::net::*;
+use std::str::FromStr;
+
+fn main() {
+    ConsensusController::launch_controller();
+    loop {
+
+    }
+    let test = get_local_ip();
+    let result = get_public_ip_addr(Protocol::UPNP, &SocketAddr::from_str("192.168.0.1:20").unwrap());
+    println!("{:?}", test);
 }

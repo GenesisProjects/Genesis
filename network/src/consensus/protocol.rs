@@ -238,6 +238,9 @@ impl ConsensusProtocol {
             "NOTIFY_TNX" => {
                 return true;
             }
+            _ => {
+                return true;
+            }
         }
     }
 }

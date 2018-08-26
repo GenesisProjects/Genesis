@@ -1,6 +1,5 @@
 pub mod nat;
 pub mod eventloop;
-pub mod bft;
 pub mod p2p;
 pub mod consensus;
 pub mod socket;

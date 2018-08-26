@@ -32,8 +32,8 @@ pub struct ConsensusController {
     account: Account,
     listener: TcpListener,
     peer_list: HashMap<Token, PeerRef>,
-    config: ConsensusConfig,
     eventloop: NetworkEventLoop<Peer>,
+    config: ConsensusConfig,
     last_updated: DateTime<Utc>,
     protocol: ConsensusProtocol,
     ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>,
@@ -84,7 +84,7 @@ impl ConsensusController {
 
     // Return state ref
     fn state(&mut self) -> StateRef {
-        self.state
+        self.state.clone()
     }
 
     /// Init validators list.
@@ -115,7 +115,7 @@ impl ConsensusController {
 
         let peers: Vec<(Token, PeerRef)> = sockets.into_iter()
             .map(|addr| {
-                let peer_ref = self.connect(addr, self.state).unwrap();
+                let peer_ref = self.connect(addr, self.state()).unwrap();
                 thread::sleep(Duration::from_millis(20));
                 let ret = (self.eventloop.register_peer(&peer_ref.borrow()), peer_ref.clone());
                 ret
@@ -244,17 +244,17 @@ impl Thread for ConsensusController {
                 let validator = config
                     .validator_keys()
                     .into_iter()
-                    .find(|(key, addr)| key.unwrap() == account)
-                    .map(|(Some(key), addr)| key);
+                    .find(|(Some(key), _)| key == account)
+                    .map(|tup| tup.0.unwrap());
 
                 Ok(ConsensusController {
-                    state: Rc::new(RefCell::new(NodeState::new(validator.unwrap(), zero_hash!(), 0, Utc::now()))),
+                    state: Rc::new(RefCell::new(NodeState::new(validator, zero_hash!(), 0, Utc::now()))),
                     name: name,
                     account: account,
                     listener: server,
                     peer_list: peer_list,
-                    config: config,
                     eventloop: NetworkEventLoop::new(config.events_size()),
+                    config: config,
                     last_updated: Utc::now(),
                     protocol: ConsensusProtocol::new(),
                     ch_pair: None

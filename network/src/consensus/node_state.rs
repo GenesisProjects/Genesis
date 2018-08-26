@@ -48,7 +48,7 @@ pub struct NodeState {
     unknown_proposes_with_precommits: HashMap<Hash, Vec<(usize, Hash)>>,
 }
 
-/// State of a validator-node.
+/// State of a vaRefCell<MessageQueue>lidator-node.
 #[derive(Debug, Clone)]
 pub struct ValidatorState {
     account: Account,
@@ -77,7 +77,7 @@ pub struct BlockState {
 }
 
 /// `VoteMessage` trait represents voting messages such as `Precommit` and `Prevote`.
-pub trait VoteMessage {
+pub trait VoteMessage: Clone {
     /// Return validator if of the message.
     fn validator(&self) -> Account;
 }
@@ -98,7 +98,7 @@ impl VoteMessage for Prevote {
 #[derive(Debug)]
 pub struct Votes<T: VoteMessage> {
     messages: Vec<T>,
-    validators: HashSet<Account>,
+    validators: HashSet<String>,
     count: usize,
 }
 
@@ -117,7 +117,7 @@ impl<T> Votes<T>
 
     /// Inserts a new message if it hasn't been inserted yet.
     pub fn insert(&mut self, message: &T) {
-        let voter = message.validator();
+        let voter = message.validator().text;
         if !self.validators.contains(&voter) {
             self.count += 1;
             self.validators.insert(voter.clone());
@@ -126,7 +126,7 @@ impl<T> Votes<T>
     }
 
     /// Returns validators.
-    pub fn validators(&self) -> &HashSet<Account> {
+    pub fn validators(&self) -> &HashSet<String> {
         &self.validators
     }
 
@@ -163,7 +163,7 @@ impl ValidatorState {
 
     /// Checks if the node has pre-vote for the specified round.
     pub fn have_prevote(&self, round: usize) -> bool {
-        self.our_prevotes.get(&round).is_some()
+        self.owned_prevotes.get(&round).is_some()
     }
 
     /// Clears pre-commits and pre-votes.
@@ -176,7 +176,9 @@ impl ValidatorState {
 impl ProposeState {
     /// Returns hash of the propose.
     pub fn hash(&self) -> Hash {
-        self.propose.hash()
+        // Todo gen hash for propose
+        // self.propose.hash()
+        unimplemented!()
     }
 
     /// Returns block hash propose was executed.
@@ -217,7 +219,7 @@ impl ProposeState {
 
 impl NodeState {
     pub fn new(
-        validator: Account,
+        validator: Option<Account>,
         last_hash: Hash,
         last_height: usize,
         height_start_time: DateTime<Utc>,
@@ -234,6 +236,7 @@ impl NodeState {
             blocks: HashMap::new(),
             prevotes: HashMap::new(),
             precommits: HashMap::new(),
+            queued_msgs: RefCell::new(MessageQueue::new(1024)),
             unknown_txs: HashMap::new(),
             unknown_proposes_with_precommits: HashMap::new(),
             //requests: HashMap::new(),
