@@ -26,20 +26,20 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::thread;
 
-pub struct ConsensusController<'a> {
-    state: &'a NodeState,
+pub struct ConsensusController {
+    state: StateRef,
     name: String,
     account: Account,
     listener: TcpListener,
-    peer_list: HashMap<Token, Rc<RefCell<Peer<'a>>>>,
+    peer_list: HashMap<Token, PeerRef>,
     config: ConsensusConfig,
-    eventloop: NetworkEventLoop<Peer<'a>>,
+    eventloop: NetworkEventLoop<Peer>,
     last_updated: DateTime<Utc>,
     protocol: ConsensusProtocol,
     ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>,
 }
 
-impl<'a> ConsensusController<'a> {
+impl ConsensusController {
     /// # launch_controller
     /// **Usage**
     /// - launch the controller with a new thread
@@ -73,13 +73,18 @@ impl<'a> ConsensusController<'a> {
     /// ## Examples
     /// ```
     /// ```
-    fn connect(&mut self, addr: SocketInfo, state: &'a mut NodeState) -> Result<(Rc<RefCell<Peer<'a>>>)> {
+    fn connect(&mut self, addr: SocketInfo, state: StateRef) -> Result<(PeerRef)> {
         match TcpStream::connect(&addr) {
             Ok(stream) => {
                 Ok(Rc::new(RefCell::new(Peer::new(stream, &addr, state))))
             },
             Err(e) => Err(e)
         }
+    }
+
+    // Return state ref
+    fn state(&mut self) -> StateRef {
+        self.state
     }
 
     /// Init validators list.
@@ -108,9 +113,9 @@ impl<'a> ConsensusController<'a> {
                 addr.clone()
             }).collect();
 
-        let peers: Vec<(Token, Rc<RefCell<Peer<'a>>>)> = sockets.into_iter()
+        let peers: Vec<(Token, PeerRef)> = sockets.into_iter()
             .map(|addr| {
-                let peer_ref = self.connect(addr, &mut self.state).unwrap();
+                let peer_ref = self.connect(addr, self.state).unwrap();
                 thread::sleep(Duration::from_millis(20));
                 let ret = (self.eventloop.register_peer(&peer_ref.borrow()), peer_ref.clone());
                 ret
@@ -134,7 +139,7 @@ impl<'a> ConsensusController<'a> {
     }
 }
 
-impl<'a> Notify for ConsensusController<'a> {
+impl Notify for ConsensusController {
     fn notify_propose(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, table: &PeerTable) {
         unimplemented!()
     }
@@ -156,7 +161,7 @@ impl<'a> Notify for ConsensusController<'a> {
     }
 }
 
-impl<'a> Observe for ConsensusController<'a> {
+impl Observe for ConsensusController {
     fn subscribe(&mut self, name: String) {
         let name = name.to_owned();
         // Subscribe the channel, store the channel reference.
@@ -223,7 +228,7 @@ impl<'a> Observe for ConsensusController<'a> {
     }
 }
 
-impl<'a> Thread for ConsensusController<'a> {
+impl Thread for ConsensusController {
     fn new(name: String) -> Result<Self> {
         let config = ConsensusConfig::load();
         let msg_queue = MessageQueue::new(1024);
@@ -234,17 +239,16 @@ impl<'a> Thread for ConsensusController<'a> {
 
         match (server, account) {
             (Ok(server), Some(account)) => {
-                let mut peer_list = HashMap::<Token, Rc<RefCell<Peer<'a>>>>::new();
+                let mut peer_list = HashMap::<Token, PeerRef>::new();
                 let keys = config.validator_keys();
                 let validator = config
                     .validator_keys()
                     .into_iter()
                     .find(|(key, addr)| key.unwrap() == account)
                     .map(|(Some(key), addr)| key);
-                let state = NodeState::new(validator.unwrap(), zero_hash!(), 0, Utc::now());
 
                 Ok(ConsensusController {
-                    state: &state,
+                    state: Rc::new(RefCell::new(NodeState::new(validator.unwrap(), zero_hash!(), 0, Utc::now()))),
                     name: name,
                     account: account,
                     listener: server,
@@ -314,7 +318,7 @@ impl<'a> Thread for ConsensusController<'a> {
     }
 }
 
-impl<'a> Drop for ConsensusController<'a> {
+impl Drop for ConsensusController {
     fn drop(&mut self) {
 
     }

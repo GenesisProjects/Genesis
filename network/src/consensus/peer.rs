@@ -18,6 +18,9 @@ use mio::net::TcpStream;
 
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
+pub type PeerRef = Rc<RefCell<Peer>>;
+pub type WeakPeerRef = Weak<RefCell<Peer>>;
+
 pub const INIT_CREDIT: u32 = 800u32;
 pub const INIT_TTL: u32 = 255u32;
 
@@ -29,7 +32,7 @@ enum PeerType {
 }
 
 #[derive(Debug)]
-pub struct Peer<'a> {
+pub struct Peer {
     bootstraped: bool,
     ip_addr: SocketAddr,
     peer_type: PeerType,
@@ -38,12 +41,12 @@ pub struct Peer<'a> {
     token: Option<Token>,
     ttl: u32,
 
-    pub session: Session<'a>
+    pub session: Session
 }
 
-impl<'a> Peer<'a> {
+impl Peer {
     #[inline]
-    pub fn new(socket: TcpStream, addr: &SocketAddr, state: &'a mut NodeState) -> Self {
+    pub fn new(socket: TcpStream, addr: &SocketAddr, state: StateRef) -> Self {
         Peer {
             bootstraped: false,
             ip_addr: addr.clone(),
@@ -58,7 +61,7 @@ impl<'a> Peer<'a> {
     }
 
     #[inline]
-    pub fn connect(addr: &SocketAddr, state: &'a mut NodeState) -> Result<Self> {
+    pub fn connect(addr: &SocketAddr, state: StateRef) -> Result<Self> {
         Session::connect(addr, state).and_then(|session| {
             Ok(Peer {
                 bootstraped: false,
@@ -149,7 +152,7 @@ impl<'a> Peer<'a> {
     }
 }
 
-impl<'a> Evented for Peer<'a> {
+impl Evented for Peer {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()> {
         self.session.register(poll, token, interest, opts)
     }

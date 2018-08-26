@@ -5,7 +5,7 @@ use socket::message::message_handler::*;
 use super::session::*;
 use super::protocol::*;
 
-impl<'a> EventRegister for Session<'a> {
+impl EventRegister for Session {
     fn add_handler(self) -> Self {
         let handler = self.handler.clone();
         let mut handler_ref = handler.borrow_mut();

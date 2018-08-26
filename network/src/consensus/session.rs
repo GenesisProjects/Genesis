@@ -148,7 +148,7 @@ pub enum SessionMode {
 /// - 5. ***context***:     instance of [TaskContext]
 /// - 6. ***connected***:   true if communication session has been established
 /// - 6. ***mode***:        instance of [SessionMode]
-pub struct Session<'a> {
+pub struct Session {
     token: Option<Token>,
     socket: PeerSocket,
     status: SessionStatus,
@@ -162,11 +162,11 @@ pub struct Session<'a> {
 
     table: PeerTable,
 
-    state: &'a mut NodeState,
-    pub handler: Rc<RefCell<SocketMessageHandler<Session<'a>>>>
+    state: StateRef,
+    pub handler: Rc<RefCell<SocketMessageHandler<Session>>>
 }
 
-impl<'a> Session<'a> {
+impl Session {
     /// # new(2)
     /// **Usage**
     /// - accept the connection and init a new session by incoming socket,
@@ -181,7 +181,7 @@ impl<'a> Session<'a> {
     /// ## Examples
     /// ```
     /// ```
-    pub fn new(socket: TcpStream, addr: &SocketAddr, state: &'a mut NodeState) -> Self {
+    pub fn new(socket: TcpStream, addr: &SocketAddr, state: StateRef) -> Self {
         Session {
             token: None,
             socket: PeerSocket::new(socket),
@@ -214,7 +214,7 @@ impl<'a> Session<'a> {
     /// ## Examples
     /// ```
     /// ```
-    pub fn connect(addr: &SocketAddr, state: &'a mut NodeState) -> Result<Self> {
+    pub fn connect(addr: &SocketAddr, state: StateRef) -> Result<Self> {
         match PeerSocket::connect(addr) {
             Ok(r) => {
                 Ok(Session {
@@ -256,7 +256,7 @@ impl<'a> Session<'a> {
     }
 
     #[inline]
-    pub fn state(&self) -> &mut NodeState {
+    pub fn state(&self) -> StateRef {
         self.state
     }
 
@@ -430,7 +430,7 @@ impl<'a> Session<'a> {
 
 }
 
-impl<'a> Evented for Session<'a> {
+impl Evented for Session {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()> {
         self.socket.register(poll, token, interest, opts)
     }
@@ -445,13 +445,13 @@ impl<'a> Evented for Session<'a> {
     }
 }
 
-impl<'a> fmt::Debug for Session<'a> {
+impl fmt::Debug for Session {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Session")
     }
 }
 
-impl<'a> Drop for Session<'a> {
+impl Drop for Session {
     fn drop(&mut self) {
         println!("session: {:?} drop here", self.token);
     }

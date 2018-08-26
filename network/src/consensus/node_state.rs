@@ -25,6 +25,8 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::thread;
 
+pub type StateRef = Rc<RefCell<NodeState>>;
+
 pub struct NodeState {
     validator_state: Option<ValidatorState>,
     // Round
