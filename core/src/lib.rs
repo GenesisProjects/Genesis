@@ -6,7 +6,7 @@ pub mod log;
 pub mod mpt;
 pub mod storage;
 pub mod transaction;
-pub mod receipt;
+pub mod validator;
 pub mod vm;
 pub mod state;
 pub mod tx_pool;

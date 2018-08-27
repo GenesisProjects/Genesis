@@ -2,8 +2,10 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::Path;
 use std::str::FromStr;
+
 use common::address::Address as Account;
 use config::{Config, Value, File};
+use gen_core::validator::Validator;
 
 pub trait MockConfig {
     fn mock() -> Self;
@@ -89,7 +91,7 @@ impl ConsensusConfig {
         self.peer_expire
     }
 
-    pub fn validator_keys(&self) -> Vec<(Option<Account>, SocketAddr)> {
+    pub fn validator_keys(&self) -> Vec<Validator> {
         self.validator_keys.clone()
     }
 }

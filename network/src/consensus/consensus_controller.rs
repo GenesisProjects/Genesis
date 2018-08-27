@@ -13,6 +13,8 @@ use common::thread::{Thread, ThreadStatus};
 use common::observe::Observe;
 use common::hash::*;
 
+use gen_core::validator::Validator;
+
 use mio::*;
 use mio::net::{TcpListener, TcpStream};
 

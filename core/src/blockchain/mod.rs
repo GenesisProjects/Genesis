@@ -1,5 +1,7 @@
 pub mod genesis;
 
+use validator::Validator;
+
 use chrono::{DateTime, Utc};
 use common::hash::Hash;
 
@@ -25,5 +27,10 @@ pub fn cur_block_chain_len() -> usize {
 
 /// Return last block transaction hash root, if the block chain has not been sync, return None
 pub fn last_block_tx_root() -> Option<Hash> {
+    unimplemented!()
+}
+
+/// Return top N validator from last block
+pub fn validator_from_last_block(n: usize) -> Vec<Validator> {
     unimplemented!()
 }
