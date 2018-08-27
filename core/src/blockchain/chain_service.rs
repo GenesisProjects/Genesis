@@ -1,4 +1,4 @@
-//! Basic operation of block chain
+//! Basic operation of committed block chain
 //! Including reading/verification/synchronization
 //!
 //!

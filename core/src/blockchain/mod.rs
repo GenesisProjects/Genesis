@@ -1,3 +1,4 @@
+pub mod chain_cache;
 pub mod chain_service;
 pub mod genesis;
 
