@@ -12,6 +12,8 @@ use common::thread::{Thread, ThreadStatus};
 use common::observe::Observe;
 use common::hash::*;
 
+use gen_core::validator::*;
+
 use mio::*;
 use mio::net::{TcpListener, TcpStream};
 
@@ -51,7 +53,7 @@ pub struct NodeState {
 /// State of a vaRefCell<MessageQueue>lidator-node.
 #[derive(Debug, Clone)]
 pub struct ValidatorState {
-    account: Account,
+    validator_id: ValidatorId,
     owned_prevotes: HashMap<usize, Prevote>,
     owned_precommits: HashMap<usize, Precommit>,
 }
@@ -219,7 +221,7 @@ impl ProposeState {
 
 impl NodeState {
     pub fn new(
-        validator: Option<Account>,
+        validator: Option<ValidatorId>,
         last_hash: Hash,
         last_height: usize,
         height_start_time: DateTime<Utc>,
