@@ -1,6 +1,6 @@
 use common::hash::*;
 use rlp::{RLPSerialize, decoder::Decoder};
-use gen_rocksdb::*;
+use gen_db::*;
 use ::rocksdb::{DB};
 use config::*;
 use std::path::Path;

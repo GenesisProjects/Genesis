@@ -83,7 +83,7 @@ impl DBOP for RocksDB {
         match &self.db.get(key).unwrap() {
             Some(t) => {
                 let result = t.to_vec();
-                let t= Decoder::decode(&result).unwrap();
+                let t = Decoder::decode(&result).unwrap();
                 Some(T::deserialize(&t).unwrap())
             },
             None => None

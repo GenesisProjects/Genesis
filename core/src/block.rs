@@ -3,6 +3,7 @@ use common::address::*;
 use num::bigint::BigInt;
 use rlp::RLPSerialize;
 use rlp::types::*;
+use mpt::node::TrieKey;
 
 pub mod nounce {
     /// A BlockNonce is a 64-bit hash which proves (combined with the
@@ -20,11 +21,9 @@ pub struct Block {
     pub parent: Hash,
     pub uncle: Hash,
     pub coinbase: Address,
-    pub root: Hash,
-    pub tx_root: Hash,
-    pub receipt_root: Hash,
+    pub account_root: TrieKey,
+    pub txs_root: TrieKey,
     //pub logs_bloom: Bloom<Log>,
-    pub difficulty: BigInt,
     pub number: BigInt,
     pub gas_used: u64,
     pub time: BigInt,

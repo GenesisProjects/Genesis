@@ -1,6 +1,6 @@
 use common::hash::*;
 use db::manager::*;
-use db::gen_rocksdb::*;
+use db::gen_db::*;
 use rlp::RLPSerialize;
 use std::cmp::min;
 use std::fmt;

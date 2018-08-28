@@ -18,7 +18,6 @@ impl ValidatorId {
     /// # Examples
     ///
     /// ```
-    /// use exonum::helpers::ValidatorId;
     ///
     /// let id = ValidatorId::zero();
     /// assert_eq!(0, id.0);
