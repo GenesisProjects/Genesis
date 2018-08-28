@@ -153,7 +153,7 @@ impl ValidatorState {
 
     /// Returns validator id.
     pub fn account(&self) -> Account {
-        self.account
+        self.account.clone()
     }
 
     /// Sets new validator id.

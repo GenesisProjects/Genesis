@@ -21,7 +21,7 @@ pub struct ConsensusConfig {
     connect_timeout: i64,
     peer_expire: i64,
 
-    validator_keys: Vec<(Option<Account>, SocketAddr)>
+    validator_keys: Vec<Validator>
 }
 
 impl ConsensusConfig {
@@ -48,7 +48,7 @@ impl ConsensusConfig {
         let peer_expire: i64 = consensus_config["peer_expire"].clone()
             .into_int().unwrap() as i64;
 
-        let validator_keys: Vec<(Option<Account>, SocketAddr)> = consensus_config["bootstrap_peers"].clone()
+        let validator_keys: Vec<Validator> = consensus_config["bootstrap_peers"].clone()
             .into_array().expect("The `bootstrap_peers` is not an array")
             .into_iter().map(|value| {
             let socket_addr = value
@@ -56,7 +56,7 @@ impl ConsensusConfig {
                 .expect("The bootstrap peer address should be a string")
                 .parse()
                 .expect("Unable to parse socket address");
-            (None, socket_addr)
+            Validator::new(socket_addr, Account::load().unwrap())
         }).collect();
 
 
@@ -108,10 +108,10 @@ impl MockConfig for ConsensusConfig {
             peer_expire: 60000,
 
             validator_keys: vec![
-                (None, SocketAddr::from_str("127.0.0.1:40001").unwrap()),
-                (None, SocketAddr::from_str("127.0.0.1:40002").unwrap()),
-                (None, SocketAddr::from_str("127.0.0.1:40003").unwrap()),
-                (None, SocketAddr::from_str("127.0.0.1:40004").unwrap())
+                Validator::new(SocketAddr::from_str("127.0.0.1:40001").unwrap(), Account::load().unwrap()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40002").unwrap(), Account::load().unwrap()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40003").unwrap(), Account::load().unwrap()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40004").unwrap(), Account::load().unwrap()),
             ]
         }
     }
@@ -127,10 +127,10 @@ impl MockConfig for ConsensusConfig {
             peer_expire: 60000,
 
             validator_keys: vec![
-                (None, SocketAddr::from_str("127.0.0.1:40000").unwrap()),
-                (None, SocketAddr::from_str("127.0.0.1:40002").unwrap()),
-                (None, SocketAddr::from_str("127.0.0.1:40003").unwrap()),
-                (None, SocketAddr::from_str("127.0.0.1:40004").unwrap())
+                Validator::new(SocketAddr::from_str("127.0.0.1:40000").unwrap(), Account::load().unwrap()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40002").unwrap(), Account::load().unwrap()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40003").unwrap(), Account::load().unwrap()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40004").unwrap(), Account::load().unwrap()),
             ]
         }
     }

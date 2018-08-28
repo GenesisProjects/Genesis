@@ -99,7 +99,9 @@ impl ConsensusController {
         });
 
         // add bootstrap peers
-        raw_peers_table.append(&mut self.config.validator_keys());
+        raw_peers_table.append(&mut self.config.validator_keys().into_iter().map(|v| {
+            (Some(v.account_addr()), v.socket_addr())
+        }).collect());
 
         // filter out self
         raw_peers_table = raw_peers_table.into_iter().filter(|&(ref addr, _)| {
@@ -117,7 +119,8 @@ impl ConsensusController {
 
         let peers: Vec<(Token, PeerRef)> = sockets.into_iter()
             .map(|addr| {
-                let peer_ref = self.connect(addr, self.state()).unwrap();
+                let mut state = self.state();
+                let peer_ref = self.connect(addr, state).unwrap();
                 thread::sleep(Duration::from_millis(20));
                 let ret = (self.eventloop.register_peer(&peer_ref.borrow()), peer_ref.clone());
                 ret
@@ -246,8 +249,8 @@ impl Thread for ConsensusController {
                 let validator = config
                     .validator_keys()
                     .into_iter()
-                    .find(|(Some(key), _)| key == account)
-                    .map(|tup| tup.0.unwrap());
+                    .find(|v| v.account_addr() == account)
+                    .map(|v| v.account_addr());
 
                 Ok(ConsensusController {
                     state: Rc::new(RefCell::new(NodeState::new(validator, zero_hash!(), 0, Utc::now()))),

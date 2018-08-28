@@ -257,7 +257,7 @@ impl Session {
 
     #[inline]
     pub fn state(&self) -> StateRef {
-        self.state
+        self.state.clone()
     }
 
     #[inline]
