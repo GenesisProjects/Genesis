@@ -148,8 +148,8 @@ impl ValidatorState {
     pub fn new(validator_id: ValidatorId) -> Self {
         Self {
             validator_id,
-            our_precommits: HashMap::new(),
-            our_prevotes: HashMap::new(),
+            owned_precommits: HashMap::new(),
+            owned_prevotes: HashMap::new(),
         }
     }
 
@@ -164,14 +164,14 @@ impl ValidatorState {
     }
 
     /// Checks if the node has pre-vote for the specified round.
-    pub fn have_prevote(&self, round: Round) -> bool {
-        self.our_prevotes.get(&round).is_some()
+    pub fn have_prevote(&self, round: usize) -> bool {
+        self.owned_prevotes.get(&round).is_some()
     }
 
     /// Clears pre-commits and pre-votes.
     pub fn clear(&mut self) {
-        self.our_precommits.clear();
-        self.our_prevotes.clear();
+        self.owned_precommits.clear();
+        self.owned_prevotes.clear();
     }
 }
 

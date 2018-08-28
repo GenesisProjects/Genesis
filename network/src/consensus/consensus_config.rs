@@ -50,13 +50,13 @@ impl ConsensusConfig {
 
         let validator_keys: Vec<Validator> = consensus_config["bootstrap_peers"].clone()
             .into_array().expect("The `bootstrap_peers` is not an array")
-            .into_iter().find().map(|value| {
+            .into_iter().enumerate().map(|(index, value)| {
             let socket_addr = value
                 .into_str()
                 .expect("The bootstrap peer address should be a string")
                 .parse()
                 .expect("Unable to parse socket address");
-            Validator::new(socket_addr, Account::load().unwrap(), ValidatorId::zero())
+            Validator::new(socket_addr, Account::load().unwrap(), ValidatorId(index as u16))
         }).collect();
 
 

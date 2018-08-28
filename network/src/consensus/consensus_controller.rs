@@ -246,14 +246,13 @@ impl Thread for ConsensusController {
             (Ok(server), Some(account)) => {
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
                 let keys = config.validator_keys();
-                let validator = config
+                let validator_id = ValidatorId(config
                     .validator_keys()
                     .into_iter()
-                    .find(|v| v.account_addr() == account)
-                    .map(|v| v.account_addr());
+                    .position(|v| v.account_addr() == account).unwrap() as u16);
 
                 Ok(ConsensusController {
-                    state: Rc::new(RefCell::new(NodeState::new(validator, zero_hash!(), 0, Utc::now()))),
+                    state: Rc::new(RefCell::new(NodeState::new(Some(validator_id), zero_hash!(), 0, Utc::now()))),
                     name: name,
                     account: account,
                     listener: server,
