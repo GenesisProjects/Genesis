@@ -145,33 +145,33 @@ impl<T> Votes<T>
 
 impl ValidatorState {
     /// Creates new `ValidatorState` with given validator id.
-    pub fn new(account: Account) -> Self {
+    pub fn new(validator_id: ValidatorId) -> Self {
         Self {
-            account,
-            owned_precommits: HashMap::new(),
-            owned_prevotes: HashMap::new(),
+            validator_id,
+            our_precommits: HashMap::new(),
+            our_prevotes: HashMap::new(),
         }
     }
 
     /// Returns validator id.
-    pub fn account(&self) -> Account {
-        self.account.clone()
+    pub fn validator_id(&self) -> ValidatorId {
+        self.validator_id
     }
 
     /// Sets new validator id.
-    pub fn set_validator_account(&mut self, account: Account) {
-        self.account = account;
+    pub fn set_validator_id(&mut self, validator_id: ValidatorId) {
+        self.validator_id = validator_id;
     }
 
     /// Checks if the node has pre-vote for the specified round.
-    pub fn have_prevote(&self, round: usize) -> bool {
-        self.owned_prevotes.get(&round).is_some()
+    pub fn have_prevote(&self, round: Round) -> bool {
+        self.our_prevotes.get(&round).is_some()
     }
 
     /// Clears pre-commits and pre-votes.
     pub fn clear(&mut self) {
-        self.owned_precommits.clear();
-        self.owned_prevotes.clear();
+        self.our_precommits.clear();
+        self.our_prevotes.clear();
     }
 }
 

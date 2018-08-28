@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use common::address::Address as Account;
 use config::{Config, Value, File};
-use gen_core::validator::Validator;
+use gen_core::validator::*;
 
 pub trait MockConfig {
     fn mock() -> Self;
@@ -50,13 +50,13 @@ impl ConsensusConfig {
 
         let validator_keys: Vec<Validator> = consensus_config["bootstrap_peers"].clone()
             .into_array().expect("The `bootstrap_peers` is not an array")
-            .into_iter().map(|value| {
+            .into_iter().find().map(|value| {
             let socket_addr = value
                 .into_str()
                 .expect("The bootstrap peer address should be a string")
                 .parse()
                 .expect("Unable to parse socket address");
-            Validator::new(socket_addr, Account::load().unwrap())
+            Validator::new(socket_addr, Account::load().unwrap(), ValidatorId::zero())
         }).collect();
 
 
@@ -108,10 +108,10 @@ impl MockConfig for ConsensusConfig {
             peer_expire: 60000,
 
             validator_keys: vec![
-                Validator::new(SocketAddr::from_str("127.0.0.1:40001").unwrap(), Account::load().unwrap()),
-                Validator::new(SocketAddr::from_str("127.0.0.1:40002").unwrap(), Account::load().unwrap()),
-                Validator::new(SocketAddr::from_str("127.0.0.1:40003").unwrap(), Account::load().unwrap()),
-                Validator::new(SocketAddr::from_str("127.0.0.1:40004").unwrap(), Account::load().unwrap()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40001").unwrap(), Account::load().unwrap(), ValidatorId::zero()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40002").unwrap(), Account::load().unwrap(), ValidatorId::zero()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40003").unwrap(), Account::load().unwrap(), ValidatorId::zero()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40004").unwrap(), Account::load().unwrap(), ValidatorId::zero()),
             ]
         }
     }
@@ -127,10 +127,10 @@ impl MockConfig for ConsensusConfig {
             peer_expire: 60000,
 
             validator_keys: vec![
-                Validator::new(SocketAddr::from_str("127.0.0.1:40000").unwrap(), Account::load().unwrap()),
-                Validator::new(SocketAddr::from_str("127.0.0.1:40002").unwrap(), Account::load().unwrap()),
-                Validator::new(SocketAddr::from_str("127.0.0.1:40003").unwrap(), Account::load().unwrap()),
-                Validator::new(SocketAddr::from_str("127.0.0.1:40004").unwrap(), Account::load().unwrap()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40000").unwrap(), Account::load().unwrap(), ValidatorId::zero()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40002").unwrap(), Account::load().unwrap(), ValidatorId::zero()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40003").unwrap(), Account::load().unwrap(), ValidatorId::zero()),
+                Validator::new(SocketAddr::from_str("127.0.0.1:40004").unwrap(), Account::load().unwrap(), ValidatorId::zero()),
             ]
         }
     }
