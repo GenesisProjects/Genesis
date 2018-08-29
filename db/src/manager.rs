@@ -1,20 +1,25 @@
+use ::rocksdb::DB;
 use common::hash::*;
-use rlp::{RLPSerialize, decoder::Decoder};
-use gen_db::*;
-use ::rocksdb::{DB};
 use config::*;
-use std::path::Path;
+use gen_db::*;
+use rlp::{decoder::Decoder, RLPSerialize};
 
-use std::sync::Mutex;
 use std::collections::HashMap;
 use std::fs;
+use std::path::Path;
+use std::sync::Mutex;
 
-
-pub struct DBManager {
-    config: HashMap<String, Value>,
+lazy_static! {
+    static ref DB_MAP: Mutex<HashMap<String, RocksDB>> = {
+        Mutex::new(HashMap::new())
+    };
 }
 
-static DB_NAME: &'static str = "db/_trie_db";
+pub struct DBManager {
+    config: HashMap<String, Value>
+}
+
+static mut DB_NAME: &'static str = "db/_trie_db";
 
 impl DBManager {
     pub fn default() -> Self {
@@ -32,11 +37,14 @@ impl DBManager {
         let path = conf.get("path").unwrap().clone().into_str().unwrap();
         let create_if_missing = conf.get("create_if_missing").unwrap().clone().into_bool().unwrap();
         let max_open_files = conf.get("max_open_files").unwrap().clone().into_int().unwrap() as i32;
-        let db_config = DBConfig {
-            create_if_missing,
-            max_open_files
-        };
-        RocksDB::open(&db_config, &path[..])
+        let mut map = DB_MAP.lock().unwrap();
+        map.entry(key.to_string()).or_insert_with(|| {
+            let db_config = DBConfig {
+                create_if_missing,
+                max_open_files,
+            };
+            RocksDB::open(&db_config, &path[..])
+        }).clone()
     }
 }
 
@@ -48,6 +56,7 @@ mod tests {
     fn get_test_db() {
         let mut c = DBManager::default();
         let d = c.get_db("test");
+        println!("{:?}", d);
     }
 
     #[test]
@@ -57,5 +66,6 @@ mod tests {
 
         let test_str = String::from("test");
         let r = db.put(&test_str);
+        println!("{:?}", r);
     }
 }

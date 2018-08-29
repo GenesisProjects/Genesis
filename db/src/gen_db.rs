@@ -10,8 +10,9 @@ use common::hash::*;
 /// This structure is required to potentially adapt the interface to
 /// use different databases.
 
+#[derive(Clone)]
 pub struct RocksDB {
-    pub db: ::rocksdb::DB,
+    pub db: Arc<::rocksdb::DB>,
 }
 
 pub enum DBResult {
@@ -56,7 +57,7 @@ impl DBConfig {
 impl RocksDB {
     pub fn open(options: &DBConfig, path: &str) -> Self {
         let db = DB::open(&options.to_rocksdb(), path).unwrap();
-        Self { db: db }
+        Self { db: Arc::new(db) }
     }
 }
 
