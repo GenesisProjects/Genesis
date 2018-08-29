@@ -57,58 +57,58 @@ pub trait Notify {
 #[derive(Debug, Clone)]
 pub struct Status {
     /// The sender's public key.
-    from: Account,
+    pub from: Account,
     /// The height to which the message is related.
-    height: i64,
+    pub height: usize,
     /// Hash of the last committed block.
-    last_hash: Hash,
+    pub last_hash: Hash,
 }
 
 /// Proposal for a new block.
 #[derive(Debug, Clone)]
 pub struct Propose {
     /// The validator account.
-    validator: ValidatorId,
+    pub validator: ValidatorId,
     /// The height to which the message is related.
-    height: i64,
+    pub height: usize,
     /// The round to which the message is related.
-    round: i64,
+    pub round: usize,
     /// Hash of the previous block.
-    prev_hash: Hash,
+    pub prev_hash: Hash,
     /// The list of transactions to include in the next block.
-    transactions: Vec<Hash>,
+    pub transactions: Vec<Hash>,
 }
 
 /// Pre-vote for a new block.
 #[derive(Debug, Clone)]
 pub struct Prevote {
     /// The validator account.
-    validator: ValidatorId,
+    pub validator: ValidatorId,
     /// The height to which the message is related.
-    height: i64,
+    pub height: usize,
     /// The round to which the message is related.
-    round: i64,
+    pub round: usize,
     /// Hash of the corresponding `Propose`.
-    propose_hash: Hash,
+    pub propose_hash: Hash,
     /// Locked round.
-    locked_round: i64,
+    pub locked_round: usize,
 }
 
 /// Pre-commit for a proposal.
 #[derive(Debug, Clone)]
 pub struct Precommit {
     /// The validator account.
-    validator: ValidatorId,
+    pub validator: ValidatorId,
     /// The height to which the message is related.
-    height: i64,
+    pub height: usize,
     /// The round to which the message is related.
-    round: i64,
+    pub round: usize,
     /// Hash of the corresponding `Propose`.
-    propose_hash: Hash,
+    pub propose_hash: Hash,
     /// Hash of the new block.
-    block_hash: Hash,
+    pub block_hash: Hash,
     /// Time of the `Precommit`.
-    time: DateTime<Utc>,
+    pub time: DateTime<Utc>,
 }
 
 #[derive(Debug)]
@@ -225,7 +225,7 @@ impl ConsensusProtocol {
         let mut transactions = Vec::<Hash>::new();
         for arg in &msg.args()[8..] {
             match arg {
-                &SocketMessageArg::Hash { ref value } => {
+                &SocketMessageArg::Hash { value } => {
                     transactions.push(value);
                 }
                 _ => { return None; }
@@ -234,8 +234,8 @@ impl ConsensusProtocol {
 
         Some((Propose {
             validator: ValidatorId(msg.int_at(3usize).unwrap() as u16),
-            height: msg.int_at(4usize).unwrap(),
-            round: msg.int_at(5usize).unwrap(),
+            height: msg.int_at(4usize).unwrap() as usize,
+            round: msg.int_at(5usize).unwrap() as usize,
             prev_hash: msg.hash_at(6usize).unwrap(),
             transactions
         }, msg.account_at(1usize).unwrap()))
@@ -259,10 +259,10 @@ impl ConsensusProtocol {
 
         Some((Prevote {
             validator: ValidatorId(msg.int_at(3usize).unwrap() as u16),
-            height: msg.int_at(4usize).unwrap(),
-            round: msg.int_at(5usize).unwrap(),
+            height: msg.int_at(4usize).unwrap() as usize,
+            round: msg.int_at(5usize).unwrap() as usize,
             propose_hash: msg.hash_at(6usize).unwrap(),
-            locked_round: msg.int_at(7usize).unwrap(),
+            locked_round: msg.int_at(7usize).unwrap() as usize,
         }, msg.account_at(1usize).unwrap()))
     }
 
@@ -284,8 +284,8 @@ impl ConsensusProtocol {
 
         Some((Precommit {
             validator: ValidatorId(msg.int_at(3usize).unwrap() as u16),
-            height: msg.int_at(4usize).unwrap(),
-            round: msg.int_at(5usize).unwrap(),
+            height: msg.int_at(4usize).unwrap() as usize,
+            round: msg.int_at(5usize).unwrap() as usize,
             propose_hash: msg.hash_at(6usize).unwrap(),
             block_hash: msg.hash_at(7usize).unwrap(),
             time: msg.timestamp_at(2usize).unwrap(),

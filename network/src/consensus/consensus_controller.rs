@@ -119,7 +119,7 @@ impl ConsensusController {
 
         let peers: Vec<(Token, PeerRef)> = sockets.into_iter()
             .map(|addr| {
-                let mut state = self.state();
+                let state = self.state();
                 let peer_ref = self.connect(addr, state).unwrap();
                 thread::sleep(Duration::from_millis(20));
                 let ret = (self.eventloop.register_peer(&peer_ref.borrow()), peer_ref.clone());
@@ -245,14 +245,14 @@ impl Thread for ConsensusController {
         match (server, account) {
             (Ok(server), Some(account)) => {
                 let mut peer_list = HashMap::<Token, PeerRef>::new();
-                let keys = config.validator_keys();
+                let validators = config.validator_keys();
                 let validator_id = ValidatorId(config
                     .validator_keys()
                     .into_iter()
                     .position(|v| v.account_addr() == account).unwrap() as u16);
 
                 Ok(ConsensusController {
-                    state: Rc::new(RefCell::new(NodeState::new(Some(validator_id), zero_hash!(), 0, Utc::now()))),
+                    state: Rc::new(RefCell::new(NodeState::new(validators, Some(validator_id), zero_hash!(), 0, Utc::now()))),
                     name: name,
                     account: account,
                     listener: server,

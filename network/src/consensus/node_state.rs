@@ -30,6 +30,7 @@ use std::thread;
 pub type StateRef = Rc<RefCell<NodeState>>;
 
 pub struct NodeState {
+    validators: Vec<Validator>,
     validator_state: Option<ValidatorState>,
     // Round
     height: usize,
@@ -221,12 +222,14 @@ impl ProposeState {
 
 impl NodeState {
     pub fn new(
+        validators: Vec<Validator>,
         validator: Option<ValidatorId>,
         last_hash: Hash,
         last_height: usize,
         height_start_time: DateTime<Utc>,
     ) -> Self {
         Self {
+            validators,
             validator_state: validator.map(ValidatorState::new),
             height: last_height,
             height_start_time,
@@ -243,6 +246,11 @@ impl NodeState {
             unknown_proposes_with_precommits: HashMap::new(),
             //requests: HashMap::new(),
         }
+    }
+
+    /// Returns the current validators list.
+    pub fn validators(&self) -> &Vec<Validator> {
+        &self.validators
     }
 
     /// Returns `ValidatorState` if the node is validator.
@@ -272,14 +280,19 @@ impl NodeState {
 
     /// Returns the leader id for the specified round and current height.
     pub fn leader(&self, round: usize) -> ValidatorId {
-        let height: u64 = self.height() as u64;
-        ValidatorId(((height + round) % (self.validators().len() as u64)) as u16)
+        ValidatorId(((self.height() + round) % (self.validators().len() as usize)) as u16)
     }
 
     /// Checks if the node is a leader for the current height and round.
     pub fn is_leader(&self) -> bool {
         self.validator_state()
             .as_ref()
-            .map_or(false, |validator| self.leader(self.round()) == validator.id)
+            .map_or(false, |validator| self.leader(self.round()) == validator.validator_id)
+    }
+
+    /// Returns public key of a validator identified by id.
+    pub fn get_validator_key(&self, id: ValidatorId) -> Option<Account> {
+        let id: usize = id.0.into();
+        self.validators().get(id).map(|x| x.account_addr())
     }
 }
