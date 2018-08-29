@@ -19,8 +19,6 @@ impl ValidatorId {
     ///
     /// ```
     ///
-    /// let id = ValidatorId::zero();
-    /// assert_eq!(0, id.0);
     /// ```
     pub fn zero() -> Self {
         ValidatorId(0)
