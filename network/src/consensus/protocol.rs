@@ -241,6 +241,57 @@ impl ConsensusProtocol {
         })
     }
 
+    fn verify_prevote(&self, index: usize, msg: &SocketMessage) -> Option<Prevote> {
+        if msg.args().len() < 8 {
+            return None;
+        }
+
+        if !(self.verify_version(0usize, msg)
+            && Self::verify_account(1usize, msg)
+            && Self::verify_timestamp(2usize, msg)
+            && msg.int_at(3usize).is_some()
+            && msg.int_at(4usize).is_some()
+            && msg.int_at(5usize).is_some()
+            && msg.hash_at(6usize).is_some()
+            && msg.int_at(7usize).is_some()) {
+            return None;
+        }
+
+        Some(Prevote {
+            validator: ValidatorId(msg.int_at(3usize).unwrap() as u16),
+            height: msg.int_at(4usize).unwrap(),
+            round: msg.int_at(5usize).unwrap(),
+            propose_hash: msg.hash_at(6usize).unwrap(),
+            locked_round: msg.int_at(7usize).unwrap(),
+        })
+    }
+
+    fn verify_precommit(&self, index: usize, msg: &SocketMessage) -> Option<Precommit> {
+        if msg.args().len() < 8 {
+            return None;
+        }
+
+        if !(self.verify_version(0usize, msg)
+            && Self::verify_account(1usize, msg)
+            && Self::verify_timestamp(2usize, msg)
+            && msg.int_at(3usize).is_some()
+            && msg.int_at(4usize).is_some()
+            && msg.int_at(5usize).is_some()
+            && msg.hash_at(6usize).is_some()
+            && msg.hash_at(7usize).is_some()) {
+            return None;
+        }
+
+        Some(Precommit {
+            validator: ValidatorId(msg.int_at(3usize).unwrap() as u16),
+            height: msg.int_at(4usize).unwrap(),
+            round: msg.int_at(5usize).unwrap(),
+            propose_hash: msg.hash_at(6usize).unwrap(),
+            block_hash: msg.hash_at(7usize).unwrap(),
+            time: msg.timestamp_at(2usize).unwrap(),
+        })
+    }
+
     pub fn verify(&self, msg: &SocketMessage) -> bool {
         match msg.event().as_str() {
             "NOTIFY_PROPOSE" => {
@@ -357,15 +408,15 @@ impl ConsensusProtocol {
             value: self.vesion.to_owned()
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
-            << SocketMessageArg::Hash {
-            value: prevote.propose_hash
-        } << SocketMessageArg::Int {
+            << SocketMessageArg::Int {
             value: prevote.validator.0 as i64
         } << SocketMessageArg::Int {
             value: prevote.height as i64
         } << SocketMessageArg::Int {
             value: prevote.round as i64
-        }  << SocketMessageArg::Int {
+        } << SocketMessageArg::Hash {
+            value: prevote.propose_hash
+        } << SocketMessageArg::Int {
             value: prevote.locked_round as i64
         };
 
@@ -383,17 +434,17 @@ impl ConsensusProtocol {
             value: self.vesion.to_owned()
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
-            << SocketMessageArg::Hash {
-            value: precommit.propose_hash
-        } << SocketMessageArg::Hash {
-            value: precommit.block_hash
-        } << SocketMessageArg::Int {
+            << SocketMessageArg::Int {
             value: precommit.validator.0 as i64
         } << SocketMessageArg::Int {
             value: precommit.height as i64
         } << SocketMessageArg::Int {
             value: precommit.round as i64
-        };
+        } << SocketMessageArg::Hash {
+            value: precommit.propose_hash
+        } << SocketMessageArg::Hash {
+            value: precommit.block_hash
+        } ;
 
         msg
     }
