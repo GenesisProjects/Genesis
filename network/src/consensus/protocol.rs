@@ -57,7 +57,7 @@ pub struct Status {
     /// The sender's public key.
     from: Account,
     /// The height to which the message is related.
-    height: usize,
+    height: i64,
     /// Hash of the last committed block.
     last_hash: Hash,
 }
@@ -68,9 +68,9 @@ pub struct Propose {
     /// The validator account.
     validator: Account,
     /// The height to which the message is related.
-    height: usize,
+    height: i64,
     /// The round to which the message is related.
-    round: usize,
+    round: i64,
     /// Hash of the previous block.
     prev_hash: Hash,
     /// The list of transactions to include in the next block.
@@ -83,13 +83,13 @@ pub struct Prevote {
     /// The validator account.
     validator: Account,
     /// The height to which the message is related.
-    height: usize,
+    height: i64,
     /// The round to which the message is related.
-    round: usize,
+    round: i64,
     /// Hash of the corresponding `Propose`.
     propose_hash: Hash,
     /// Locked round.
-    locked_round: usize,
+    locked_round: i64,
 }
 
 /// Pre-commit for a proposal.
@@ -98,9 +98,9 @@ pub struct Precommit {
     /// The validator account.
     validator: Account,
     /// The height to which the message is related.
-    height: usize,
+    height: i64,
     /// The round to which the message is related.
-    round: usize,
+    round: i64,
     /// Hash of the corresponding `Propose`.
     propose_hash: Hash,
     /// Hash of the new block.

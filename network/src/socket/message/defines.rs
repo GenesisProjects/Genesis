@@ -14,7 +14,7 @@ static DATE_FMT: &'static str = "%Y-%m-%d-%H-%M-%S-%f";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SocketMessageArg {
-    Int { value: i32 },
+    Int { value: i64 },
     String { value: String },
     Account { value: String },
     Hash { value: Hash },
