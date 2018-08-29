@@ -21,7 +21,7 @@ fn propose_handler(session: &mut Session, msg: &SocketMessage, name: String) -> 
     if !session.protocol().verify(&msg) {
         false
     } else {
-        let state = session.state();
+        let state = session.state().borrow_mut();
         // Todo Check leader + unknown tnxs + handle propose
         true
     }

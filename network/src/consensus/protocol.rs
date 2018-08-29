@@ -207,6 +207,40 @@ impl ConsensusProtocol {
         }
     }
 
+    fn verify_propose(&self, index: usize, msg: &SocketMessage) -> Option<Propose> {
+        if msg.args().len() < 8 {
+            return None;
+        }
+
+        if !(self.verify_version(0usize, msg)
+            && Self::verify_account(1usize, msg)
+            && Self::verify_timestamp(2usize, msg)
+            && msg.int_at(3usize).is_some()
+            && msg.int_at(4usize).is_some()
+            && msg.int_at(5usize).is_some()
+            && msg.hash_at(6usize).is_some()) {
+            return None;
+        }
+
+        let mut transactions = Vec::<Hash>::new();
+        for arg in &msg.args()[8..] {
+            match arg {
+                &SocketMessageArg::Hash { ref value } => {
+                    transactions.push(value);
+                }
+                _ => { return None; }
+            }
+        };
+
+        Propose {
+            validator: ValidatorId(msg.int_at(3usize).unwrap() as u16),
+            height: msg.int_at(4usize).unwrap(),
+            round: msg.int_at(5usize).unwrap(),
+            prev_hash: msg.hash_at(6usize).unwrap(),
+            transactions
+        }
+    }
+
     pub fn verify(&self, msg: &SocketMessage) -> bool {
         match msg.event().as_str() {
             "NOTIFY_PROPOSE" => {
@@ -293,14 +327,14 @@ impl ConsensusProtocol {
             value: self.vesion.to_owned()
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
-            << SocketMessageArg::Hash {
-            value: propose.prev_hash
-        } << SocketMessageArg::Int {
+            << SocketMessageArg::Int {
                 value: propose.validator.0 as i64
         } << SocketMessageArg::Int {
             value: propose.height as i64
         } << SocketMessageArg::Int {
             value: propose.round as i64
+        } << SocketMessageArg::Hash {
+            value: propose.prev_hash
         };
 
         for tnx in &propose.transactions {
