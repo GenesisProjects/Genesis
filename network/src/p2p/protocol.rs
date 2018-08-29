@@ -276,7 +276,7 @@ impl P2PProtocol {
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
             << SocketMessageArg::Int {
-            value: self_block_len as i32
+            value: self_block_len as i64
         };
 
         for host in &table.table {
@@ -321,7 +321,7 @@ impl P2PProtocol {
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
             << SocketMessageArg::Int {
-            value: self_block_len as i32
+            value: self_block_len as i64
         } << SocketMessageArg::Hash {
             value: self_last_hash.clone()
         };
@@ -341,7 +341,7 @@ impl P2PProtocol {
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
             << SocketMessageArg::Int {
-            value: block_info.block_len as i32
+            value: block_info.block_len as i64
         } << SocketMessageArg::Hash {
             value: block_info.last_block_hash.clone()
         };
@@ -404,7 +404,7 @@ impl P2PProtocol {
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
             << SocketMessageArg::Int {
-            value: block_info.last_block_num as i32
+            value: block_info.last_block_num as i64
         } << SocketMessageArg::Hash {
             value: block_info.last_block_hash.clone()
         };
@@ -424,11 +424,11 @@ impl P2PProtocol {
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
             << SocketMessageArg::Int {
-            value: forked_block_info.last_block_num as i32
+            value: forked_block_info.last_block_num as i64
         } << SocketMessageArg::Hash {
             value: forked_block_info.last_block_hash.clone()
         } << SocketMessageArg::Int {
-            value: last_block_info.last_block_num as i32
+            value: last_block_info.last_block_num as i64
         } << SocketMessageArg::Hash {
             value: last_block_info.last_block_hash.clone()
         };
@@ -449,7 +449,7 @@ impl P2PProtocol {
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
             << SocketMessageArg::Int {
-            value: forked_block_info.last_block_num as i32
+            value: forked_block_info.last_block_num as i64
         } << SocketMessageArg::Hash {
             value: forked_block_info.last_block_hash.clone()
         };
@@ -471,9 +471,9 @@ impl P2PProtocol {
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
             << SocketMessageArg::Int {
-            value: start_block_num as i32
+            value: start_block_num as i64
         } << SocketMessageArg::Int {
-            value: end_block_num as i32
+            value: end_block_num as i64
         };
 
         msg
@@ -492,7 +492,7 @@ impl P2PProtocol {
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
             << SocketMessageArg::Int {
-            value: size as i32
+            value: size as i64
         };
 
         msg

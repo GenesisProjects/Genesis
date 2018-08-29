@@ -1,6 +1,8 @@
 use chrono::prelude::*;
 use common::address::Address as Account;
 use common::hash::Hash;
+
+use gen_core::validator::*;
 use gen_core::transaction::Transaction;
 use nat::*;
 use socket::message::defines::*;
@@ -66,7 +68,7 @@ pub struct Status {
 #[derive(Debug, Clone)]
 pub struct Propose {
     /// The validator account.
-    validator: Account,
+    validator: ValidatorId,
     /// The height to which the message is related.
     height: i64,
     /// The round to which the message is related.
@@ -81,7 +83,7 @@ pub struct Propose {
 #[derive(Debug, Clone)]
 pub struct Prevote {
     /// The validator account.
-    validator: Account,
+    validator: ValidatorId,
     /// The height to which the message is related.
     height: i64,
     /// The round to which the message is related.
@@ -96,7 +98,7 @@ pub struct Prevote {
 #[derive(Debug, Clone)]
 pub struct Precommit {
     /// The validator account.
-    validator: Account,
+    validator: ValidatorId,
     /// The height to which the message is related.
     height: i64,
     /// The round to which the message is related.
@@ -242,5 +244,35 @@ impl ConsensusProtocol {
                 return true;
             }
         }
+    }
+
+    pub fn notify_propose(&self, propose: &Propose) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "NOTIFY_PROPOSE".to_string(),
+            vec![],
+            vec![],
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
+                value: propose.validator.0 as i64
+        } << SocketMessageArg::Int {
+            value: propose.height as i64
+        } << SocketMessageArg::Int {
+            value: propose.round as i64
+        } << SocketMessageArg::Hash {
+            value: propose.prev_hash
+        };
+
+        for tnx in &propose.transactions {
+            msg = msg << SocketMessageArg::Hash {
+                value: tnx.clone()
+            }
+        }
+
+        msg
     }
 }
