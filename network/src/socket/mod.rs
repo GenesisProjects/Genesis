@@ -4,7 +4,7 @@
 //! All I/O operations are **non-blocking**
 //!
 //! # Examples
-//! ```
+//! ```ignore
 //! // Show general usage of PeerSocket
 //! use gen_network::socket::PeerSocket;
 //! use gen_network::socket::message::defines::*;
@@ -34,7 +34,7 @@
 //!     }
 //! }
 //! ```
-//! ```
+//! ```ignore
 //! // Integrated with event loop
 //! use gen_network::socket::PeerSocket;
 //! use gen_network::socket::message::defines::*;

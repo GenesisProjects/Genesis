@@ -42,7 +42,7 @@ impl From<DateTime<Utc>> for SocketMessageArg {
 /// Socket message.
 /// The following example shows how to build a message.
 ///
-/// ```
+/// ```ignore
 /// let mut msg = SocketMessage::new(
 ///     "TEST".to_string(),
 ///     vec![],

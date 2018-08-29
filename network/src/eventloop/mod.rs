@@ -63,7 +63,7 @@ impl<T> NetworkEventLoop<T> where T: Evented {
     /// New connection will accept if event with `SERVER_TOKEN` has been triggered.
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// // Init a listener
     /// let server = TcpListener::bind(&"127.0.0.1:19090".into());
     ///
@@ -115,7 +115,7 @@ impl<T> NetworkEventLoop<T> where T: Evented {
 
     /// Fetch new I/O ready events from sockets registered in the eventloop.
     /// Return number of ready sockets
-    /// ```
+    /// ```ignore
     /// // Define an evented object.
     /// struct ObjectEvented;
     /// impl Evented for ObjectEvented {

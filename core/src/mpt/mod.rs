@@ -52,7 +52,7 @@ pub mod node;
 ///     let root = blockchain::last_block_tx_root().unwrap();
 ///     let mut manager = DBManager::default();
 ///     let test_db = manager.get_db("test");
-///     let mut tree = Trie::<Transaction>::load(root, &test_db);
+///     let mut tree = Trie::<String>::load(root, &test_db);
 /// }
 /// ```
 pub mod trie;

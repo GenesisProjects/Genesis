@@ -1,6 +1,6 @@
 //! Handle message with callback functions.
 //! # Example:
-//! ```
+//! ```ignore
 //! use gen_network::socket::message::message_handler::*;
 //!
 //! // Define a test session struct, this will be used as a parameter into the callback function.
