@@ -275,4 +275,56 @@ impl ConsensusProtocol {
 
         msg
     }
+
+    pub fn notify_prevote(&self, prevote: &Prevote) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "NOTIFY_PROPOSE".to_string(),
+            vec![],
+            vec![],
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
+            value: prevote.validator.0 as i64
+        } << SocketMessageArg::Int {
+            value: prevote.height as i64
+        } << SocketMessageArg::Int {
+            value: prevote.round as i64
+        } << SocketMessageArg::Hash {
+            value: prevote.propose_hash
+        } << SocketMessageArg::Int {
+            value: prevote.locked_round as i64
+        };
+
+        msg
+    }
+
+    pub fn notify_precommit(&self, precommit: &Precommit) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "NOTIFY_PROPOSE".to_string(),
+            vec![],
+            vec![],
+        );
+
+        msg = msg << SocketMessageArg::Vesion {
+            value: self.vesion.to_owned()
+        } << Account::load().expect("Can not load account").into()
+            << Utc::now().into()
+            << SocketMessageArg::Int {
+            value: precommit.validator.0 as i64
+        } << SocketMessageArg::Int {
+            value: precommit.height as i64
+        } << SocketMessageArg::Int {
+            value: precommit.round as i64
+        } << SocketMessageArg::Hash {
+            value: precommit.propose_hash
+        } << SocketMessageArg::Hash {
+            value: precommit.block_hash
+        };
+
+        msg
+    }
 }
