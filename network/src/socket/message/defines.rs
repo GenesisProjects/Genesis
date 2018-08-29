@@ -86,7 +86,7 @@ impl SocketMessage {
 
     /// Fetch integer argument with the index.
     /// Return `None` if type dismatch.
-    pub fn int_at(&self, index: usize) -> Option<i32> {
+    pub fn int_at(&self, index: usize) -> Option<i64> {
         match self.arg[index] {
             SocketMessageArg::Int { value } => Some(value),
             _ => None
