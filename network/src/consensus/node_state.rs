@@ -249,4 +249,15 @@ impl NodeState {
     pub fn validator_state(&self) -> &Option<ValidatorState> {
         &self.validator_state
     }
+
+    /// Returns the current height of the node.
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    /// Returns the leader id for the specified round and current height.
+    pub fn leader(&self, round: usize) -> ValidatorId {
+        let height: u64 = self.height() as u64;
+        ValidatorId(((height + round) % (self.validators().len() as u64)) as u16)
+    }
 }
