@@ -210,7 +210,7 @@ impl ConsensusProtocol {
     pub fn verify(&self, msg: &SocketMessage) -> bool {
         match msg.event().as_str() {
             "NOTIFY_PROPOSE" => {
-                if msg.args().len() < 4 {
+                if msg.args().len() < 7 {
                     return false;
                 }
 
@@ -230,9 +230,44 @@ impl ConsensusProtocol {
                 return true;
             }
             "NOTIFY_PREVOTE" => {
+                if msg.args().len() < 8 {
+                    return false;
+                }
+
+                if !(self.verify_version(0usize, msg)
+                    && Self::verify_account(1usize, msg)
+                    && Self::verify_timestamp(2usize, msg)
+                    && msg.hash_at(3).is_some()) {
+                    return false;
+                }
+
+                for arg in &msg.args()[4..] {
+                    match arg {
+                        &SocketMessageArg::Int { ref value } => {}
+                        _ => { return false; }
+                    }
+                };
                 return true;
             }
             "NOTIFY_PRECOMMIT" => {
+                if msg.args().len() < 7 {
+                    return false;
+                }
+
+                if !(self.verify_version(0usize, msg)
+                    && Self::verify_account(1usize, msg)
+                    && Self::verify_timestamp(2usize, msg)
+                    && msg.hash_at(3).is_some()
+                    && msg.hash_at(4).is_some()) {
+                    return false;
+                }
+
+                for arg in &msg.args()[5..] {
+                    match arg {
+                        &SocketMessageArg::Int { ref value } => {}
+                        _ => { return false; }
+                    }
+                };
                 return true;
             }
             "NOTIFY_TNX_REQUEST" => {
@@ -258,14 +293,14 @@ impl ConsensusProtocol {
             value: self.vesion.to_owned()
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
-            << SocketMessageArg::Int {
+            << SocketMessageArg::Hash {
+            value: propose.prev_hash
+        } << SocketMessageArg::Int {
                 value: propose.validator.0 as i64
         } << SocketMessageArg::Int {
             value: propose.height as i64
         } << SocketMessageArg::Int {
             value: propose.round as i64
-        } << SocketMessageArg::Hash {
-            value: propose.prev_hash
         };
 
         for tnx in &propose.transactions {
@@ -314,16 +349,16 @@ impl ConsensusProtocol {
             value: self.vesion.to_owned()
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
-            << SocketMessageArg::Int {
+            << SocketMessageArg::Hash {
+            value: precommit.propose_hash
+        } << SocketMessageArg::Hash {
+            value: precommit.block_hash
+        } << SocketMessageArg::Int {
             value: precommit.validator.0 as i64
         } << SocketMessageArg::Int {
             value: precommit.height as i64
         } << SocketMessageArg::Int {
             value: precommit.round as i64
-        } << SocketMessageArg::Hash {
-            value: precommit.propose_hash
-        } << SocketMessageArg::Hash {
-            value: precommit.block_hash
         };
 
         msg
