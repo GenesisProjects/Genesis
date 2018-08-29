@@ -216,13 +216,14 @@ impl ConsensusProtocol {
 
                 if !(self.verify_version(0usize, msg)
                     && Self::verify_account(1usize, msg)
-                    && Self::verify_timestamp(2usize, msg)) {
+                    && Self::verify_timestamp(2usize, msg)
+                    && msg.hash_at(3).is_some()) {
                     return false;
                 }
 
-                for arg in &msg.args()[3..] {
+                for arg in &msg.args()[4..] {
                     match arg {
-                        &SocketMessageArg::String { ref value } => {}
+                        &SocketMessageArg::Int { ref value } => {}
                         _ => { return false; }
                     }
                 };
@@ -287,15 +288,15 @@ impl ConsensusProtocol {
             value: self.vesion.to_owned()
         } << Account::load().expect("Can not load account").into()
             << Utc::now().into()
-            << SocketMessageArg::Int {
+            << SocketMessageArg::Hash {
+            value: prevote.propose_hash
+        } << SocketMessageArg::Int {
             value: prevote.validator.0 as i64
         } << SocketMessageArg::Int {
             value: prevote.height as i64
         } << SocketMessageArg::Int {
             value: prevote.round as i64
-        } << SocketMessageArg::Hash {
-            value: prevote.propose_hash
-        } << SocketMessageArg::Int {
+        }  << SocketMessageArg::Int {
             value: prevote.locked_round as i64
         };
 
