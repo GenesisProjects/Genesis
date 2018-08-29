@@ -207,7 +207,7 @@ impl ConsensusProtocol {
         }
     }
 
-    fn verify_propose(&self, index: usize, msg: &SocketMessage) -> Option<Propose> {
+    pub fn verify_propose(&self, msg: &SocketMessage) -> Option<Propose> {
         if msg.args().len() < 8 {
             return None;
         }
@@ -241,7 +241,7 @@ impl ConsensusProtocol {
         })
     }
 
-    fn verify_prevote(&self, index: usize, msg: &SocketMessage) -> Option<Prevote> {
+    pub fn verify_prevote(&self, msg: &SocketMessage) -> Option<Prevote> {
         if msg.args().len() < 8 {
             return None;
         }
@@ -266,7 +266,7 @@ impl ConsensusProtocol {
         })
     }
 
-    fn verify_precommit(&self, index: usize, msg: &SocketMessage) -> Option<Precommit> {
+    pub fn verify_precommit(&self, msg: &SocketMessage) -> Option<Precommit> {
         if msg.args().len() < 8 {
             return None;
         }

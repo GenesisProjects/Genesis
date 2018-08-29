@@ -18,12 +18,12 @@ impl EventRegister for Session {
 
 fn propose_handler(session: &mut Session, msg: &SocketMessage, name: String) -> bool {
     let args = msg.args();
-    if !session.protocol().verify(&msg) {
-        false
-    } else {
+    if let Some(propse) = session.protocol().verify_propose(&msg) {
         let state = session.state().borrow_mut();
         // Todo Check leader + unknown tnxs + handle propose
         true
+    } else {
+        false
     }
 }
 
