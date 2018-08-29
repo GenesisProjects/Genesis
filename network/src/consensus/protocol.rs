@@ -207,7 +207,7 @@ impl ConsensusProtocol {
         }
     }
 
-    pub fn verify_propose(&self, msg: &SocketMessage) -> Option<Propose> {
+    pub fn verify_propose(&self, msg: &SocketMessage) -> Option<(Propose, Account)> {
         if msg.args().len() < 8 {
             return None;
         }
@@ -232,16 +232,16 @@ impl ConsensusProtocol {
             }
         };
 
-        Some(Propose {
+        Some((Propose {
             validator: ValidatorId(msg.int_at(3usize).unwrap() as u16),
             height: msg.int_at(4usize).unwrap(),
             round: msg.int_at(5usize).unwrap(),
             prev_hash: msg.hash_at(6usize).unwrap(),
             transactions
-        })
+        }, msg.account_at(1usize).unwrap()))
     }
 
-    pub fn verify_prevote(&self, msg: &SocketMessage) -> Option<Prevote> {
+    pub fn verify_prevote(&self, msg: &SocketMessage) -> Option<(Prevote, Account)> {
         if msg.args().len() < 8 {
             return None;
         }
@@ -257,16 +257,16 @@ impl ConsensusProtocol {
             return None;
         }
 
-        Some(Prevote {
+        Some((Prevote {
             validator: ValidatorId(msg.int_at(3usize).unwrap() as u16),
             height: msg.int_at(4usize).unwrap(),
             round: msg.int_at(5usize).unwrap(),
             propose_hash: msg.hash_at(6usize).unwrap(),
             locked_round: msg.int_at(7usize).unwrap(),
-        })
+        }, msg.account_at(1usize).unwrap()))
     }
 
-    pub fn verify_precommit(&self, msg: &SocketMessage) -> Option<Precommit> {
+    pub fn verify_precommit(&self, msg: &SocketMessage) -> Option<(Precommit, Account)> {
         if msg.args().len() < 8 {
             return None;
         }
@@ -282,14 +282,14 @@ impl ConsensusProtocol {
             return None;
         }
 
-        Some(Precommit {
+        Some((Precommit {
             validator: ValidatorId(msg.int_at(3usize).unwrap() as u16),
             height: msg.int_at(4usize).unwrap(),
             round: msg.int_at(5usize).unwrap(),
             propose_hash: msg.hash_at(6usize).unwrap(),
             block_hash: msg.hash_at(7usize).unwrap(),
             time: msg.timestamp_at(2usize).unwrap(),
-        })
+        }, msg.account_at(1usize).unwrap()))
     }
 
     pub fn verify(&self, msg: &SocketMessage) -> bool {
