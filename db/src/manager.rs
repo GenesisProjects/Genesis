@@ -19,7 +19,7 @@ pub struct DBManager {
     config: HashMap<String, Value>
 }
 
-static mut DB_NAME: &'static str = "db/_trie_db";
+static DB_NAME: &'static str = "db/_trie_db";
 
 impl DBManager {
     pub fn default() -> Self {
