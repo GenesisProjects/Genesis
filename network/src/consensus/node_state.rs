@@ -250,14 +250,36 @@ impl NodeState {
         &self.validator_state
     }
 
+    /// Checks if the node is a validator.
+    pub fn is_validator(&self) -> bool {
+        self.validator_state().is_some()
+    }
+
     /// Returns the current height of the node.
     pub fn height(&self) -> usize {
         self.height
+    }
+
+    /// Returns the current round of the node.
+    pub fn round(&self) -> usize {
+        self.round
+    }
+
+    /// Returns start time of the current height.
+    pub fn height_start_time(&self) -> DateTime<Utc> {
+        self.height_start_time
     }
 
     /// Returns the leader id for the specified round and current height.
     pub fn leader(&self, round: usize) -> ValidatorId {
         let height: u64 = self.height() as u64;
         ValidatorId(((height + round) % (self.validators().len() as u64)) as u16)
+    }
+
+    /// Checks if the node is a leader for the current height and round.
+    pub fn is_leader(&self) -> bool {
+        self.validator_state()
+            .as_ref()
+            .map_or(false, |validator| self.leader(self.round()) == validator.id)
     }
 }
