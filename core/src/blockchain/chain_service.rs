@@ -25,14 +25,6 @@ impl ChainService {
         unimplemented!()
     }
 
-    pub fn verify_block_header(&self) -> bool {
-        self.verify_signature()
-    }
-
-    pub fn verify_signature(&self) -> bool {
-        unimplemented!()
-    }
-
     pub fn get_last_block_header(&self) -> Result<Block, ChainServiceError> {
         unimplemented!()
     }
@@ -49,7 +41,21 @@ impl ChainService {
         })
     }
 
-    pub fn replay_txs(&self) {
+    pub fn get_transactions(&self, trie: Trie<Transaction>)
+        -> Result<Vec<Transaction>, ChainServiceError> {
         unimplemented!()
     }
+
+    pub fn replay_txs(&self, new_txs: Vec<Transaction>, old_account_root: Trie<Account>)
+        -> Result<Trie<Account>, ChainServiceError> {
+        unimplemented!()
+    }
+}
+
+pub enum Validation {
+
+}
+
+pub struct ValidationBuilder {
+
 }
