@@ -232,13 +232,13 @@ impl ConsensusProtocol {
             }
         };
 
-        Propose {
+        Some(Propose {
             validator: ValidatorId(msg.int_at(3usize).unwrap() as u16),
             height: msg.int_at(4usize).unwrap(),
             round: msg.int_at(5usize).unwrap(),
             prev_hash: msg.hash_at(6usize).unwrap(),
             transactions
-        }
+        })
     }
 
     pub fn verify(&self, msg: &SocketMessage) -> bool {
