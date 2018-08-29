@@ -11,7 +11,7 @@ use common::hash::*;
 /// use different databases.
 
 pub struct RocksDB {
-    pub db: Arc<::rocksdb::DB>,
+    pub db: ::rocksdb::DB,
 }
 
 pub enum DBResult {
@@ -56,7 +56,7 @@ impl DBConfig {
 impl RocksDB {
     pub fn open(options: &DBConfig, path: &str) -> Self {
         let db = DB::open(&options.to_rocksdb(), path).unwrap();
-        Self { db: Arc::new(db) }
+        Self { db: db }
     }
 }
 

@@ -9,6 +9,7 @@ use rlp::types::*;
 ///
 ///
 ///
+#[derive(Clone)]
 pub struct TransactionBody {
     timestamp: DateTime<Utc>,
     sender: Address,
@@ -20,6 +21,7 @@ pub struct TransactionBody {
 ///
 ///
 ///
+#[derive(Clone)]
 pub struct Transaction {
     tx_body: TransactionBody
 }

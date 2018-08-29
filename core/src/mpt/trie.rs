@@ -421,14 +421,14 @@ mod trie {
 
     #[test]
     fn test_trie() {
-        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let mut manager = DBManager::default();
         let test_db = manager.get_db("test");
-        let trie = Trie::<TestObject>::new(test_db);
+        let trie = Trie::<TestObject>::new(&test_db);
     }
 
     #[test]
     fn test_trie_root() {
-        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let mut manager = DBManager::default();
         let test_db = manager.get_db("test");
         let trie = Trie::<TestObject>::new(&test_db);
         let root = trie.root();
@@ -437,7 +437,7 @@ mod trie {
 
     #[test]
     fn test_trie_insert() {
-        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let mut manager = DBManager::default();
         let test_db = manager.get_db("test");
         let mut trie = Trie::<String>::new(&test_db);
         let path = vec![
@@ -454,7 +454,7 @@ mod trie {
 
     #[test]
     fn test_trie_insert_multiple() {
-        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let mut manager = DBManager::default();
         let test_db = manager.get_db("test");
         let mut trie = Trie::<String>::new(&test_db);
         let path1 = vec![
@@ -480,7 +480,7 @@ mod trie {
 
     #[test]
     fn test_trie_update() {
-        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let mut manager = DBManager::default();
         let test_db = manager.get_db("test");
         let mut trie = Trie::<String>::new(&test_db);
         let path = vec![
@@ -516,7 +516,7 @@ mod trie {
 
     #[test]
     fn test_trie_delete() {
-        let mut manager = SHARED_MANAGER.lock().unwrap();
+        let mut manager = DBManager::default();
         let test_db = manager.get_db("test");
         let mut trie = Trie::<String>::new(&test_db);
         let path = vec![

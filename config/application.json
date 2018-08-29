@@ -15,6 +15,16 @@
       "path": "~/.genesis/data/state",
       "create_if_missing": true,
       "max_open_files": 32
+    },
+    "transaction": {
+      "path": "~/.genesis/data/transaction",
+      "create_if_missing": true,
+      "max_open_files": 32
+    },
+    "block": {
+      "path": "~/.genesis/data/block",
+      "create_if_missing": true,
+      "max_open_files": 32
     }
   },
 
