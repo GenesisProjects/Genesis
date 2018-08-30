@@ -339,13 +339,20 @@ impl NodeState {
     pub fn add_propose(
         &mut self,
         propose: &Propose
-    ) -> Result<ProposeState> {
+    ) -> Result<&mut ProposeState> {
         let unknown_tnxs = HashSet::new();
-        Ok(ProposeState {
-            propose: propose.clone(),
-            unknown_tnxs,
-            block_hash: None,
-            is_saved: false,
-        })
+        Ok(self.proposes.entry(propose.hash()).or_insert_with(||
+            ProposeState {
+                propose: propose.clone(),
+                unknown_tnxs,
+                block_hash: None,
+                is_saved: false,
+            }
+        ))
+    }
+
+    /// Returns propose state with hash.
+    pub fn get_propose(&self, hash: &Hash) -> Option<&ProposeState> {
+        self.proposes.get(hash)
     }
 }

@@ -1,6 +1,9 @@
 use chrono::prelude::*;
 use common::address::Address as Account;
-use common::hash::Hash;
+use common::hash::*;
+
+use rlp::RLPSerialize;
+use rlp::types::*;
 
 use gen_core::validator::*;
 use gen_core::transaction::Transaction;
@@ -77,6 +80,21 @@ pub struct Propose {
     pub prev_hash: Hash,
     /// The list of transactions to include in the next block.
     pub transactions: Vec<Hash>,
+}
+
+impl Propose {
+    pub fn hash(&self) -> Hash {
+        self.encrype_sha256().unwrap().0
+    }
+}
+impl RLPSerialize for Propose {
+    fn serialize(&self) -> Result<RLP, RLPError> {
+        unimplemented!()
+    }
+
+    fn deserialize(rlp: &RLP) -> Result<Self, RLPError> {
+        unimplemented!()
+    }
 }
 
 /// Pre-vote for a new block.

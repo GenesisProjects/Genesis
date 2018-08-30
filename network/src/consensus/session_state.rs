@@ -34,6 +34,7 @@ fn propose_handler(session: &mut Session, msg: &SocketMessage, name: String) -> 
             return false;
         }
 
+        state.add_propose(&propose);
         // Todo add propose and check if there are unknown tnxs
         true
     } else {
