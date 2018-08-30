@@ -200,6 +200,32 @@ impl ValidatorState {
     }
 }
 
+impl RequestState {
+    fn new() -> Self {
+        Self {
+            retries: 0,
+            known_nodes: HashSet::new(),
+        }
+    }
+
+    fn insert(&mut self, peer: Account) {
+        self.known_nodes.insert(peer);
+    }
+
+    fn remove(&mut self, peer: &Account) {
+        self.retries += 1;
+        self.known_nodes.remove(peer);
+    }
+
+    fn is_empty(&self) -> bool {
+        self.known_nodes.is_empty()
+    }
+
+    fn peek(&self) -> Option<Account> {
+        self.known_nodes.iter().next().cloned()
+    }
+}
+
 impl ProposeState {
     /// Returns hash of the propose.
     pub fn hash(&self) -> Hash {
