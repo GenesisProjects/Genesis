@@ -61,13 +61,13 @@ impl RocksDB {
     }
 }
 
-pub trait DBOP {
+pub trait TrieNodeDBOP {
     fn put<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, value: &T) -> Hash;
     fn delete(&self, key: &Vec<u8>);
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;
 }
 
-impl DBOP for RocksDB {
+impl TrieNodeDBOP for RocksDB {
     fn put<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, value: &T) -> Hash {
         let db = &self.db;
         let (key, encoded_rlp) = value.encrype_sha256().unwrap();
