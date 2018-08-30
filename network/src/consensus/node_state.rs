@@ -63,7 +63,7 @@ pub struct ValidatorState {
 #[derive(Debug)]
 pub struct ProposeState {
     propose: Propose,
-    unknown_txs: HashSet<Hash>,
+    unknown_tnxs: HashSet<Hash>,
     block_hash: Option<Hash>,
     // Whether the message has been saved to the consensus messages' cache or not.
     is_saved: bool,
@@ -77,6 +77,30 @@ pub struct BlockState {
     // patch: Patch,
     txs: Vec<Hash>,
     proposer_id: usize,
+}
+
+/// `RequestData` represents a request for some data to other nodes. Each enum variant will be
+/// translated to the corresponding request-message.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum RequestData {
+    /// Represents `ProposeRequest` message.
+    Propose(Hash),
+    /// Represents `TransactionsRequest` message for `Propose`.
+    ProposeTransactions(Hash),
+    /// Represents `TransactionsRequest` message for `BlockResponse`.
+    BlockTransactions,
+    /// Represents `PrevotesRequest` message.
+    Prevotes(usize, Hash),
+    /// Represents `BlockRequest` message.
+    Block(usize),
+}
+
+#[derive(Debug)]
+struct RequestState {
+    // Number of attempts made.
+    retries: u16,
+    // Nodes that have the required information.
+    known_nodes: HashSet<Account>,
 }
 
 /// `VoteMessage` trait represents voting messages such as `Precommit` and `Prevote`.
@@ -101,7 +125,7 @@ impl VoteMessage for Prevote {
 #[derive(Debug)]
 pub struct Votes<T: VoteMessage> {
     messages: Vec<T>,
-    validators: HashSet<String>,
+    validators: HashSet<Account>,
     count: usize,
 }
 
@@ -120,7 +144,7 @@ impl<T> Votes<T>
 
     /// Inserts a new message if it hasn't been inserted yet.
     pub fn insert(&mut self, message: &T) {
-        let voter = message.validator().text;
+        let voter = message.validator();
         if !self.validators.contains(&voter) {
             self.count += 1;
             self.validators.insert(voter.clone());
@@ -129,7 +153,7 @@ impl<T> Votes<T>
     }
 
     /// Returns validators.
-    pub fn validators(&self) -> &HashSet<String> {
+    pub fn validators(&self) -> &HashSet<Account> {
         &self.validators
     }
 
@@ -200,13 +224,13 @@ impl ProposeState {
     }
 
     /// Returns unknown transactions of the propose.
-    pub fn unknown_txs(&self) -> &HashSet<Hash> {
-        &self.unknown_txs
+    pub fn unknown_tnxs(&self) -> &HashSet<Hash> {
+        &self.unknown_tnxs
     }
 
     /// Returns `true` if there are unknown transactions in the propose.
-    pub fn has_unknown_txs(&self) -> bool {
-        !self.unknown_txs.is_empty()
+    pub fn has_unknown_tnxs(&self) -> bool {
+        !self.unknown_tnxs.is_empty()
     }
 
     /// Indicates whether Propose has been saved to the consensus messages cache
@@ -306,10 +330,10 @@ impl NodeState {
         &mut self,
         propose: &Propose
     ) -> Result<ProposeState> {
-        let unknown_tnxs = HashMap::new();
+        let unknown_tnxs = HashSet::new();
         Ok(ProposeState {
             propose: propose.clone(),
-            unknown_txs,
+            unknown_tnxs,
             block_hash: None,
             is_saved: false,
         })

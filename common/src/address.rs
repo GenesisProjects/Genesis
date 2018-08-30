@@ -7,7 +7,7 @@ use key::*;
 use rust_base58::{ToBase58, FromBase58};
 
 /// Common key operations
-#[derive(Debug, Clone, Eq, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Hash)]
 pub struct Address {
     pub text: String
 }

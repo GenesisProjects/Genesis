@@ -36,7 +36,7 @@ fn propose_handler(session: &mut Session, msg: &SocketMessage, name: String) -> 
         if propose.validator != state.leader(propose.round) {
             return false;
         }
-        // Todo Check leader + unknown tnxs + handle propose
+        // Todo add propose and check if there are unknown tnxs
         true
     } else {
         false
