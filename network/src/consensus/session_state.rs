@@ -22,20 +22,18 @@ fn propose_handler(session: &mut Session, msg: &SocketMessage, name: String) -> 
         let state_ref = session.state();
         let mut state = state_ref.borrow_mut();
 
-        // Check validator
         if account != state.get_validator_key(propose.validator).unwrap() {
             return false;
         }
 
-        // Check prev_hash
         if propose.prev_hash != state.last_hash() {
             return false;
         }
 
-        // Check leader
         if propose.validator != state.leader(propose.round) {
             return false;
         }
+
         // Todo add propose and check if there are unknown tnxs
         true
     } else {

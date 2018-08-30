@@ -349,6 +349,11 @@ impl Session {
     }
 
     #[inline]
+    pub fn send_request(&mut self, msg: RequestData) -> Result<()> {
+        self.socket.send_msg(self.protocol.request(msg))
+    }
+
+    #[inline]
     pub fn set_connect(&mut self, connected: bool) {
         self.connected = true;
     }

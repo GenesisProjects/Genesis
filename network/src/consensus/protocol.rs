@@ -111,6 +111,22 @@ pub struct Precommit {
     pub time: DateTime<Utc>,
 }
 
+/// `RequestData` represents a request for some data to other nodes. Each enum variant will be
+/// translated to the corresponding request-message.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum RequestData {
+    /// Represents `ProposeRequest` message.
+    Propose(Hash),
+    /// Represents `TransactionsRequest` message for `Propose`.
+    ProposeTransactions(Hash),
+    /// Represents `TransactionsRequest` message for `BlockResponse`.
+    BlockTransactions,
+    /// Represents `PrevotesRequest` message.
+    Prevotes(usize, Hash),
+    /// Represents `BlockRequest` message.
+    Block(usize),
+}
+
 #[derive(Debug)]
 pub struct PeerTable {
     pub table: Vec<(Option<Account>, SocketInfo)>,
@@ -447,5 +463,49 @@ impl ConsensusProtocol {
         } ;
 
         msg
+    }
+
+    pub fn request(&self, req: RequestData) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            "REQUEST_".to_string(),
+            vec![],
+            vec![],
+        );
+
+        match req {
+            RequestData::Propose(hash) => {
+                msg.set_event("REQUEST_PROPOSE".to_string());
+                msg = msg << SocketMessageArg::Hash {
+                    value: hash
+                };
+
+                msg
+            }
+            RequestData::ProposeTransactions(hash) => {
+                msg.set_event("REQUEST_PROPOSE_TNXS".to_string());
+                msg = msg << SocketMessageArg::Hash {
+                    value: hash
+                };
+
+                msg
+            }
+            RequestData::BlockTransactions => {
+                msg.set_event("REQUEST_BLOCK_TNXS".to_string());
+                msg
+            }
+            RequestData::Prevotes(round, hash) => {
+                msg.set_event("REQUEST_PREVOTE".to_string());
+                msg = msg << SocketMessageArg::Int {
+                    value: round as i64
+                } << SocketMessageArg::Hash {
+                    value: hash
+                };
+
+                msg
+            }
+            _ => {
+                msg
+            }
+        }
     }
 }

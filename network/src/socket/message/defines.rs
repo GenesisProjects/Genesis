@@ -84,6 +84,11 @@ impl SocketMessage {
         }
     }
 
+    /// Set message event name.
+    pub fn set_event(&mut self, event: String) {
+        self.event = event;
+    }
+
     /// Fetch integer argument with the index.
     /// Return `None` if type dismatch.
     pub fn int_at(&self, index: usize) -> Option<i64> {

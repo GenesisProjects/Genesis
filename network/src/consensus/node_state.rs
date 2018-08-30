@@ -44,7 +44,7 @@ pub struct NodeState {
     proposes: HashMap<Hash, ProposeState>,
     prevotes: HashMap<(usize, Hash), Votes<Prevote>>,
     precommits: HashMap<(usize, Hash), Votes<Precommit>>,
-    //requests: HashMap<RequestData, RequestState>,
+    requests: HashMap<RequestData, RequestState>,
     blocks: HashMap<Hash, BlockState>,
     queued_msgs: RefCell<MessageQueue>,
     unknown_txs: HashMap<Hash, Vec<Hash>>,
@@ -77,22 +77,6 @@ pub struct BlockState {
     // patch: Patch,
     txs: Vec<Hash>,
     proposer_id: usize,
-}
-
-/// `RequestData` represents a request for some data to other nodes. Each enum variant will be
-/// translated to the corresponding request-message.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum RequestData {
-    /// Represents `ProposeRequest` message.
-    Propose(Hash),
-    /// Represents `TransactionsRequest` message for `Propose`.
-    ProposeTransactions(Hash),
-    /// Represents `TransactionsRequest` message for `BlockResponse`.
-    BlockTransactions,
-    /// Represents `PrevotesRequest` message.
-    Prevotes(usize, Hash),
-    /// Represents `BlockRequest` message.
-    Block(usize),
 }
 
 #[derive(Debug)]
@@ -294,7 +278,7 @@ impl NodeState {
             queued_msgs: RefCell::new(MessageQueue::new(1024)),
             unknown_txs: HashMap::new(),
             unknown_proposes_with_precommits: HashMap::new(),
-            //requests: HashMap::new(),
+            requests: HashMap::new(),
         }
     }
 
