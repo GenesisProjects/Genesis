@@ -273,6 +273,11 @@ impl NodeState {
         self.round
     }
 
+    /// Returns the current round of the node.
+    pub fn last_hash(&self) -> Hash {
+        self.last_hash
+    }
+
     /// Returns start time of the current height.
     pub fn height_start_time(&self) -> DateTime<Utc> {
         self.height_start_time
@@ -294,5 +299,19 @@ impl NodeState {
     pub fn get_validator_key(&self, id: ValidatorId) -> Option<Account> {
         let id: usize = id.0.into();
         self.validators().get(id).map(|x| x.account_addr())
+    }
+
+    /// Adds propose to the proposes list. Returns `ProposeState` if it is a new propose.
+    pub fn add_propose(
+        &mut self,
+        propose: &Propose
+    ) -> Result<ProposeState> {
+        let unknown_tnxs = HashMap::new();
+        Ok(ProposeState {
+            propose: propose.clone(),
+            unknown_txs,
+            block_hash: None,
+            is_saved: false,
+        })
     }
 }
