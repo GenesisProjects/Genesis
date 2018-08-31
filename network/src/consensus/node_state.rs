@@ -366,7 +366,7 @@ impl NodeState {
                     .owned_prevotes
                     .insert(prevote.round, prevote.clone())
                     {
-                        if &other != msg {
+                        if other.propose_hash != prevote.propose_hash {
                             panic!("Cannot send a different prevote for the same round");
                         }
                     }
@@ -379,6 +379,30 @@ impl NodeState {
             .entry(key)
             .or_insert_with(|| Votes::new(validators_len));
         votes.insert(prevote);
+        votes.count() >= validators_len * 2 / 3
+    }
+
+    /// Adds precommit to the precommits list. Returns true if it has majority precommits.
+    pub fn add_precommit(&mut self, precommit: &Precommit) -> bool {
+        if let Some(ref mut validator_state) = self.validator_state {
+            if validator_state.validator_id == precommit.validator {
+                if let Some(other) = validator_state
+                    .owned_precommits
+                    .insert(precommit.round, precommit.clone())
+                    {
+                        if other.propose_hash != precommit.propose_hash {
+                            panic!("Cannot send a different precommit for the same round");
+                        }
+                    }
+            }
+        }
+
+        let key = (precommit.round, precommit.block_hash);
+        let validators_len = self.validators().len();
+        let votes = self.precommits
+            .entry(key)
+            .or_insert_with(|| Votes::new(validators_len));
+        votes.insert(precommit);
         votes.count() >= validators_len * 2 / 3
     }
 }
