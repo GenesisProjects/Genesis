@@ -13,15 +13,14 @@ use db::gen_db::RocksDB;
 use mpt::node::TrieKey;
 use mpt::trie::Trie;
 
-pub enum ChainServiceError {
-    MissingData
-}
+use super::defines::ChainServiceError;
 
 pub struct ChainService {
     accounts_db: RocksDB,
     blocks_db: RocksDB,
     txs_db: RocksDB
 }
+
 
 impl ChainService {
     pub fn new() -> Self {

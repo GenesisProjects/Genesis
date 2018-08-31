@@ -1,5 +1,8 @@
+pub mod block_service;
 pub mod chain_cache;
 pub mod chain_service;
+
+pub mod defines;
 pub mod genesis;
 
 use validator::Validator;
