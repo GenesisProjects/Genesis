@@ -342,6 +342,8 @@ impl NodeState {
     ) -> Result<&mut ProposeState> {
         let unknown_tnxs = HashSet::new();
         Ok(self.proposes.entry(propose.hash()).or_insert_with(||
+
+            // Todo check tnxs pool and insert unknown tnxs
             ProposeState {
                 propose: propose.clone(),
                 unknown_tnxs,
@@ -354,5 +356,29 @@ impl NodeState {
     /// Returns propose state with hash.
     pub fn get_propose(&self, hash: &Hash) -> Option<&ProposeState> {
         self.proposes.get(hash)
+    }
+
+    /// Adds prevote to the prevotes list. Returns true if it has majority prevotes.
+    pub fn add_prevote(&mut self, prevote: &Prevote) -> bool {
+        if let Some(ref mut validator_state) = self.validator_state {
+            if validator_state.validator_id == msg.validator() {
+                if let Some(other) = validator_state
+                    .owned_prevotes
+                    .insert(prevote.round, prevote.clone())
+                    {
+                        if &other != msg {
+                            panic!("Cannot send a different prevote for the same round");
+                        }
+                    }
+            }
+        }
+
+        let key = (prevote.round, prevote.propose_hash);
+        let validators_len = self.validators().len();
+        let votes = self.prevotes
+            .entry(key)
+            .or_insert_with(|| Votes::new(validators_len));
+        votes.insert(prevote);
+        votes.count() >= validators_len * 2 / 3
     }
 }
