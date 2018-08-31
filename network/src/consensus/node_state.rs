@@ -361,7 +361,7 @@ impl NodeState {
     /// Adds prevote to the prevotes list. Returns true if it has majority prevotes.
     pub fn add_prevote(&mut self, prevote: &Prevote) -> bool {
         if let Some(ref mut validator_state) = self.validator_state {
-            if validator_state.validator_id == msg.validator() {
+            if validator_state.validator_id == prevote.validator {
                 if let Some(other) = validator_state
                     .owned_prevotes
                     .insert(prevote.round, prevote.clone())
