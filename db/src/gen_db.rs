@@ -73,8 +73,9 @@ pub trait TrieNodeDBOP {
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;
 }
 
-pub trait BlockDBOP {
+pub trait ChainDBOP {
     fn set_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, block: &T, num: u64) -> Hash;
+    fn delete_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, num: u64);
     fn forward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator;
     fn backward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator;
     fn raw_iter<T: RLPSerialize>(&self, num: u64) -> DBRawIterator;
@@ -106,13 +107,19 @@ impl TrieNodeDBOP for RocksDB {
     }
 }
 
-impl BlockDBOP for RocksDB {
+impl ChainDBOP for RocksDB {
     fn set_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, block: &T, num: u64) -> Hash {
-        let num_key_bytes: [u8; 8] = unsafe { transmute(num.to_be()) };
+        let num_key_bytes: [u8; 8] = num_to_bytes(num);
         let db = &self.db;
         let (key, encoded_rlp) = block.encrype_sha256().unwrap();
         db.put(&num_key_bytes[..], encoded_rlp.as_slice()).expect("db put error");
         key
+    }
+
+    fn delete_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, num: u64) {
+        let num_key_bytes: [u8; 8] = num_to_bytes(num);
+        let db = &self.db;
+        db.delete(&num_key_bytes[..]).expect("db put error");
     }
 
     fn forward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator {
