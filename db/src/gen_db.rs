@@ -1,5 +1,5 @@
-use ::rocksdb::{DB, Options};
-use std::{error::Error, fmt, iter::Peekable, mem, path::Path, sync::Arc};
+use ::rocksdb::{DB, DBIterator, IteratorMode, Options};
+use std::{error::Error, fmt, iter::Peekable, mem, mem::transmute, path::Path, sync::Arc};
 use rlp::{RLPSerialize, decoder::Decoder};
 use common::hash::*;
 
@@ -31,14 +31,6 @@ pub enum DBError {
     DBStatusError { msg: &'static str },
 }
 
-pub struct DBContext {
-
-}
-
-pub struct DBStatus {
-
-}
-
 pub struct DBConfig {
     pub create_if_missing: bool,
     pub max_open_files: i32,
@@ -67,6 +59,12 @@ pub trait TrieNodeDBOP {
     fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;
 }
 
+pub trait BlockDBOP {
+    fn set_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, block: &T, num: u64) -> Hash;
+    fn forward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator;
+    fn backward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator;
+}
+
 impl TrieNodeDBOP for RocksDB {
     fn put<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, value: &T) -> Hash {
         let db = &self.db;
@@ -89,6 +87,24 @@ impl TrieNodeDBOP for RocksDB {
             },
             None => None
         }
+    }
+}
+
+impl BlockDBOP for RocksDB {
+    fn set_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, block: &T, num: u64) -> Hash {
+        let num_key_bytes: [u8; 8] = unsafe { transmute(num.to_be()) };
+        let db = &self.db;
+        let (key, encoded_rlp) = block.encrype_sha256().unwrap();
+        db.put(&num_key_bytes[..], encoded_rlp.as_slice()).expect("db put error");
+        key
+    }
+
+    fn forward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator {
+        self.db.iterator(IteratorMode::Start)
+    }
+
+    fn backward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator {
+        self.db.iterator(IteratorMode::End)
     }
 }
 
