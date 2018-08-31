@@ -97,8 +97,9 @@ impl TrieNodeDBOP for RocksDB {
         match &self.db.get(key).unwrap() {
             Some(t) => {
                 let result = t.to_vec();
-                let t = Decoder::decode(&result).unwrap();
-                Some(T::deserialize(&t).unwrap())
+                Decoder::decode(&result).and_then(|rlp| {
+                    T::deserialize(&rlp).ok()
+                })
             },
             None => None
         }
@@ -149,8 +150,9 @@ impl BlockDeRef for DBRawIterator {
     fn block<T: RLPSerialize>(&self) -> Option<T> {
         if self.valid() {
             self.value().and_then(|v| {
-                let t = Decoder::decode(&v).unwrap();
-                Some(T::deserialize(&t).unwrap())
+                Decoder::decode(&v).and_then(|rlp| {
+                    T::deserialize(&rlp).ok()
+                })
             })
         } else {
             None
