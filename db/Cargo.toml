@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
+byteorder = "1.2.6"
 lazy_static = "1.0.0"
 rocksdb = "0.10.1"
 config = "0.9"

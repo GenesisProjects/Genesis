@@ -1,4 +1,4 @@
-use ::rocksdb::DB;
+use ::rocksdb::{DB, Options};
 use common::hash::*;
 use config::*;
 use gen_db::*;
@@ -45,6 +45,17 @@ impl DBManager {
             };
             RocksDB::open(&db_config, &path[..])
         }).clone()
+    }
+
+    pub fn destroy_db(&mut self, key: &str) {
+        let conf = self.config.get(key).unwrap().clone().into_table().unwrap();
+        let path = conf.get("path").unwrap().clone().into_str().unwrap();
+        let opts = Options::default();
+        let mut map = DB_MAP.lock().unwrap();
+        DB::destroy(&opts, path).and_then(|r| {
+            map.remove(key);
+            Ok(r)
+        });
     }
 }
 

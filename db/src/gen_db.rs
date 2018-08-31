@@ -1,7 +1,8 @@
-use ::rocksdb::{DB, DBIterator, IteratorMode, Options};
-use std::{error::Error, fmt, iter::Peekable, mem, mem::transmute, path::Path, sync::Arc};
-use rlp::{RLPSerialize, decoder::Decoder};
+use byteorder::{BigEndian, ReadBytesExt};
 use common::hash::*;
+use rlp::{RLPSerialize, decoder::Decoder};
+use ::rocksdb::{DB, DBIterator, DBRawIterator, IteratorMode, Options};
+use std::{error::Error, fmt, iter::Peekable, mem, mem::transmute, path::Path, sync::Arc};
 
 /// Database implementation on top of [`RocksDB`](https://rocksdb.org)
 /// backend.
@@ -9,6 +10,19 @@ use common::hash::*;
 /// `RocksDB` is an embedded database for key-value data, which is optimized for fast storage.
 /// This structure is required to potentially adapt the interface to
 /// use different databases.
+
+fn num_to_bytes(num: u64) -> [u8; 8] {
+    let num_key_bytes: [u8; 8] = unsafe { transmute(num.to_be()) };
+    num_key_bytes
+}
+
+fn bytes_to_num(bytes: Vec<u8>) -> Option<u64> {
+    if bytes.len() != 8 {
+        None
+    } else {
+        Some((&bytes[..]).read_u64::<BigEndian>().unwrap())
+    }
+}
 
 #[derive(Clone)]
 pub struct RocksDB {
@@ -63,6 +77,7 @@ pub trait BlockDBOP {
     fn set_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, block: &T, num: u64) -> Hash;
     fn forward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator;
     fn backward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator;
+    fn raw_iter<T: RLPSerialize>(&self, num: u64) -> DBRawIterator;
 }
 
 impl TrieNodeDBOP for RocksDB {
@@ -105,6 +120,41 @@ impl BlockDBOP for RocksDB {
 
     fn backward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator {
         self.db.iterator(IteratorMode::End)
+    }
+
+    fn raw_iter<T: RLPSerialize>(&self, num: u64) -> DBRawIterator {
+        let mut iter = self.db.raw_iterator();
+        let key = num_to_bytes(num);
+        iter.seek(&key[..]);
+        iter
+    }
+}
+
+pub trait BlockDeRef {
+    fn num(&self) -> Option<u64>;
+    fn block<T: RLPSerialize>(&self) -> Option<T>;
+}
+
+impl BlockDeRef for DBRawIterator {
+    fn num(&self) -> Option<u64> {
+        if self.valid() {
+            self.key().and_then(|bytes| {
+                bytes_to_num(bytes)
+            })
+        } else {
+            None
+        }
+    }
+
+    fn block<T: RLPSerialize>(&self) -> Option<T> {
+        if self.valid() {
+            self.value().and_then(|v| {
+                let t = Decoder::decode(&v).unwrap();
+                Some(T::deserialize(&t).unwrap())
+            })
+        } else {
+            None
+        }
     }
 }
 
