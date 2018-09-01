@@ -44,12 +44,45 @@ fn propose_handler(session: &mut Session, msg: &SocketMessage, name: String) -> 
 
 fn prevote_handler(session: &mut Session, msg: &SocketMessage, name: String) -> bool {
     let args = msg.args();
-    if !session.protocol().verify(&msg) {
-        false
-    } else {
-        let state = session.state();
-        // Todo Check leader + unknown tnxs + handle propose
+    if let Some((prevote, account)) = session.protocol().verify_prevote(&msg) {
+        let state_ref = session.state();
+        let mut state = state_ref.borrow_mut();
+
+        // Add prevote
+        let has_consensus = state.add_prevote(&prevote);
+        let mut full_propose = false;
+
+        match state.get_propose(propose_hash) {
+            Some(propose_state) => {
+                if !propose_state.unknown_tnxs().is_empty() {
+                    // Request transactions
+                    let req = state.add_request(prevote.validator, RequestData::ProposeTransactions(prevote.propose_hash));
+                    session.send_request(req.unwrap());
+                } else {
+                    full_propose = true;
+                }
+            }
+            None => {
+                // Request propose
+                let req = state.add_request(prevote.validator, RequestData::Propose(prevote.propose_hash));
+                session.send_request(req.unwrap());
+            }
+        }
+
+        // Request prevotes if there are missing rounds
+        if prevote.locked_round > state.locked_round() {
+            let req = state.add_request(prevote.validator, RequestData::Prevotes(prevote.locked_round, prevote.propose_hash));
+            session.send_request(req.unwrap());
+        }
+
+
+        if has_consensus && full_propose {
+            // Todo Lock current state to the propose
+        }
+
         true
+    } else {
+        false
     }
 }
 
