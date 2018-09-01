@@ -90,18 +90,18 @@ struct RequestState {
 /// `VoteMessage` trait represents voting messages such as `Precommit` and `Prevote`.
 pub trait VoteMessage: Clone {
     /// Return validator if of the message.
-    fn validator(&self) -> Account;
+    fn validator(&self) -> ValidatorId;
 }
 
 impl VoteMessage for Precommit {
-    fn validator(&self) -> Account {
-        self.validator()
+    fn validator(&self) -> ValidatorId {
+        self.validator
     }
 }
 
 impl VoteMessage for Prevote {
-    fn validator(&self) -> Account {
-        self.validator()
+    fn validator(&self) -> ValidatorId {
+        self.validator
     }
 }
 
@@ -109,7 +109,7 @@ impl VoteMessage for Prevote {
 #[derive(Debug)]
 pub struct Votes<T: VoteMessage> {
     messages: Vec<T>,
-    validators: HashSet<Account>,
+    validators: HashSet<ValidatorId>,
     count: usize,
 }
 
@@ -137,7 +137,7 @@ impl<T> Votes<T>
     }
 
     /// Returns validators.
-    pub fn validators(&self) -> &HashSet<Account> {
+    pub fn validators(&self) -> &HashSet<ValidatorId> {
         &self.validators
     }
 
@@ -403,11 +403,11 @@ impl NodeState {
     }
 
     /// Returns ids of validators that that sent pre-votes for the specified propose.
-    pub fn known_prevotes(&self, round: Round, propose_hash: &Hash) -> BitVec {
+    pub fn known_prevotes(&self, round: Round, propose_hash: &Hash) -> Vec<Validator> {
         let len = self.validators().len();
         self.prevotes
             .get(&(round, *propose_hash))
-            .map_or_else(|| BitVec::from_elem(len, false), |x| x.validators().clone())
+            .map_or_else(|| Vec::new(), |x| x.validators().clone())
     }
 
     /// Adds precommit to the precommits list. Returns true if it has majority precommits.
@@ -443,7 +443,7 @@ impl NodeState {
     }
 
     /// Returns ids of validators that that sent pre-commits for the specified propose.
-    pub fn known_precommits(&self, round: Round, propose_hash: &Hash) -> BitVec {
+    pub fn known_precommits(&self, round: Round, propose_hash: &Hash) -> Vec<Validator> {
         let len = self.validators().len();
         self.precommits
             .get(&(round, *propose_hash))
