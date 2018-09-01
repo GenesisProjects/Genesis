@@ -1,6 +1,7 @@
 use chrono::*;
 use nat::*;
 use eventloop::*;
+use bit_vec::BitVec;
 
 use super::peer::*;
 use super::protocol::*;
@@ -109,7 +110,7 @@ impl VoteMessage for Prevote {
 #[derive(Debug)]
 pub struct Votes<T: VoteMessage> {
     messages: Vec<T>,
-    validators: HashSet<ValidatorId>,
+    validators: BitVec,
     count: usize,
 }
 
@@ -121,23 +122,23 @@ impl<T> Votes<T>
     pub fn new(validators_len: usize) -> Self {
         Self {
             messages: Vec::new(),
-            validators: HashSet::new(),
-            count: 0,
+            validators: BitVec::from_elem(validators_len, false),
+            count: 0
         }
     }
 
     /// Inserts a new message if it hasn't been inserted yet.
     pub fn insert(&mut self, message: &T) {
-        let voter = message.validator();
-        if !self.validators.contains(&voter) {
+        let voter: usize = message.validator().into();
+        if !self.validators[voter] {
             self.count += 1;
-            self.validators.insert(voter.clone());
+            self.validators.set(voter, true);
             self.messages.push(message.clone());
         }
     }
 
     /// Returns validators.
-    pub fn validators(&self) -> &HashSet<ValidatorId> {
+    pub fn validators(&self) -> &BitVec {
         &self.validators
     }
 

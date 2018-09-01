@@ -9,6 +9,8 @@ pub mod utils;
 pub extern crate byteorder;
 pub extern crate bytebuffer;
 pub extern crate config;
+pub extern crate bit_vec;
+
 #[macro_use]
 pub extern crate common;
 pub extern crate chrono;

@@ -21,6 +21,7 @@ serde_json = "1.0"
 serde_derive = "1.0.71"
 slab = "0.2"
 snap = "0.2"
+bit-vec = "=0.5.0"
 
 common = { version = "0.1.0", path = "../common" }
 gen_core = { version = "0.1.0", path = "../core" }
