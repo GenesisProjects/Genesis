@@ -129,7 +129,7 @@ impl<T> Votes<T>
 
     /// Inserts a new message if it hasn't been inserted yet.
     pub fn insert(&mut self, message: &T) {
-        let voter: usize = message.validator().into();
+        let voter: usize = message.validator().0.into();
         if !self.validators[voter] {
             self.count += 1;
             self.validators.set(voter, true);
@@ -342,10 +342,10 @@ impl NodeState {
     }
 
     /// Adds request data to requests list.
-    pub fn add_request(&self, id: ValidatorId, req: RequestData) -> Option<RequestData> {
-        let mut state = self.requests.entry(req).or_insert(RequestState::new());
+    pub fn add_request(&mut self, id: ValidatorId, req: RequestData) -> Option<RequestData> {
+        let mut state = self.requests.entry(req.clone()).or_insert(RequestState::new());
         state.insert(id);
-        Ok(req)
+        Some(req)
     }
 
     /// Adds propose to the proposes list. Returns `ProposeState` if it is a new propose.
@@ -398,17 +398,17 @@ impl NodeState {
     /// Returns `true` if there are +2/3 pre-votes for the specified round and hash.
     pub fn has_majority_prevotes(&self, round: usize, propose_hash: Hash) -> bool {
         match self.prevotes.get(&(round, propose_hash)) {
-            Some(votes) => votes.count() >= self.majority_count(),
+            Some(votes) => votes.count() >= self.validators().len() * 2 / 3,
             None => false,
         }
     }
 
     /// Returns ids of validators that that sent pre-votes for the specified propose.
-    pub fn known_prevotes(&self, round: Round, propose_hash: &Hash) -> Vec<Validator> {
+    pub fn known_prevotes(&self, round: usize, propose_hash: &Hash) -> BitVec {
         let len = self.validators().len();
         self.prevotes
             .get(&(round, *propose_hash))
-            .map_or_else(|| Vec::new(), |x| x.validators().clone())
+            .map_or_else(|| BitVec::from_elem(len, false), |x| x.validators().clone())
     }
 
     /// Adds precommit to the precommits list. Returns true if it has majority precommits.
@@ -438,13 +438,13 @@ impl NodeState {
     /// Returns `true` if there are +2/3 pre-votes for the specified round and hash.
     pub fn has_majority_precommits(&self, round: usize, propose_hash: Hash) -> bool {
         match self.prevotes.get(&(round, propose_hash)) {
-            Some(votes) => votes.count() >= self.majority_count(),
+            Some(votes) => votes.count() >= self.validators().len() * 2 / 3,
             None => false,
         }
     }
 
     /// Returns ids of validators that that sent pre-commits for the specified propose.
-    pub fn known_precommits(&self, round: Round, propose_hash: &Hash) -> Vec<Validator> {
+    pub fn known_precommits(&self, round: usize, propose_hash: &Hash) -> BitVec {
         let len = self.validators().len();
         self.precommits
             .get(&(round, *propose_hash))

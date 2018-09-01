@@ -52,21 +52,25 @@ fn prevote_handler(session: &mut Session, msg: &SocketMessage, name: String) -> 
         let has_consensus = state.add_prevote(&prevote);
         let mut full_propose = false;
 
-        match state.get_propose(propose_hash) {
+        let req = match state.get_propose(&prevote.propose_hash) {
             Some(propose_state) => {
                 if !propose_state.unknown_tnxs().is_empty() {
                     // Request transactions
-                    let req = state.add_request(prevote.validator, RequestData::ProposeTransactions(prevote.propose_hash));
-                    session.send_request(req.unwrap());
+                    Some(RequestData::ProposeTransactions(prevote.propose_hash))
                 } else {
                     full_propose = true;
+                    None
                 }
             }
             None => {
                 // Request propose
-                let req = state.add_request(prevote.validator, RequestData::Propose(prevote.propose_hash));
-                session.send_request(req.unwrap());
+                Some(RequestData::Propose(prevote.propose_hash))
             }
+        };
+
+        if let Some(req_data) = req {
+            state.add_request(prevote.validator, req_data.clone());
+            session.send_request(req_data);
         }
 
         // Request prevotes if there are missing rounds
