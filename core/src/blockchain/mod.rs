@@ -1,11 +1,9 @@
 pub mod account_service;
 pub mod block_service;
-pub mod transaction_service;
 pub mod chain_cache;
 pub mod chain_service;
-
-pub mod defines;
 pub mod genesis;
+pub mod transaction_service;
 
 use validator::Validator;
 

@@ -17,8 +17,6 @@ pub use db::gen_db::{BlockDeRef, ChainDBOP, DBError, DBRawIterator, RocksDB};
 use mpt::node::TrieKey;
 use mpt::trie::Trie;
 
-use super::defines::ChainServiceError;
-
 pub struct ChainService {
     account_service: AccountService,
     block_service: BlockService,
@@ -65,13 +63,18 @@ impl ChainService {
         })
     }
 
-    pub fn get_transactions(&self, trie: Trie<Transaction>)
-        -> Result<Vec<Transaction>, ChainServiceError> {
-        unimplemented!()
+    pub fn get_last_block_transactions(&self)
+        -> Result<Vec<Transaction>, DBError> {
+        self.block_service.last().block::<Block>().ok_or_else(|| {
+            DBError::new("Can not retrieve the last block".into())
+        }).and_then(|block| {
+            Ok(self.transaction_service.fetch_all_transactions_in_block(&block))
+        })
+
     }
 
     pub fn replay_txs(&self, new_txs: Vec<Transaction>, old_account_root: Trie<Account>)
-        -> Result<Trie<Account>, ChainServiceError> {
+        -> Result<Trie<Account>, DBError> {
         unimplemented!()
     }
 }
