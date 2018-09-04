@@ -9,7 +9,7 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct BaseAccount {
-    pub nonce: u32,
+    pub nonce: u64,
     pub balance: u32,
     pub storage_root: Hash,
     pub code_hash: Hash,
@@ -18,7 +18,7 @@ pub struct BaseAccount {
 
 #[derive(Debug, Clone)]
 pub struct Account {
-    nonce: u32,
+    nonce: u64,
     balance: u32,
     name: String,
     storage_root: Hash,
@@ -47,7 +47,7 @@ impl Account {
     pub fn new(account_name: &str) -> Self {
         // TODO: check account name  
         Account{
-            nonce: 0u32,
+            nonce: 0u64,
             balance: 0u32,
             name: account_name.to_string(),
             storage_root: zero_hash!(),
@@ -73,7 +73,7 @@ impl Account {
         self.balance
     }
 
-    pub fn nonce(&self) -> u32 {
+    pub fn nonce(&self) -> u64 {
         self.nonce
     }
 

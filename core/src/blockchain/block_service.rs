@@ -1,32 +1,32 @@
 use block::Block;
-use db::gen_db::RocksDB;
+use db::gen_db::{BlockDeRef, ChainDBOP, DBError, DBRawIterator, RocksDB};
+use db::manager::DBManager;
 
-use super::defines::ChainServiceError;
+pub struct BlockService {
+    db: RocksDB
+}
 
-pub mod BlockService {
-    use super::*;
-
-    fn seek(num: u64, db: &RocksDB) -> Result<Block, ChainServiceError> {
-        unimplemented!()
+impl BlockService {
+    pub fn new() -> Self {
+        let mut db_manager = DBManager::default();
+        BlockService {
+            db: db_manager.get_db("block")
+        }
     }
 
-    fn genesis_block(db: &RocksDB) -> Result<Block, ChainServiceError> {
-        unimplemented!()
+    pub fn seek(&self, num: u64) -> DBRawIterator {
+        self.db.raw_iter::<Block>(num)
     }
 
-    fn last_block(db: &RocksDB) -> Result<Block, ChainServiceError> {
-        unimplemented!()
+    pub fn last(&self) -> DBRawIterator {
+        let mut iter = self.db.raw_iter::<Block>(0);
+        iter.seek_to_last();
+        iter
     }
 
-    fn next_block(cur: &Block, db: &RocksDB) -> Result<Block, ChainServiceError> {
-        unimplemented!()
-    }
-
-    fn previous_block(cur: &Block, db: &RocksDB) -> Result<Block, ChainServiceError> {
-        unimplemented!()
-    }
-
-    fn max_height() -> u64 {
-        unimplemented!()
+    pub fn genesis(&self) -> DBRawIterator {
+        let mut iter = self.db.raw_iter::<Block>(0);
+        iter.seek_to_first();
+        iter
     }
 }

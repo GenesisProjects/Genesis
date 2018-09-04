@@ -1,7 +1,7 @@
 use byteorder::{BigEndian, ReadBytesExt};
 use common::hash::*;
 use rlp::{RLPSerialize, decoder::Decoder};
-use ::rocksdb::{DB, DBIterator, DBRawIterator, IteratorMode, Options};
+pub use ::rocksdb::{DB, DBIterator, DBRawIterator, IteratorMode, Options};
 use std::{error::Error, fmt, iter::Peekable, mem, mem::transmute, path::Path, sync::Arc};
 
 /// Database implementation on top of [`RocksDB`](https://rocksdb.org)
@@ -10,6 +10,21 @@ use std::{error::Error, fmt, iter::Peekable, mem, mem::transmute, path::Path, sy
 /// `RocksDB` is an embedded database for key-value data, which is optimized for fast storage.
 /// This structure is required to potentially adapt the interface to
 /// use different databases.
+
+#[derive(Debug, Clone)]
+pub struct DBError {
+    msg: String
+}
+
+impl DBError {
+    pub fn new(msg: String) -> Self {
+        DBError { msg: msg }
+    }
+
+    pub fn msg(&self) -> String {
+        self.msg.clone()
+    }
+}
 
 fn num_to_bytes(num: u64) -> [u8; 8] {
     let num_key_bytes: [u8; 8] = unsafe { transmute(num.to_be()) };
@@ -27,22 +42,6 @@ fn bytes_to_num(bytes: Vec<u8>) -> Option<u64> {
 #[derive(Clone)]
 pub struct RocksDB {
     pub db: Arc<::rocksdb::DB>,
-}
-
-pub enum DBResult {
-    DBConnectSuccess,
-    DBDisconnectSuccess,
-    DBUpdateSuccess,
-    DBFetchSuccess,
-    DBStatusSuccess,
-}
-
-pub enum DBError {
-    DBConnectError{ msg: &'static str },
-    DBDisconnectError { msg: &'static str },
-    DBUpdateError { msg: &'static str },
-    DBFetchError { msg: &'static str },
-    DBStatusError { msg: &'static str },
 }
 
 pub struct DBConfig {
@@ -68,58 +67,78 @@ impl RocksDB {
 }
 
 pub trait TrieNodeDBOP {
-    fn put<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, value: &T) -> Hash;
-    fn delete(&self, key: &Vec<u8>);
-    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;
+    fn put<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, value: &T) -> Result<Hash, DBError>;
+    fn delete(&self, key: &Vec<u8>) -> Result<(), DBError>;
+    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Result<Option<T>, DBError>;
 }
 
 pub trait ChainDBOP {
-    fn set_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, block: &T, num: u64) -> Hash;
-    fn delete_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, num: u64);
+    fn set_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, block: &T, num: u64) -> Result<Hash, DBError>;
+    fn delete_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, num: u64) -> Result<(), DBError>;
     fn forward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator;
     fn backward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator;
     fn raw_iter<T: RLPSerialize>(&self, num: u64) -> DBRawIterator;
 }
 
 impl TrieNodeDBOP for RocksDB {
-    fn put<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, value: &T) -> Hash {
+    fn put<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, value: &T) -> Result<Hash, DBError> {
         let db = &self.db;
         let (key, encoded_rlp) = value.encrype_sha256().unwrap();
-        db.put(&key, encoded_rlp.as_slice()).expect("db put error");
-        key
+        db.put(&key, encoded_rlp.as_slice()).and_then(|_| {
+            Ok(key)
+        }).map_err(|e| {
+            DBError::new(e.to_string())
+        })
     }
 
-    fn delete(&self, key: &Vec<u8>) {
+    fn delete(&self, key: &Vec<u8>) -> Result<(), DBError> {
         let db= &self.db;
-        db.delete(key);
+        db.delete(key).map_err(|e| {
+            DBError::new(e.to_string())
+        })
     }
 
-    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {
-        match &self.db.get(key).unwrap() {
-            Some(t) => {
-                let result = t.to_vec();
-                Decoder::decode(&result).and_then(|rlp| {
-                    T::deserialize(&rlp).ok()
-                })
-            },
-            None => None
-        }
+    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Result<Option<T>, DBError> {
+        self.db.get(key).map_err(|e| {
+            DBError::new(e.to_string())
+        }).and_then(|v| {
+            match v {
+                Some(t) => {
+                    let result = t.to_vec();
+                    Decoder::decode(&result).ok_or_else(|| {
+                        DBError::new("The node is malformed".into())
+                    }).and_then(|rlp| {
+                        T::deserialize(&rlp).map_err(|e| {
+                            DBError::new("RLP deserialize error".into())
+                        })
+                    }).and_then(|r| {
+                        Ok(Some(r))
+                    })
+                },
+                None => Ok(None)
+            }
+        })
     }
 }
 
 impl ChainDBOP for RocksDB {
-    fn set_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, block: &T, num: u64) -> Hash {
+    fn set_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, block: &T, num: u64) -> Result<Hash, DBError> {
         let num_key_bytes: [u8; 8] = num_to_bytes(num);
         let db = &self.db;
         let (key, encoded_rlp) = block.encrype_sha256().unwrap();
-        db.put(&num_key_bytes[..], encoded_rlp.as_slice()).expect("db put error");
-        key
+        db.put(&num_key_bytes[..], encoded_rlp.as_slice()).and_then(|_| {
+            Ok(key)
+        }).map_err(|e| {
+            DBError::new(e.to_string())
+        })
     }
 
-    fn delete_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, num: u64) {
+    fn delete_block_at_num<T: RLPSerialize + SerializableAndSHA256Hashable>(&self, num: u64) -> Result<(), DBError> {
         let num_key_bytes: [u8; 8] = num_to_bytes(num);
         let db = &self.db;
-        db.delete(&num_key_bytes[..]).expect("db put error");
+        db.delete(&num_key_bytes[..]).map_err(|e| {
+            DBError::new(e.to_string())
+        })
     }
 
     fn forward_iter<T: RLPSerialize>(&self, num: u64) -> DBIterator {
@@ -131,10 +150,14 @@ impl ChainDBOP for RocksDB {
     }
 
     fn raw_iter<T: RLPSerialize>(&self, num: u64) -> DBRawIterator {
-        let mut iter = self.db.raw_iterator();
-        let key = num_to_bytes(num);
-        iter.seek(&key[..]);
-        iter
+        if num == 0 {
+            self.db.raw_iterator()
+        } else {
+            let mut iter = self.db.raw_iterator();
+            let key = num_to_bytes(num);
+            iter.seek(&key[..]);
+            iter
+        }
     }
 }
 

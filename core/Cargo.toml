@@ -14,4 +14,3 @@ common = { version = "0.1.0", path = "../common" }
 db = { version = "0.1.0", path = "../db" }
 gen_utils = { version = "0.1.0", path = "../util" }
 rlp = { version = "0.1.0", path = "../rlp" }
-gen_pool = { version = "0.1.0", path = "../pool" }

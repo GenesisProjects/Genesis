@@ -5,31 +5,35 @@ use rlp::RLPSerialize;
 use rlp::types::*;
 use mpt::node::TrieKey;
 
-pub mod nounce {
-    /// A BlockNonce is a 64-bit hash which proves (combined with the
-    /// mix-hash) that a sufficient amount of computation has been carried
-    /// out on a block.
-    pub type BlockNounce = [u8; 8];
-
-}
 
 ///
 ///
 ///
 #[derive(Clone, Debug)]
 pub struct Block {
-    pub parent: Hash,
-    pub uncle: Hash,
-    pub coinbase: Address,
-    pub account_root: TrieKey,
-    pub txs_root: TrieKey,
-    //pub logs_bloom: Bloom<Log>,
-    pub number: BigInt,
-    pub gas_used: u64,
-    pub time: BigInt,
-    pub extra: Vec<u8>,
-    pub digest: Hash,
-    pub nounce: nounce::BlockNounce
+    num: u64,
+    parent: Hash,
+    uncle: Hash,
+    coinbase: Address,
+    account_root: TrieKey,
+    txs_root: TrieKey,
+    time: BigInt,
+    extra: Vec<u8>,
+    digest: Hash
+}
+
+impl Block {
+    pub fn num(&self) -> u64 {
+        self.num
+    }
+
+    pub fn account_root(&self) -> TrieKey {
+        self.account_root.clone()
+    }
+
+    pub fn txs_root(&self) -> TrieKey {
+        self.txs_root.clone()
+    }
 }
 
 impl RLPSerialize for Block {

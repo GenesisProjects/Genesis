@@ -5,6 +5,7 @@ use rlp::RLPSerialize;
 use std::cmp::min;
 use std::fmt;
 use std::marker::PhantomData;
+use std::panic;
 use std::sync::Mutex;
 use super::node::*;
 
@@ -26,7 +27,6 @@ impl<'db, T> Trie<'db, T> where T: RLPSerialize + Clone {
     pub fn load(root: TrieKey, db: &'db RocksDB) -> Trie<T> {
         Trie::<T> { root: root, db: db, phantom: PhantomData }
     }
-
 
     /// Query a stored value by key, the key is also the path of value node in the trie.
     pub fn get(&self, path: &Vec<u8>) -> Option<T> {
@@ -64,14 +64,14 @@ const PATH_MAX_LEN: usize = 64usize;
 /// DBManager delete a node
 macro_rules! mpt_db_delete {
     ($node:expr, $db:expr) => {{
-        $db.delete(&($node).to_vec());
+        $db.delete(&($node).to_vec()).unwrap();
     }};
 }
 
 /// DBManager update a node
 macro_rules! mpt_db_update {
     ($node:expr, $db:expr) => {
-        $db.put($node)
+        $db.put($node).unwrap()
     };
 }
 /// DBManager replace a node with a new node index
@@ -85,7 +85,7 @@ macro_rules! mpt_db_replace {
 /// DBManager get a node
 macro_rules! mpt_db_fetch {
     ($node:expr, $db:expr) => {
-        $db.get(&($node).to_vec())
+        $db.get(&($node).to_vec()).unwrap()
     };
 }
 

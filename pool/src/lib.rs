@@ -1,10 +1,14 @@
-pub extern crate common;
-pub extern crate gen_message;
-pub extern crate slab;
+extern crate common;
+extern crate gen_core;
+extern crate gen_message;
+extern crate slab;
 
-use ::common::hash::*;
-use ::common::observe::*;
-use ::slab::Slab;
+use common::address::*;
+use common::hash::*;
+use common::observe::*;
+use slab::Slab;
+use gen_core::blockchain::chain_service;
+use gen_core::transaction::Transaction;
 use gen_message::*;
 
 use std::collections::{HashMap, BinaryHeap};
@@ -12,8 +16,9 @@ use std::cmp::Ordering;
 use std::mem;
 
 pub enum PoolError {
+    DBError(String),
     Duplicate(Hash),
-    Validation(String),
+    NonceError,
     Locked,
 }
 
@@ -22,10 +27,34 @@ pub trait Poolable {
     fn score(&self) -> ScoreRecord;
     /// Unique hash id
     fn hash(&self) -> Hash;
-    /// The round counter
-    fn round(&self) -> usize;
+    /// Account address with this transaction
+    fn account(&self) -> Address;
+    /// Nonce for this transaction
+    fn nonce(&self) -> u64;
     /// Verify if the object is valid
     fn verify(&self) -> Result<(), PoolError>;
+}
+
+impl Poolable for Transaction {
+    fn score(&self) -> ScoreRecord {
+        unimplemented!()
+    }
+
+    fn hash(&self) -> Hash {
+        unimplemented!()
+    }
+
+    fn nonce(&self) -> u64 {
+        unimplemented!()
+    }
+
+    fn verify(&self) -> Result<(), PoolError> {
+        unimplemented!()
+    }
+
+    fn account(&self) -> Address {
+        unimplemented!()
+    }
 }
 
 /// Assign each element with a score, so it will sorted in priority queue.
@@ -53,16 +82,11 @@ impl PartialOrd for ScoreRecord {
 pub struct Pool<T> where T: Poolable {
     name: String,
     channels: Vec<String>,
-    next_round: usize,
-
-    pending_slab: Slab<T>,
-    pending_slab_key_map: HashMap<Hash, usize>,
-    pending_priority_queue: BinaryHeap<ScoreRecord>,
-
-    cur_slab: Slab<T>,
-    cur_slab_key_map: HashMap<Hash, usize>,
-    cur_priority_queue: BinaryHeap<ScoreRecord>,
-
+    slab: Slab<T>,
+    slab_key_map: HashMap<Hash, usize>,
+    priority_queue: BinaryHeap<ScoreRecord>,
+    nonce_map: HashMap<Hash, u64>,
+    chain_service: chain_service::ChainService,
     locked: bool
 }
 
@@ -72,16 +96,11 @@ impl<T> Pool<T> where T: Poolable {
         Pool {
             name: name,
             channels: vec![],
-            next_round: next_round,
-
-            pending_slab: Slab::with_capacity(size),
-            pending_slab_key_map: HashMap::new(),
-            pending_priority_queue: BinaryHeap::new(),
-
-            cur_slab: Slab::with_capacity(size),
-            cur_slab_key_map: HashMap::new(),
-            cur_priority_queue: BinaryHeap::new(),
-
+            slab: Slab::with_capacity(size),
+            slab_key_map: HashMap::new(),
+            priority_queue: BinaryHeap::new(),
+            nonce_map: HashMap::new(),
+            chain_service: chain_service::ChainService::new(),
             locked: false
         }
     }
@@ -128,14 +147,31 @@ impl<T> Pool<T> where T: Poolable {
     #[inline]
     pub fn exist(&self, obj: &T) -> bool {
         let hash = obj.hash();
-        self.pending_slab_key_map.get(&hash).is_some()
+        self.slab_key_map.get(&hash).is_some()
     }
 
+    /// Check if the nonce is correct
+    fn verify_nonce(&self, obj: &T) -> Result<bool, chain_service::DBError> {
+        self.get_account_nonce(obj.account()).and_then(|nonce| {
+            Ok(nonce == obj.nonce())
+        })
+    }
+
+    fn get_account_nonce(&self, account_addr: Address) -> Result<u64, chain_service::DBError> {
+        self.chain_service.get_last_block_account_nonce(account_addr)
+    }
+
+    /// Check if the transaction is valid
     fn check(&self, obj: &T) -> Result<(), PoolError> {
-        if obj.round() != self.next_round {
-            Err(PoolError::Validation("The input object is not at it's round".into()))
-        } else {
-            obj.verify()
+        match self.verify_nonce(&obj) {
+            Ok(r) => {
+                if r {
+                    obj.verify()
+                } else {
+                    Err(PoolError::NonceError)
+                }
+            }
+            Err(e) => Err(PoolError::DBError(e.msg()))
         }
     }
 
@@ -153,9 +189,9 @@ impl<T> Pool<T> where T: Poolable {
         } else {
             let hash = obj.hash();
             let score = obj.score();
-            let slab_key = self.pending_slab.insert(obj);
-            self.pending_slab_key_map.insert(hash, slab_key);
-            self.pending_priority_queue.push(score);
+            let slab_key = self.slab.insert(obj);
+            self.slab_key_map.insert(hash, slab_key);
+            self.priority_queue.push(score);
             self.notify_new_tx_recieved();
             Ok(())
         }
@@ -165,51 +201,24 @@ impl<T> Pool<T> where T: Poolable {
     /// High score object will first out
     #[inline]
     pub fn pop(&mut self) -> Option<T> {
-        match self.cur_priority_queue.pop() {
+        match self.priority_queue.pop() {
             Some(record) => {
                 let hash = record.id;
-                let (_, slab_key) = self.cur_slab_key_map.remove_entry(&hash).unwrap();
-                let obj = self.cur_slab.remove(slab_key);
+                let (_, slab_key) = self.slab_key_map.remove_entry(&hash).unwrap();
+                let obj = self.slab.remove(slab_key);
                 Some(obj)
             },
             None => None
         }
     }
 
-    /// swap the current object pool with pending object pool
-    #[inline]
-    fn swap(&mut self) -> Result<(), PoolError> {
-        mem::swap(&mut self.cur_slab, &mut self.pending_slab);
-        mem::swap(&mut self.cur_slab_key_map, &mut self.pending_slab_key_map);
-        mem::swap(&mut self.cur_priority_queue, &mut self.pending_priority_queue);
-        self.clear_pending();
-        Ok(())
-    }
-
-    /// Clear the object pool
-    #[inline]
-    fn clear_cur(&mut self) -> Result<(), PoolError> {
-        self.cur_priority_queue.clear();
-        self.cur_slab.clear();
-        self.cur_slab_key_map.clear();
-        Ok(())
-    }
-
     /// Clear the pending object pool
     #[inline]
-    fn clear_pending(&mut self) -> Result<(), PoolError> {
-        self.pending_priority_queue.clear();
-        self.pending_slab.clear();
-        self.pending_slab_key_map.clear();
+    fn clear(&mut self) -> Result<(), PoolError> {
+        self.priority_queue.clear();
+        self.slab.clear();
+        self.slab_key_map.clear();
         Ok(())
-    }
-
-
-    /// Swap pending and current object pools and prepare for next round
-    #[inline]
-    pub fn next_round(&mut self) {
-        self.swap();
-        self.next_round += 1;
     }
 
     /// Lock the pool
@@ -227,12 +236,7 @@ impl<T> Pool<T> where T: Poolable {
     /// Count pending objects in the pool
     #[inline]
     pub fn count(&self) -> usize {
-        self.pending_slab.len()
+        self.slab.len()
     }
 
-    /// Count current objects in the pool
-    #[inline]
-    pub fn count_cur(&self) -> usize {
-        self.cur_slab.len()
-    }
 }
