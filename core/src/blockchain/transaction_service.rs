@@ -17,8 +17,13 @@ impl TransactionService {
         }
     }
 
-    pub fn fetch_transaction_in_block(&self, block: &Block, root: Hash, hash: Hash) -> Option<Transaction> {
+    pub fn fetch_transaction_in_block(&self, block: &Block, hash: Hash) -> Option<Transaction> {
         let trie: Trie<Transaction> = Trie::load(block.txs_root(), &self.db);
         trie.get(&hash.to_vec())
+    }
+
+    pub fn fetch_all_transactions_in_block(&self, block: &Block) -> Vec<Transaction> {
+        let trie: Trie<Transaction> = Trie::load(block.txs_root(), &self.db);
+        trie.traversal()
     }
 }

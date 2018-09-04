@@ -18,7 +18,7 @@ impl AccountService {
         }
     }
 
-    pub fn fetch_account_in_block(&self, block: &Block, root: Hash, addr: Address) -> Option<Account> {
+    pub fn fetch_account_in_block(&self, block: &Block, addr: Address) -> Option<Account> {
         let trie: Trie<Account> = Trie::load(block.account_root(), &self.db);
         trie.get(&addr.to_key().unwrap().to_vec())
     }
