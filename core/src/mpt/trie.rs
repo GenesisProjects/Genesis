@@ -33,6 +33,14 @@ impl<'db, T> Trie<'db, T> where T: RLPSerialize + Clone {
         get_helper(&self.root, &vec2nibble(path), self.db)
     }
 
+    /// Query all stored values.
+    /// Use BFS as traversal algorithm.
+    pub fn traversal(&self) -> Vec<T> {
+        let mut result: Vec<T> = vec![];
+        bfs_traversal_helper(&self.root, self.db, &mut result);
+        result
+    }
+
     /// Trace the value and all node on its path.
     pub fn trace(&self, path: &Vec<u8>) -> (Option<T>, Vec<TrieNode<T>>) {
         let mut result: Vec<TrieNode<T>> = vec![];
@@ -203,6 +211,30 @@ fn get_helper_with_trace<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
             None
         }
         _ => panic!("Unknown error!")
+    }
+}
+
+fn bfs_traversal_helper<T: RLPSerialize + Clone>(node: &TrieKey, db: &RocksDB, result: &mut Vec<T>) {
+    let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
+    match node_type {
+        Some(TrieNode::BranchNode::<T> { ref branches, ref value }) => {
+            for i in 0..MAX_BRANCHE_NUM {
+                let new_node = &branches[i];
+                bfs_traversal_helper(new_node, db, result);
+            }
+            if let Some(ref value) = value {
+                result.push(value.clone())
+            }
+        },
+        Some(TrieNode::LeafNode::<T> { ref encoded_path, ref value }) => {
+            result.push(value.clone())
+        },
+        Some(TrieNode::ExtensionNode::<T> { ref encoded_path, ref key }) => {
+            bfs_traversal_helper(key, db, result);
+        },
+        _ => {
+            // Do nothing
+        }
     }
 }
 
@@ -404,9 +436,15 @@ mod trie {
     use rlp::types::*;
     use super::*;
 
-    #[derive(Clone)]
+    #[derive(Clone, Debug, Eq, PartialEq)]
     struct TestObject {
         name: String
+    }
+
+    impl TestObject {
+        pub fn new(name: String) -> Self {
+            TestObject {name: name}
+        }
     }
 
     impl RLPSerialize for TestObject {
@@ -528,6 +566,31 @@ mod trie {
         trie.update(&path, &val);
         trie.delete(&path);
         assert_eq!(trie.get(&path), None)
+    }
+
+    #[test]
+    fn test_bfs() {
+        let mut manager = DBManager::default();
+        let test_db = manager.get_db("test");
+        let mut trie = Trie::<TestObject>::new(&test_db);
+        let obj1 = TestObject::new("obj1".into());
+        let obj2 = TestObject::new("obj2".into());
+        let obj3 = TestObject::new("obj3".into());
+        let obj4 = TestObject::new("obj4".into());
+        let obj5 = TestObject::new("obj5".into());
+        let obj6 = TestObject::new("obj6".into());
+        let obj7 = TestObject::new("obj7".into());
+        let obj8 = TestObject::new("obj8".into());
+        trie.update(&b"obj1".to_vec(), &obj1);
+        trie.update(&b"obj2".to_vec(), &obj2);
+        trie.update(&b"obj3".to_vec(), &obj3);
+        trie.update(&b"obj4".to_vec(), &obj4);
+        trie.update(&b"obj5".to_vec(), &obj5);
+        trie.update(&b"obj6".to_vec(), &obj6);
+        trie.update(&b"obj7".to_vec(), &obj7);
+        trie.update(&b"obj8".to_vec(), &obj8);
+        trie.update(&b"obj1".to_vec(), &obj1);
+        assert_eq!(trie.traversal(), vec![obj1, obj2, obj3, obj4, obj5, obj6, obj7, obj8]);
     }
 }
 

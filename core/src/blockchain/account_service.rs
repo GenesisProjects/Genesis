@@ -1,5 +1,6 @@
 use account::Account;
 use block::Block;
+use common::address::Address;
 use common::hash::Hash;
 use db::gen_db::RocksDB;
 use db::manager::DBManager;
@@ -17,8 +18,8 @@ impl AccountService {
         }
     }
 
-    pub fn fetch_account_in_block(&self, block: &Block, root: Hash) -> Option<Account> {
+    pub fn fetch_account_in_block(&self, block: &Block, root: Hash, addr: Address) -> Option<Account> {
         let trie: Trie<Account> = Trie::load(block.account_root(), &self.db);
-        trie.get(&root.to_vec())
+        trie.get(&addr.to_key().unwrap().to_vec())
     }
 }

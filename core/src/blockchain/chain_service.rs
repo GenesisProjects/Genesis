@@ -52,7 +52,7 @@ impl ChainService {
             DBError::new("Can not retrieve the last block".into())
         }).and_then(|block| {
             self.account_service
-                .fetch_account_in_block(&block, block.account_root())
+                .fetch_account_in_block(&block, block.account_root(), addr)
                 .ok_or_else(||{
                     DBError::new("Can not retrieve the last block".into())
                 })
