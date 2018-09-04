@@ -48,11 +48,21 @@ impl ChainService {
     }
 
     pub fn get_last_block_account(&self, addr: Address) -> Result<Account, DBError> {
-       unimplemented!()
+        self.block_service.last().block::<Block>().ok_or_else(|| {
+            DBError::new("Can not retrieve the last block".into())
+        }).and_then(|block| {
+            self.account_service
+                .fetch_account_in_block(&block, block.account_root())
+                .ok_or_else(||{
+                    DBError::new("Can not retrieve the last block".into())
+                })
+        })
     }
 
     pub fn get_last_block_account_nonce(&self, addr: Address) -> Result<u64, DBError> {
-        unimplemented!()
+        self.get_last_block_account(addr).and_then(|account| {
+            Ok(account.nonce())
+        })
     }
 
     pub fn get_transactions(&self, trie: Trie<Transaction>)
