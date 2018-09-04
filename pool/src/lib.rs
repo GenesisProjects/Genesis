@@ -11,7 +11,7 @@ use gen_core::blockchain::chain_service;
 use gen_core::transaction::Transaction;
 use gen_message::*;
 
-use std::collections::{HashMap, BinaryHeap};
+use std::collections::HashMap;
 use std::cmp::Ordering;
 use std::mem;
 
@@ -23,8 +23,6 @@ pub enum PoolError {
 }
 
 pub trait Poolable {
-    /// Priority in queue
-    fn score(&self) -> ScoreRecord;
     /// Unique hash id
     fn hash(&self) -> Hash;
     /// Account address with this transaction
@@ -36,10 +34,6 @@ pub trait Poolable {
 }
 
 impl Poolable for Transaction {
-    fn score(&self) -> ScoreRecord {
-        unimplemented!()
-    }
-
     fn hash(&self) -> Hash {
         unimplemented!()
     }
@@ -57,34 +51,14 @@ impl Poolable for Transaction {
     }
 }
 
-/// Assign each element with a score, so it will sorted in priority queue.
-#[derive(Copy, Clone, Eq, PartialEq)]
-pub struct ScoreRecord {
-    pub id: Hash,
-    pub score: usize
-}
-
-impl Ord for ScoreRecord {
-    fn cmp(&self, other: &ScoreRecord) -> Ordering {
-        other.score.cmp(&self.score)
-    }
-}
-
-impl PartialOrd for ScoreRecord {
-    fn partial_cmp(&self, other: &ScoreRecord) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
 
 /// Object pool, which uses slab allocator to manage memory
-/// The object stored must be uniform type and implement [ScoreGen] trait
 /// Should notify all channels after added a new object
 pub struct Pool<T> where T: Poolable {
     name: String,
     channels: Vec<String>,
     slab: Slab<T>,
     slab_key_map: HashMap<Hash, usize>,
-    priority_queue: BinaryHeap<ScoreRecord>,
     nonce_map: HashMap<Hash, u64>,
     chain_service: chain_service::ChainService,
     locked: bool
@@ -98,7 +72,6 @@ impl<T> Pool<T> where T: Poolable {
             channels: vec![],
             slab: Slab::with_capacity(size),
             slab_key_map: HashMap::new(),
-            priority_queue: BinaryHeap::new(),
             nonce_map: HashMap::new(),
             chain_service: chain_service::ChainService::new(),
             locked: false
@@ -157,6 +130,7 @@ impl<T> Pool<T> where T: Poolable {
         })
     }
 
+    /// Get the account nonce from the last block in block chain
     fn get_account_nonce(&self, account_addr: Address) -> Result<u64, chain_service::DBError> {
         self.chain_service.get_last_block_account_nonce(account_addr)
     }
@@ -188,34 +162,28 @@ impl<T> Pool<T> where T: Poolable {
             Err(e)
         } else {
             let hash = obj.hash();
-            let score = obj.score();
             let slab_key = self.slab.insert(obj);
             self.slab_key_map.insert(hash, slab_key);
-            self.priority_queue.push(score);
             self.notify_new_tx_recieved();
             Ok(())
         }
     }
 
-    /// Pop out a enqueued object
-    /// High score object will first out
+    /// Fetch a enqueued object.
+    /// The object will be consumed
     #[inline]
-    pub fn pop(&mut self) -> Option<T> {
-        match self.priority_queue.pop() {
-            Some(record) => {
-                let hash = record.id;
-                let (_, slab_key) = self.slab_key_map.remove_entry(&hash).unwrap();
-                let obj = self.slab.remove(slab_key);
-                Some(obj)
-            },
-            None => None
-        }
+    pub fn fetch(&mut self, hash: Hash) -> Option<T> {
+       match self.slab_key_map.remove(&hash) {
+           Some(r) => {
+               Some(self.slab.remove(r))
+           },
+           None => None
+       }
     }
 
     /// Clear the pending object pool
     #[inline]
     fn clear(&mut self) -> Result<(), PoolError> {
-        self.priority_queue.clear();
         self.slab.clear();
         self.slab_key_map.clear();
         Ok(())
