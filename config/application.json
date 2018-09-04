@@ -25,6 +25,11 @@
       "path": "~/.genesis/data/block",
       "create_if_missing": true,
       "max_open_files": 32
+    },
+    "code": {
+      "path": "~/.genesis/data/code",
+      "create_if_missing": true,
+      "max_open_files": 32
     }
   },
 

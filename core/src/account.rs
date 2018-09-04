@@ -1,19 +1,20 @@
-use std::fmt;
-use common::hash::*;
 use common::address::*;
-use storage::{Storage, CHUNK, StorageCache};
-use std::cell::{RefCell, Cell};
+use common::hash::*;
 use rlp::RLPSerialize;
 use rlp::types::*;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::fmt;
+use storage::{CHUNK, Storage, StorageCache};
+use super::*;
 
 #[derive(Debug, Clone)]
 pub struct BaseAccount {
     pub nonce: u64,
     pub balance: u32,
-    pub storage_root: Hash,
+    pub storage_root: mpt::node::TrieKey,
     pub code_hash: Hash,
-    pub name: String
+    pub name: String,
 }
 
 #[derive(Debug, Clone)]
@@ -21,11 +22,11 @@ pub struct Account {
     nonce: u64,
     balance: u32,
     name: String,
-    storage_root: Hash,
-//    storage_cache: RefCell<StorageCache>,
+    storage_root: mpt::node::TrieKey,
+    // storage_cache: RefCell<StorageCache>,
     storage_changes: HashMap<Hash, CHUNK>,
     code_hash: Hash,
-//    address: Cell<Option<Address>>
+    // address: Cell<Option<Address>>
 }
 
 impl From<BaseAccount> for Account {
@@ -36,8 +37,7 @@ impl From<BaseAccount> for Account {
             storage_root: base.storage_root,
             storage_changes: HashMap::new(),
             code_hash: base.code_hash,
-//            address: Cell::New(None),
-            name: base.name
+            name: base.name,
         }
     }
 }
@@ -46,18 +46,17 @@ impl Account {
     #[cfg(test)]
     pub fn new(account_name: &str) -> Self {
         // TODO: check account name  
-        Account{
+        Account {
             nonce: 0u64,
             balance: 0u32,
             name: account_name.to_string(),
             storage_root: zero_hash!(),
-//            storage_cache: Self::clear_storage_cache(),
+            // storage_cache: Self::clear_storage_cache(),
             storage_changes: HashMap::new(),
             code_hash: zero_hash!(),
-//            address: Cell::new(None)
+            // address: Cell::new(None)
         }
     }
-
 
 
 //    pub fn clear_storage_cache() -> RefCell<StorageCache> {
@@ -86,14 +85,11 @@ impl Account {
     }
 
     /// Get the storage of the account.
-//    pub fn storage(&self) -> Storage  {
-//        self.storage.to_owned()
-//    }
+
 
     /// set the value of the trie's storage with provided `key`.
-    pub fn set_storage(&mut self, key: Hash, val: CHUNK)  {
+    pub fn set_storage(&mut self, key: Hash, val: CHUNK) {
         self.storage_changes.insert(key, val);
-//        self.storage.update(key, val);
     }
 
     /// update storage changes and save to db
@@ -149,7 +145,7 @@ impl RLPSerialize for Account {
                     balance: rlp[2].clone().into(),
                     storage_root,
                     code_hash,
-                    name: rlp[5].clone().into()
+                    name: rlp[5].clone().into(),
                 };
 
                 Ok(Account::from(base_account))
@@ -182,5 +178,4 @@ mod tests {
     fn fmt() {
         println!("{:?}", Account::new("test"));
     }
-
 }
