@@ -121,6 +121,7 @@ fn cmp_path(path1: &Vec<u8>, path2: &Vec<u8>) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
     )
 }
 
+// TODO: tail recursive?
 fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &RocksDB) -> Option<T> {
     let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
 
@@ -165,6 +166,7 @@ fn get_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &Rock
     }
 }
 
+// TODO: tail recursive?
 fn get_helper_with_trace<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &RocksDB, nodes: &mut Vec<TrieNode<T>>) -> Option<T> {
     let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
     match node_type {
@@ -214,6 +216,7 @@ fn get_helper_with_trace<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>
     }
 }
 
+// TODO: tail recursive?
 fn bfs_traversal_helper<T: RLPSerialize + Clone>(node: &TrieKey, db: &RocksDB, result: &mut Vec<T>) {
     let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
     match node_type {
@@ -238,6 +241,7 @@ fn bfs_traversal_helper<T: RLPSerialize + Clone>(node: &TrieKey, db: &RocksDB, r
     }
 }
 
+// TODO: tail recursive?
 fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &RocksDB) -> TrieKey {
     let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
     match node_type {
@@ -293,6 +297,7 @@ fn delete_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, db: &R
     }
 }
 
+// TODO: tail recursive?
 fn update_helper<T: RLPSerialize + Clone>(node: &TrieKey, path: &Vec<u8>, v: &T, db: &RocksDB) -> TrieKey {
     let node_type: Option<TrieNode<T>> = mpt_db_fetch!(node, db);
     match node_type {
