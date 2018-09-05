@@ -8,7 +8,6 @@ pub mod storage;
 pub mod transaction;
 pub mod validator;
 pub mod vm;
-pub mod state;
 
 #[macro_use]
 pub extern crate common;

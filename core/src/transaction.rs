@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use common::address::Address;
+use common::hash::Hash;
 use common::key::Signature;
-use num::bigint::BigInt;
 use num::Zero;
 use rlp::RLPSerialize;
 use rlp::types::*;
@@ -10,44 +10,38 @@ use rlp::types::*;
 ///
 ///
 #[derive(Clone)]
-pub struct TransactionBody {
+pub struct Transaction {
+    hash: Option<Hash>,
     timestamp: DateTime<Utc>,
     sender: Address,
     recipient: Address,
-    amount: BigInt,
-    sig: Option<Signature>,
-}
-
-///
-///
-///
-#[derive(Clone)]
-pub struct Transaction {
-    tx_body: TransactionBody
+    amount: u64,
+    signature: Option<Signature>,
 }
 
 impl Transaction {
-    pub fn new(nonce: u64,
-               from: Address,
-               to: Address,
-               amount: Option<BigInt>,
-               data: &Vec<u8>) -> Self {
+    pub fn new(
+        nonce: u64,
+        from: Address,
+        to: Address,
+        amount: u64
+    ) -> Self {
         Transaction {
-            tx_body: TransactionBody {
-                timestamp: Utc::now(),
-                sender: from,
-                recipient: to,
-                amount: match amount {
-                    Some(v) => v,
-                    None => BigInt::zero()
-                },
-                sig: None,
-            },
+            hash: None,
+            timestamp: Utc::now(),
+            sender: from,
+            recipient: to,
+            amount: amount,
+            signature: None
         }
     }
 
+    pub fn hash(&self) -> Hash {
+        self.hash.clone().unwrap()
+    }
+
     pub fn timestamp(&self) -> DateTime<Utc> {
-        self.tx_body.timestamp.clone()
+        self.timestamp.clone()
     }
 }
 

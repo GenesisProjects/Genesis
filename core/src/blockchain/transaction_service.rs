@@ -26,4 +26,9 @@ impl TransactionService {
         let trie: Trie<Transaction> = Trie::load(block.txs_root(), &self.db);
         trie.traversal()
     }
+
+    pub fn write_transaction_to_block(&self, block: &Block, tx: Transaction) {
+        let mut trie: Trie<Transaction> = Trie::load(block.txs_root(), &self.db);
+        trie.update(&tx.hash().to_vec(), &tx);
+    }
 }

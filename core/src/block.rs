@@ -1,6 +1,7 @@
-use common::hash::*;
+use chrono::{Utc, DateTime};
 use common::address::*;
-use num::bigint::BigInt;
+use common::hash::*;
+use common::key::Signature;
 use rlp::RLPSerialize;
 use rlp::types::*;
 use mpt::node::TrieKey;
@@ -9,17 +10,16 @@ use mpt::node::TrieKey;
 ///
 ///
 ///
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Block {
     num: u64,
+    hash: Option<Hash>,
     parent: Hash,
-    uncle: Hash,
-    coinbase: Address,
     account_root: TrieKey,
     txs_root: TrieKey,
-    time: BigInt,
-    extra: Vec<u8>,
-    digest: Hash
+    signer_addr: Address,
+    signature: Option<Signature>,
+    date: DateTime<Utc>,
 }
 
 impl Block {
