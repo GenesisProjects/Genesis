@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use common::address::Address;
-use common::hash::Hash;
-use common::key::Signature;
+use common::hash::{Hash, SerializableAndSHA256Hashable};
+use common::key::{Signature, KeyPair, KeyPairOp};
 use num::Zero;
 use rlp::RLPSerialize;
 use rlp::types::*;
@@ -36,12 +36,28 @@ impl Transaction {
         }
     }
 
+    pub fn gen_hash(&self) -> Hash {
+        let (hash, _) = self.encrype_sha256().unwrap();
+        hash
+    }
+
     pub fn hash(&self) -> Hash {
         self.hash.clone().unwrap()
     }
 
     pub fn timestamp(&self) -> DateTime<Utc> {
         self.timestamp.clone()
+    }
+
+    pub fn check(&self) -> bool {
+        self.hash.is_some()
+            && self.signature.is_some()
+            && KeyPair::verify_sig(
+                &self.sender,
+                &self.hash.unwrap()[..],
+                &self.signature.unwrap()
+            )
+            && self.hash == self.gen_hash()
     }
 }
 
