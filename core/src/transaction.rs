@@ -57,7 +57,7 @@ impl Transaction {
                 &self.hash.unwrap()[..],
                 &self.signature.unwrap()
             )
-            && self.hash == self.gen_hash()
+            && self.hash.unwrap() == self.gen_hash()
     }
 }
 
