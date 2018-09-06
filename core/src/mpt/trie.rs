@@ -1,13 +1,14 @@
-use common::hash::*;
-use db::manager::*;
-use db::gen_db::*;
-use rlp::RLPSerialize;
+pub use common::hash::*;
+pub use db::manager::*;
+pub use db::gen_db::*;
+pub use rlp::RLPSerialize;
 use std::cmp::min;
 use std::fmt;
 use std::marker::PhantomData;
 use std::panic;
 use std::sync::Mutex;
-use super::node::*;
+
+pub use super::node::*;
 
 /// Wrapper of DBManager within **Patricia Tree**.
 #[derive(Clone)]
