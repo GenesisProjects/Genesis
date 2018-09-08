@@ -14,48 +14,6 @@ use super::peer::*;
 
 const MAX_DELAY: i64 = 30i64;
 
-pub trait Notify {
-    /// # notify_propose(&mut self, 1)
-    /// **Usage**
-    /// - send propose message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn notify_propose(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
-
-    /// # notify_prevote(&mut self, 1)
-    /// **Usage**
-    /// - send prevote message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn notify_prevote(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, table: &PeerTable);
-
-    /// # notify_precommit(&mut self, 1)
-    /// **Usage**
-    /// - send precommit message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn notify_precommit(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, block_hash: Hash, table: &PeerTable);
-
-    /// # notify_tnx_request(&mut self, 1)
-    /// **Usage**
-    /// - send tnxs request message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn notify_transactions_request(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable);
-
-    /// # notify_tnxs(&mut self, 1)
-    /// **Usage**
-    /// - send raw tnxs message
-    /// ## Examples
-    /// ```
-    /// ```
-    fn notify_transactions(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable);
-}
-
 /// Current node status.
 #[derive(Debug, Clone)]
 pub struct Status {

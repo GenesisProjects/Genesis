@@ -293,6 +293,11 @@ impl NodeState {
         &self.validator_state
     }
 
+    /// Returns validator if the node is validator.
+    pub fn validator_id(&self) -> Option<ValidatorId> {
+        self.validator_state.as_ref().map(|s| s.validator_id())
+    }
+
     /// Checks if the node is a validator.
     pub fn is_validator(&self) -> bool {
         self.validator_state().is_some()
@@ -395,22 +400,20 @@ impl NodeState {
         votes.count() >= validators_len * 2 / 3
     }
 
-    /// Returns `true` if there are +2/3 pre-votes for the specified round and hash.
-    pub fn has_majority_prevotes(&self, round: usize, propose_hash: Hash) -> bool {
-        match self.prevotes.get(&(round, propose_hash)) {
-            Some(votes) => votes.count() >= self.validators().len() * 2 / 3,
-            None => false,
+    /// Returns `true` if this node has prevote for the specified round.
+    pub fn have_prevote(&self, propose_round: usize) -> bool {
+        if let Some(ref validator_state) = *self.validator_state() {
+            validator_state.have_prevote(propose_round)
+        } else {
+            false
         }
     }
 
-    /// Locks to the propose by calling `lock`. This function is called when node receives
-    /// +2/3 pre-votes.
-    pub fn handle_majority_prevotes(&mut self, prevote_round: usize, propose_hash: &Hash) {
-        // Remove request info
-        self.remove_request(&RequestData::Prevotes(prevote_round, *propose_hash));
-        // Lock to propose
-        if self.locked_round() < prevote_round && self.get_propose(propose_hash).is_some() {
-            self.lock(prevote_round, *propose_hash);
+    /// Returns `true` if there are +2/3 pre-votes for the specified round and hash.
+    pub fn have_majority_prevotes(&self, round: usize, propose_hash: Hash) -> bool {
+        match self.prevotes.get(&(round, propose_hash)) {
+            Some(votes) => votes.count() >= self.validators().len() * 2 / 3,
+            None => false,
         }
     }
 
@@ -420,6 +423,26 @@ impl NodeState {
         self.prevotes
             .get(&(round, *propose_hash))
             .map_or_else(|| BitVec::from_elem(len, false), |x| x.validators().clone())
+    }
+
+    /// Creates the `Prevote` message
+    pub fn create_prevote(&mut self, round: usize, propose_hash: &Hash) -> Prevote {
+        let validator_id = self.validator_id()
+            .expect("called broadcast_prevote in Auditor node.");
+        let locked_round = self.locked_round();
+        let prevote = Prevote {
+            validator: validator_id,
+            height: self.height(),
+            round,
+            propose_hash,
+            locked_round
+        };
+
+        let has_majority_prevotes = self.add_prevote(&prevote);
+
+        // Todo cache the `Prevote`
+
+        prevote
     }
 
     /// Adds precommit to the precommits list. Returns true if it has majority precommits.
@@ -447,7 +470,7 @@ impl NodeState {
     }
 
     /// Returns `true` if there are +2/3 pre-votes for the specified round and hash.
-    pub fn has_majority_precommits(&self, round: usize, propose_hash: Hash) -> bool {
+    pub fn have_majority_precommits(&self, round: usize, propose_hash: Hash) -> bool {
         match self.prevotes.get(&(round, propose_hash)) {
             Some(votes) => votes.count() >= self.validators().len() * 2 / 3,
             None => false,
@@ -468,8 +491,4 @@ impl NodeState {
         self.requests.remove(data);
     }
 
-    /// Locks to a specified round.
-    pub fn lock(&mut self, prevote_round: usize, propose_hash: Hash) {
-
-    }
 }

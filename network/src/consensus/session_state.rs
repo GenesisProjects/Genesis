@@ -82,7 +82,17 @@ fn prevote_handler(session: &mut Session, msg: &SocketMessage, name: String) -> 
 
         if has_consensus && full_propose {
             // Todo Lock current state to the propose
-            state.handle_majority_prevotes(prevote.round, &prevote.propose_hash);
+            // Remove request info
+            state.remove_request(&RequestData::Prevotes(prevote_round, *propose_hash));
+            // Lock to propose
+            if state.locked_round() < prevote_round && state.get_propose(propose_hash).is_some() {
+                for round in prevote_round..(state.round() + 1) {
+                    if state.is_validator() && !state.have_prevote(round) {
+                        let new_prevote = state.create_prevote(round, &propose_hash);
+                        session.protocol.notify_prevote(send_event)
+                    }
+                }
+            }
         }
 
         true
