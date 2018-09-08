@@ -445,13 +445,13 @@ impl NodeState {
             .map_or_else(|| BitVec::from_elem(len, false), |x| x.validators().clone())
     }
 
-    /// Broadcasts the `Prevote` message to all peers. Returns if has +2/3 `Prevote` for the `Propose`
+    /// Creates and Broadcasts the `Prevote` message to all peers. Returns if has +2/3 `Prevote` for the `Propose`
     pub fn broadcast_prevote(&mut self, round: usize, propose_hash: &Hash) -> bool {
-        let validator_id = self.validator_id()
+        let validator = self.validator_id()
             .expect("called broadcast_prevote in Auditor node.");
         let locked_round = self.locked_round();
         let prevote = Prevote {
-            validator: validator_id,
+            validator,
             height: self.height(),
             round,
             propose_hash: *propose_hash,
@@ -464,6 +464,24 @@ impl NodeState {
         unimplemented!();
 
         has_majority_prevotes
+    }
+
+    /// Creates and Broadcasts the `Precommit` message to all peers.
+    pub fn broadcast_precommit(&mut self, round: usize, propose_hash: &Hash, block_hash: &Hash) {
+        let validator = self.validator_id()
+            .expect("called broadcast_precommit in Auditor node.");
+        let precommit = Precommit {
+            validator,
+            height: self.height(),
+            round,
+            propose_hash,
+            block_hash,
+            time: Utc::now()
+        };
+        self.add_precommit(&precommit);
+
+        // Todo cache the `Precommit`, Notify Consensus Controller to broadcast prevote
+        unimplemented!();
     }
 
     /// Adds precommit to the precommits list. Returns true if it has majority precommits.
