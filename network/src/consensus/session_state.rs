@@ -82,6 +82,7 @@ fn prevote_handler(session: &mut Session, msg: &SocketMessage, name: String) -> 
 
         if has_consensus && full_propose {
             // Todo Lock current state to the propose
+            state.handle_majority_prevotes(prevote.round, prevote.propose_hash);
         }
 
         true

@@ -403,6 +403,17 @@ impl NodeState {
         }
     }
 
+    /// Locks to the propose by calling `lock`. This function is called when node receives
+    /// +2/3 pre-votes.
+    pub fn handle_majority_prevotes(&mut self, prevote_round: Round, propose_hash: &Hash) {
+        // Remove request info
+        self.remove_request(&RequestData::Prevotes(prevote_round, *propose_hash));
+        // Lock to propose
+        if self.locked_round() < prevote_round && self.get_propose(propose_hash).is_some() {
+            self.lock(prevote_round, *propose_hash);
+        }
+    }
+
     /// Returns ids of validators that that sent pre-votes for the specified propose.
     pub fn known_prevotes(&self, round: usize, propose_hash: &Hash) -> BitVec {
         let len = self.validators().len();
@@ -449,5 +460,16 @@ impl NodeState {
         self.precommits
             .get(&(round, *propose_hash))
             .map_or_else(|| BitVec::from_elem(len, false), |x| x.validators().clone())
+    }
+
+    /// Removes the specified request from the pending request list.
+    pub fn remove_request(&mut self, data: &RequestData) {
+        // TODO: Clear timeout. (ECR-171)
+        self.requests.remove(data);
+    }
+
+    /// Locks to a specified round.
+    pub fn lock(&mut self, prevote_round: uszie, propose_hash: Hash) {
+
     }
 }
