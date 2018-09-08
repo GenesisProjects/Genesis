@@ -469,7 +469,7 @@ impl NodeState {
     }
 
     /// Locks to a specified round.
-    pub fn lock(&mut self, prevote_round: uszie, propose_hash: Hash) {
+    pub fn lock(&mut self, prevote_round: usize, propose_hash: Hash) {
 
     }
 }
