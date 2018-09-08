@@ -318,6 +318,15 @@ impl NodeState {
         self.locked_round
     }
 
+    /// Locks the node to the specified round and propose hash.
+    pub fn inner_lock(&mut self, round: usize, hash: Hash) {
+        if self.locked_round >= round {
+            return;
+        }
+        self.locked_round = round;
+        self.locked_propose = Some(hash);
+    }
+
     /// Returns the current round of the node.
     pub fn last_hash(&self) -> Hash {
         self.last_hash
@@ -509,6 +518,31 @@ impl NodeState {
             if self.is_validator() && !self.have_prevote(round) {
                 self.broadcast_prevote(round, &propose_hash);
             }
+
+            self.inner_lock(round, propose_hash);
+            // broadcast precommit
+            if self.is_validator() && self.have_prevote_ready() {
+                // Todo Generate and broadcast precommit
+            }
+            // Remove request info
+            self.remove_request(&RequestData::Prevotes(round, propose_hash));
         }
+    }
+
+    /// Returns `true` if the node doesn't have proposes different from the locked one.
+    pub fn have_prevote_ready(&self) -> bool {
+        for round in (self.locked_round() + 1)..(self.round() + 1) {
+            match self.validator_state {
+                Some(ref validator_state) => {
+                    if let Some(msg) = validator_state.owned_prevotes.get(&round) {
+                        if (*msg).propose_hash != self.locked_propose.unwrap() {
+                            return false;
+                        }
+                    }
+                }
+                None => continue,
+            }
+        }
+        true
     }
 }
