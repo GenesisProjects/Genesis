@@ -405,7 +405,7 @@ impl NodeState {
 
     /// Locks to the propose by calling `lock`. This function is called when node receives
     /// +2/3 pre-votes.
-    pub fn handle_majority_prevotes(&mut self, prevote_round: Round, propose_hash: &Hash) {
+    pub fn handle_majority_prevotes(&mut self, prevote_round: usize, propose_hash: &Hash) {
         // Remove request info
         self.remove_request(&RequestData::Prevotes(prevote_round, *propose_hash));
         // Lock to propose
