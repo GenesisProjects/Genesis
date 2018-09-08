@@ -144,28 +144,6 @@ impl ConsensusController {
     }
 }
 
-impl Notify for ConsensusController {
-    fn notify_propose(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, table: &PeerTable) {
-        unimplemented!()
-    }
-
-    fn notify_prevote(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, table: &PeerTable) {
-        unimplemented!()
-    }
-
-    fn notify_precommit(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, block_hash: Hash, table: &PeerTable) {
-        unimplemented!()
-    }
-
-    fn notify_transactions_request(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable) {
-        unimplemented!()
-    }
-
-    fn notify_transactions(protocol: ConsensusProtocol, round: usize, propose_hash: Hash, tnxs: Vec<Hash>, table: &PeerTable) {
-        unimplemented!()
-    }
-}
-
 impl Observe for ConsensusController {
     fn subscribe(&mut self, name: String) {
         let name = name.to_owned();

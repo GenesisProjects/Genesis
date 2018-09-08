@@ -417,6 +417,17 @@ impl NodeState {
         }
     }
 
+    /// Locks to the propose by calling `lock`. This function is called when node receives
+    /// +2/3 pre-votes.
+    pub fn handle_majority_prevotes(&mut self, prevote_round: usize, propose_hash: &Hash) {
+        // Remove request info
+        self.remove_request(&RequestData::Prevotes(prevote_round, *propose_hash));
+        // Lock to propose
+        if self.locked_round() < prevote_round && self.get_propose(propose_hash).is_some() {
+            self.lock(prevote_round, *propose_hash);
+        }
+    }
+
     /// Returns ids of validators that that sent pre-votes for the specified propose.
     pub fn known_prevotes(&self, round: usize, propose_hash: &Hash) -> BitVec {
         let len = self.validators().len();
@@ -425,8 +436,8 @@ impl NodeState {
             .map_or_else(|| BitVec::from_elem(len, false), |x| x.validators().clone())
     }
 
-    /// Creates the `Prevote` message
-    pub fn create_prevote(&mut self, round: usize, propose_hash: &Hash) -> Prevote {
+    /// Broadcasts the `Prevote` message to all peers. Returns if has +2/3 `Prevote` for the `Propose`
+    pub fn broadcast_prevote(&mut self, round: usize, propose_hash: &Hash) -> bool {
         let validator_id = self.validator_id()
             .expect("called broadcast_prevote in Auditor node.");
         let locked_round = self.locked_round();
@@ -434,15 +445,16 @@ impl NodeState {
             validator: validator_id,
             height: self.height(),
             round,
-            propose_hash,
+            propose_hash: *propose_hash,
             locked_round
         };
 
         let has_majority_prevotes = self.add_prevote(&prevote);
 
-        // Todo cache the `Prevote`
+        // Todo cache the `Prevote`, Notify Consensus Controller to broadcast prevote
+        unimplemented!();
 
-        prevote
+        has_majority_prevotes
     }
 
     /// Adds precommit to the precommits list. Returns true if it has majority precommits.
@@ -491,4 +503,12 @@ impl NodeState {
         self.requests.remove(data);
     }
 
+    /// Locks to a specified round.
+    pub fn lock(&mut self, prevote_round: usize, propose_hash: Hash) {
+        for round in prevote_round..(self.round() + 1) {
+            if self.is_validator() && !self.have_prevote(round) {
+                self.broadcast_prevote(round, &propose_hash);
+            }
+        }
+    }
 }
