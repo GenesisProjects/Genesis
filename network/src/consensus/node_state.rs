@@ -385,6 +385,11 @@ impl NodeState {
         self.proposes.get(hash)
     }
 
+    /// Returns mutable propose state with hash.
+    pub fn get_mut_propose(&mut self, hash: &Hash) -> Option<&mut ProposeState> {
+        self.proposes.get_mut(hash)
+    }
+
     /// Adds prevote to the prevotes list. Returns true if it has majority prevotes.
     pub fn add_prevote(&mut self, prevote: &Prevote) -> bool {
         if let Some(ref mut validator_state) = self.validator_state {
@@ -546,6 +551,28 @@ impl NodeState {
             self.remove_request(&RequestData::Prevotes(round, propose_hash));
         }
     }
+
+    /// Generates block with transactions from the corresponding `Propose` and returns the
+    /// block hash.
+    pub fn generate_block(&mut self, propose_hash: &Hash) -> Hash {
+        if let Some(hash) = self.get_mut_propose(propose_hash).unwrap().block_hash() {
+            return hash;
+        }
+        let propose = self.get_propose(propose_hash).unwrap().message().clone();
+
+        let tnx_hashes = propose.transactions.to_vec();
+
+        // Todo generate block with tnx_hashes
+        let block_hash = zero_hash!();
+        unimplemented!();
+
+        self.get_mut_propose(propose_hash)
+            .unwrap()
+            .set_block_hash(block_hash);
+
+        block_hash
+    }
+
 
     /// Returns `true` if the node doesn't have proposes different from the locked one.
     pub fn have_prevote_ready(&self) -> bool {
