@@ -479,8 +479,8 @@ impl NodeState {
             validator,
             height: self.height(),
             round,
-            propose_hash,
-            block_hash,
+            propose_hash: *propose_hash,
+            block_hash: *block_hash,
             time: Utc::now()
         };
         self.add_precommit(&precommit);
@@ -545,6 +545,8 @@ impl NodeState {
             self.inner_lock(round, propose_hash);
             // broadcast precommit
             if self.is_validator() && self.have_prevote_ready() {
+                let block_hash = self.generate_block(&propose_hash);
+                self.broadcast_precommit(round, &propose_hash, &block_hash);
                 // Todo Generate and broadcast precommit
             }
             // Remove request info
