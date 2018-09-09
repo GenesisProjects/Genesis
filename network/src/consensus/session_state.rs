@@ -93,11 +93,32 @@ fn prevote_handler(session: &mut Session, msg: &SocketMessage, name: String) -> 
 
 fn precommit_handler(session: &mut Session, msg: &SocketMessage, name: String) -> bool {
     let args = msg.args();
-    if !session.protocol().verify(&msg) {
-        false
-    } else {
-        let state = session.state();
-        // Todo Check leader + unknown tnxs + handle propose
+    if let Some((precommit, account)) = session.protocol().verify_precommit(&msg) {
+        let state_ref = session.state();
+        let mut state = state_ref.borrow_mut();
+
+        // Add prevote
+        let has_consensus = state.add_precommit(&precommit);
+
+        // Request propose
+        if state.get_propose(&precommit.propose_hash).is_none() {
+            session.send_request(RequestData::Propose(*msg.propose_hash));
+        }
+
+        // Request prevotes
+        // TODO: If Precommit sender in on a greater height, then it cannot have +2/3 prevotes.
+        // So can we get rid of useless sending RequestPrevotes message? (ECR-171)
+        if precommit.round > state.locked_round() {
+            session.send_request(RequestData::Prevotes(precommit.round, *precommit.propose_hash));
+        }
+
+        // Has majority precommits
+        if has_consensus {
+            // Todo handle majority precommits
+        }
+
         true
+    } else {
+        false
     }
 }
