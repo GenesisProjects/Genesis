@@ -106,15 +106,15 @@ fn precommit_handler(session: &mut Session, msg: &SocketMessage, name: String) -
         }
 
         // Request prevotes
-        // TODO: If Precommit sender in on a greater height, then it cannot have +2/3 prevotes.
-        // So can we get rid of useless sending RequestPrevotes message? (ECR-171)
         if precommit.round > state.locked_round() {
             session.send_request(RequestData::Prevotes(precommit.round, precommit.propose_hash));
         }
 
         // Has majority precommits
         if has_consensus {
+            let has_unknown_tnxs = state.handle_majority_precommits(precommit.round, &precommit.propose_hash, &precommit.block_hash);
             // Todo handle majority precommits
+            session.send_request(RequestData::ProposeTransactions(precommit.propose_hash));
         }
 
         true

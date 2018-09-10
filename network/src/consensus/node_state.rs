@@ -521,12 +521,53 @@ impl NodeState {
         }
     }
 
+    /// Executes and commits block. This function is called when the node has +2/3 pre-commits.
+    /// Returns false if the `Propose` has unknown tnxs.
+    pub fn handle_majority_precommits(&mut self, round: usize, propose_hash: &Hash, block_hash: &Hash) -> bool {
+        // Check if propose is known.
+        if self.get_propose(propose_hash).is_none() {
+            self.unknown_proposes_with_precommits
+                .entry(*propose_hash)
+                .or_insert_with(Vec::new)
+                .push((round, *block_hash));
+            return true;
+        }
+
+        // Send request if has unknown transactions.
+        let has_unknown_tnxs = {
+            let propose_state = self.get_propose(propose_hash).unwrap();
+            propose_state.has_unknown_tnxs()
+        };
+
+        if has_unknown_tnxs {
+            return true;
+        }
+
+        // Execute block and get state hash
+        let new_block_hash = self.generate_block(propose_hash);
+        assert_eq!(
+            &new_block_hash, block_hash,
+            "Our block_hash different from precommits one."
+        );
+
+        // Todo Commit.
+        let precommits = self.get_precommits(round, new_block_hash).to_vec();
+        true
+    }
+
     /// Returns ids of validators that that sent pre-commits for the specified propose.
     pub fn known_precommits(&self, round: usize, propose_hash: &Hash) -> BitVec {
         let len = self.validators().len();
         self.precommits
             .get(&(round, *propose_hash))
             .map_or_else(|| BitVec::from_elem(len, false), |x| x.validators().clone())
+    }
+
+    /// Returns pre-commits for the specified round and propose hash.
+    pub fn get_precommits(&self, round: usize, propose_hash: Hash) -> &[Precommit] {
+        self.precommits
+            .get(&(round, propose_hash))
+            .map_or_else(|| [].as_ref(), |votes| votes.messages().as_slice())
     }
 
     /// Removes the specified request from the pending request list.
