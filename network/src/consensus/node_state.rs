@@ -123,7 +123,7 @@ impl<T> Votes<T>
         Self {
             messages: Vec::new(),
             validators: BitVec::from_elem(validators_len, false),
-            count: 0
+            count: 0,
         }
     }
 
@@ -365,7 +365,7 @@ impl NodeState {
     /// Adds propose to the proposes list. Returns `ProposeState` if it is a new propose.
     pub fn add_propose(
         &mut self,
-        propose: &Propose
+        propose: &Propose,
     ) -> Result<&mut ProposeState> {
         let unknown_tnxs = HashSet::new();
         Ok(self.proposes.entry(propose.hash()).or_insert_with(||
@@ -460,7 +460,7 @@ impl NodeState {
             height: self.height(),
             round,
             propose_hash: *propose_hash,
-            locked_round
+            locked_round,
         };
 
         let has_majority_prevotes = self.add_prevote(&prevote);
@@ -469,24 +469,6 @@ impl NodeState {
         unimplemented!();
 
         has_majority_prevotes
-    }
-
-    /// Creates and Broadcasts the `Precommit` message to all peers.
-    pub fn broadcast_precommit(&mut self, round: usize, propose_hash: &Hash, block_hash: &Hash) {
-        let validator = self.validator_id()
-            .expect("called broadcast_precommit in Auditor node.");
-        let precommit = Precommit {
-            validator,
-            height: self.height(),
-            round,
-            propose_hash: *propose_hash,
-            block_hash: *block_hash,
-            time: Utc::now()
-        };
-        self.add_precommit(&precommit);
-
-        // Todo cache the `Precommit`, Notify Consensus Controller to broadcast prevote
-        unimplemented!();
     }
 
     /// Adds precommit to the precommits list. Returns true if it has majority precommits.
@@ -551,7 +533,7 @@ impl NodeState {
         );
 
         let precommits = self.get_precommits(round, new_block_hash).to_vec();
-        // Todo Commit to block.
+        self.commit(new_block_hash, precommits, round);
         false
     }
 
@@ -572,7 +554,6 @@ impl NodeState {
 
     /// Removes the specified request from the pending request list.
     pub fn remove_request(&mut self, data: &RequestData) {
-        // TODO: Clear timeout. (ECR-171)
         self.requests.remove(data);
     }
 
@@ -587,11 +568,55 @@ impl NodeState {
             // broadcast precommit
             if self.is_validator() && self.have_prevote_ready() {
                 let block_hash = self.execute_propose(&propose_hash);
-                self.broadcast_precommit(round, &propose_hash, &block_hash);
-                // Todo Generate and broadcast precommit
+                let validator = self.validator_id()
+                    .expect("called broadcast_precommit in Auditor node.");
+                let precommit = Precommit {
+                    validator,
+                    height: self.height(),
+                    round,
+                    propose_hash,
+                    block_hash,
+                    time: Utc::now(),
+                };
+                self.add_precommit(&precommit);
+
+                // Todo cache the `Precommit`, Notify Consensus Controller to broadcast prevote
             }
             // Remove request info
             self.remove_request(&RequestData::Prevotes(round, propose_hash));
+        }
+    }
+
+    /// Executes and commits block. This function is called when node has full propose information.
+    pub fn handle_full_propose(&mut self, propose_hash: Hash, propose_round: usize) {
+        // Send prevote
+        if self.locked_round() == 0 {
+            if self.is_validator() && !self.have_prevote(propose_round) {
+                self.broadcast_prevote(propose_round, &propose_hash);
+            }
+        }
+
+        // Lock to propose
+        let start_round = ::std::cmp::max(self.locked_round() + 1, propose_round);
+        for round in start_round..(self.round() + 1) {
+            if self.have_majority_prevotes(round, propose_hash) {
+                self.handle_majority_prevotes(round, &propose_hash);
+            }
+        }
+
+        // Commit propose
+        for (round, block_hash) in self.unknown_proposes_with_precommits
+            .remove(&propose_hash)
+            .unwrap_or_default() {
+            // Execute block and get state hash
+            let new_block_hash = self.execute_propose(&propose_hash);
+
+            if new_block_hash != block_hash {
+               return;
+            }
+
+            let precommits = self.get_precommits(round, new_block_hash).to_vec();
+            self.commit(new_block_hash, precommits, propose_round);
         }
     }
 
@@ -608,7 +633,7 @@ impl NodeState {
         let block_hash =
             self.generate_block(propose.validator, propose.height, tnx_hashes.as_slice());
 
-        self.add_block(block_hash,tnx_hashes, propose.validator);
+        self.add_block(block_hash, tnx_hashes, propose.validator);
 
         self.get_mut_propose(propose_hash)
             .unwrap()
@@ -663,4 +688,12 @@ impl NodeState {
         true
     }
 
+    pub fn commit(
+        &mut self,
+        block_hash: Hash,
+        precommits: Vec<Precommit>,
+        round: usize,
+    ) {
+        unimplemented!();
+    }
 }
