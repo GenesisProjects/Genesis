@@ -19,7 +19,7 @@ use mio::*;
 use mio::net::{TcpListener, TcpStream};
 
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, hash_map::Entry};
 use std::io::*;
 use std::rc::Rc;
 use std::sync::{Mutex, Arc, Condvar};
@@ -77,7 +77,7 @@ pub struct BlockState {
     // Changes that should be made for block committing.
     // patch: Patch,
     txs: Vec<Hash>,
-    proposer_id: usize,
+    proposer_id: ValidatorId,
 }
 
 #[derive(Debug)]
@@ -522,7 +522,7 @@ impl NodeState {
     }
 
     /// Executes and commits block. This function is called when the node has +2/3 pre-commits.
-    /// Returns false if the `Propose` has unknown tnxs.
+    /// Returns true if the `Propose` has unknown tnxs.
     pub fn handle_majority_precommits(&mut self, round: usize, propose_hash: &Hash, block_hash: &Hash) -> bool {
         // Check if propose is known.
         if self.get_propose(propose_hash).is_none() {
@@ -544,15 +544,15 @@ impl NodeState {
         }
 
         // Execute block and get state hash
-        let new_block_hash = self.generate_block(propose_hash);
+        let new_block_hash = self.execute_propose(propose_hash);
         assert_eq!(
             &new_block_hash, block_hash,
-            "Our block_hash different from precommits one."
+            "Our block_hash is different from precommits one."
         );
 
-        // Todo Commit.
         let precommits = self.get_precommits(round, new_block_hash).to_vec();
-        true
+        // Todo Commit to block.
+        false
     }
 
     /// Returns ids of validators that that sent pre-commits for the specified propose.
@@ -586,7 +586,7 @@ impl NodeState {
             self.inner_lock(round, propose_hash);
             // broadcast precommit
             if self.is_validator() && self.have_prevote_ready() {
-                let block_hash = self.generate_block(&propose_hash);
+                let block_hash = self.execute_propose(&propose_hash);
                 self.broadcast_precommit(round, &propose_hash, &block_hash);
                 // Todo Generate and broadcast precommit
             }
@@ -597,7 +597,7 @@ impl NodeState {
 
     /// Generates block with transactions from the corresponding `Propose` and returns the
     /// block hash.
-    pub fn generate_block(&mut self, propose_hash: &Hash) -> Hash {
+    pub fn execute_propose(&mut self, propose_hash: &Hash) -> Hash {
         if let Some(hash) = self.get_mut_propose(propose_hash).unwrap().block_hash() {
             return hash;
         }
@@ -605,9 +605,10 @@ impl NodeState {
 
         let tnx_hashes = propose.transactions.to_vec();
 
-        // Todo generate block with tnx_hashes
-        let block_hash = zero_hash!();
-        unimplemented!();
+        let block_hash =
+            self.generate_block(propose.validator, propose.height, tnx_hashes.as_slice());
+
+        self.add_block(block_hash,tnx_hashes, propose.validator);
 
         self.get_mut_propose(propose_hash)
             .unwrap()
@@ -616,6 +617,34 @@ impl NodeState {
         block_hash
     }
 
+    /// Adds block to the list of blocks for the current height. Returns `BlockState` if it is a
+    /// new block.
+    pub fn add_block(
+        &mut self,
+        block_hash: Hash,
+        txs: Vec<Hash>,
+        proposer_id: ValidatorId,
+    ) -> Option<&BlockState> {
+        match self.blocks.entry(block_hash) {
+            Entry::Occupied(..) => None,
+            Entry::Vacant(e) => Some(e.insert(BlockState {
+                hash: block_hash,
+                txs,
+                proposer_id,
+            })),
+        }
+    }
+
+    /// Creates block with given transaction and returns its hash and corresponding changes.
+    fn generate_block(
+        &mut self,
+        proposer_id: ValidatorId,
+        height: usize,
+        tx_hashes: &[Hash],
+    ) -> Hash {
+        // Todo call Block Controller's generate block service
+        unimplemented!();
+    }
 
     /// Returns `true` if the node doesn't have proposes different from the locked one.
     pub fn have_prevote_ready(&self) -> bool {
@@ -633,4 +662,5 @@ impl NodeState {
         }
         true
     }
+
 }
