@@ -254,6 +254,9 @@ impl Thread for ConsensusController {
     fn run(&mut self) -> bool {
         self.eventloop.register_server(&self.listener);
         self.init_peers_table();
+        let state_ref = self.state();
+        let mut state = state_ref.borrow_mut();
+        state.init();
         // fetch the next tick
         let result = self.eventloop.next_tick();
         // self.update();
@@ -261,7 +264,7 @@ impl Thread for ConsensusController {
             ThreadStatus::Running => {
                 match result {
                     Ok(_size) => {
-                        // self.process_events();
+                        //self.process_events();
                         true
                     },
                     Err(e) => {

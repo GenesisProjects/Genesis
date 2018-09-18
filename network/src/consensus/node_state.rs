@@ -283,6 +283,24 @@ impl NodeState {
         }
     }
 
+    /// Node sends `Propose` and `Prevote` if it is a leader as result.
+    pub fn init(&mut self) {
+        // TODO debug asserts (ECR-171)?
+        let height = self.height();
+        let round = self.round();
+
+        if self.locked_propose().is_some() {
+            return;
+        }
+
+        if let Some(validator_id) = self.validator_id() {
+            if self.have_prevote(round) {
+                return;
+            }
+            // Todo Get transactions and create new propose
+        }
+    }
+
     /// Returns the current validators list.
     pub fn validators(&self) -> &Vec<Validator> {
         &self.validators
@@ -291,6 +309,11 @@ impl NodeState {
     /// Returns `ValidatorState` if the node is validator.
     pub fn validator_state(&self) -> &Option<ValidatorState> {
         &self.validator_state
+    }
+
+    /// Returns propose hash on which the node makes lock.
+    pub fn locked_propose(&self) -> Option<Hash> {
+        self.locked_propose
     }
 
     /// Returns validator if the node is validator.
