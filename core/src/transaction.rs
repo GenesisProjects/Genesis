@@ -13,6 +13,7 @@ use rlp::types::*;
 pub struct Transaction {
     hash: Option<Hash>,
     timestamp: DateTime<Utc>,
+    nonce: u64,
     sender: Address,
     recipient: Address,
     amount: u64,
@@ -29,6 +30,7 @@ impl Transaction {
         Transaction {
             hash: None,
             timestamp: Utc::now(),
+            nonce: nonce,
             sender: from,
             recipient: to,
             amount: amount,
@@ -47,6 +49,18 @@ impl Transaction {
 
     pub fn timestamp(&self) -> DateTime<Utc> {
         self.timestamp.clone()
+    }
+
+    pub fn sender(&self) -> Address {
+        self.sender.clone()
+    }
+
+    pub fn recipient(&self) -> Address {
+        self.recipient.clone()
+    }
+
+    pub fn nonce(&self) -> u64 {
+        self.nonce
     }
 
     pub fn check(&self) -> bool {

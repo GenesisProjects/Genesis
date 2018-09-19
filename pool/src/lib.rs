@@ -35,19 +35,19 @@ pub trait Poolable {
 
 impl Poolable for Transaction {
     fn hash(&self) -> Hash {
-        unimplemented!()
+        self.hash()
     }
 
     fn nonce(&self) -> u64 {
-        unimplemented!()
+        self.nonce()
     }
 
     fn verify(&self) -> Result<(), PoolError> {
-        unimplemented!()
+        self.check()
     }
 
     fn account(&self) -> Address {
-        unimplemented!()
+        self.sender()
     }
 }
 
@@ -103,7 +103,7 @@ impl<T> Pool<T> where T: Poolable {
 
     /// Notify all channels if recieve a new transaction with message: "new_tx"
     #[inline]
-    pub fn notify_new_tx_recieved(&self) {
+    fn notify_new_tx_recieved(&self) {
         self.channels
             .iter()
             .map(|ch| {
