@@ -19,7 +19,7 @@ use mio::*;
 use mio::net::{TcpListener, TcpStream};
 
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, hash_map::Entry};
 use std::io::*;
 use std::rc::Rc;
 use std::sync::{Mutex, Arc, Condvar};
@@ -77,7 +77,7 @@ pub struct BlockState {
     // Changes that should be made for block committing.
     // patch: Patch,
     txs: Vec<Hash>,
-    proposer_id: usize,
+    proposer_id: ValidatorId,
 }
 
 #[derive(Debug)]
@@ -123,7 +123,7 @@ impl<T> Votes<T>
         Self {
             messages: Vec::new(),
             validators: BitVec::from_elem(validators_len, false),
-            count: 0
+            count: 0,
         }
     }
 
@@ -283,6 +283,24 @@ impl NodeState {
         }
     }
 
+    /// Node sends `Propose` and `Prevote` if it is a leader as result.
+    pub fn init(&mut self) {
+        // TODO debug asserts (ECR-171)?
+        let height = self.height();
+        let round = self.round();
+
+        if self.locked_propose().is_some() {
+            return;
+        }
+
+        if let Some(validator_id) = self.validator_id() {
+            if self.have_prevote(round) {
+                return;
+            }
+            // Todo Get transactions and create new propose
+        }
+    }
+
     /// Returns the current validators list.
     pub fn validators(&self) -> &Vec<Validator> {
         &self.validators
@@ -291,6 +309,11 @@ impl NodeState {
     /// Returns `ValidatorState` if the node is validator.
     pub fn validator_state(&self) -> &Option<ValidatorState> {
         &self.validator_state
+    }
+
+    /// Returns propose hash on which the node makes lock.
+    pub fn locked_propose(&self) -> Option<Hash> {
+        self.locked_propose
     }
 
     /// Returns validator if the node is validator.
@@ -365,7 +388,7 @@ impl NodeState {
     /// Adds propose to the proposes list. Returns `ProposeState` if it is a new propose.
     pub fn add_propose(
         &mut self,
-        propose: &Propose
+        propose: &Propose,
     ) -> Result<&mut ProposeState> {
         let unknown_tnxs = HashSet::new();
         Ok(self.proposes.entry(propose.hash()).or_insert_with(||
@@ -460,7 +483,7 @@ impl NodeState {
             height: self.height(),
             round,
             propose_hash: *propose_hash,
-            locked_round
+            locked_round,
         };
 
         let has_majority_prevotes = self.add_prevote(&prevote);
@@ -469,24 +492,6 @@ impl NodeState {
         unimplemented!();
 
         has_majority_prevotes
-    }
-
-    /// Creates and Broadcasts the `Precommit` message to all peers.
-    pub fn broadcast_precommit(&mut self, round: usize, propose_hash: &Hash, block_hash: &Hash) {
-        let validator = self.validator_id()
-            .expect("called broadcast_precommit in Auditor node.");
-        let precommit = Precommit {
-            validator,
-            height: self.height(),
-            round,
-            propose_hash: *propose_hash,
-            block_hash: *block_hash,
-            time: Utc::now()
-        };
-        self.add_precommit(&precommit);
-
-        // Todo cache the `Precommit`, Notify Consensus Controller to broadcast prevote
-        unimplemented!();
     }
 
     /// Adds precommit to the precommits list. Returns true if it has majority precommits.
@@ -522,7 +527,7 @@ impl NodeState {
     }
 
     /// Executes and commits block. This function is called when the node has +2/3 pre-commits.
-    /// Returns false if the `Propose` has unknown tnxs.
+    /// Returns true if the `Propose` has unknown tnxs.
     pub fn handle_majority_precommits(&mut self, round: usize, propose_hash: &Hash, block_hash: &Hash) -> bool {
         // Check if propose is known.
         if self.get_propose(propose_hash).is_none() {
@@ -544,15 +549,15 @@ impl NodeState {
         }
 
         // Execute block and get state hash
-        let new_block_hash = self.generate_block(propose_hash);
+        let new_block_hash = self.execute_propose(propose_hash);
         assert_eq!(
             &new_block_hash, block_hash,
-            "Our block_hash different from precommits one."
+            "Our block_hash is different from precommits one."
         );
 
-        // Todo Commit.
         let precommits = self.get_precommits(round, new_block_hash).to_vec();
-        true
+        self.commit(new_block_hash, precommits, round);
+        false
     }
 
     /// Returns ids of validators that that sent pre-commits for the specified propose.
@@ -572,7 +577,6 @@ impl NodeState {
 
     /// Removes the specified request from the pending request list.
     pub fn remove_request(&mut self, data: &RequestData) {
-        // TODO: Clear timeout. (ECR-171)
         self.requests.remove(data);
     }
 
@@ -586,18 +590,62 @@ impl NodeState {
             self.inner_lock(round, propose_hash);
             // broadcast precommit
             if self.is_validator() && self.have_prevote_ready() {
-                let block_hash = self.generate_block(&propose_hash);
-                self.broadcast_precommit(round, &propose_hash, &block_hash);
-                // Todo Generate and broadcast precommit
+                let block_hash = self.execute_propose(&propose_hash);
+                let validator = self.validator_id()
+                    .expect("called broadcast_precommit in Auditor node.");
+                let precommit = Precommit {
+                    validator,
+                    height: self.height(),
+                    round,
+                    propose_hash,
+                    block_hash,
+                    time: Utc::now(),
+                };
+                self.add_precommit(&precommit);
+
+                // Todo cache the `Precommit`, Notify Consensus Controller to broadcast prevote
             }
             // Remove request info
             self.remove_request(&RequestData::Prevotes(round, propose_hash));
         }
     }
 
+    /// Executes and commits block. This function is called when node has full propose information.
+    pub fn handle_full_propose(&mut self, propose_hash: Hash, propose_round: usize) {
+        // Send prevote
+        if self.locked_round() == 0 {
+            if self.is_validator() && !self.have_prevote(propose_round) {
+                self.broadcast_prevote(propose_round, &propose_hash);
+            }
+        }
+
+        // Lock to propose
+        let start_round = ::std::cmp::max(self.locked_round() + 1, propose_round);
+        for round in start_round..(self.round() + 1) {
+            if self.have_majority_prevotes(round, propose_hash) {
+                self.handle_majority_prevotes(round, &propose_hash);
+            }
+        }
+
+        // Commit propose
+        for (round, block_hash) in self.unknown_proposes_with_precommits
+            .remove(&propose_hash)
+            .unwrap_or_default() {
+            // Execute block and get state hash
+            let new_block_hash = self.execute_propose(&propose_hash);
+
+            if new_block_hash != block_hash {
+               return;
+            }
+
+            let precommits = self.get_precommits(round, new_block_hash).to_vec();
+            self.commit(new_block_hash, precommits, propose_round);
+        }
+    }
+
     /// Generates block with transactions from the corresponding `Propose` and returns the
     /// block hash.
-    pub fn generate_block(&mut self, propose_hash: &Hash) -> Hash {
+    pub fn execute_propose(&mut self, propose_hash: &Hash) -> Hash {
         if let Some(hash) = self.get_mut_propose(propose_hash).unwrap().block_hash() {
             return hash;
         }
@@ -605,9 +653,10 @@ impl NodeState {
 
         let tnx_hashes = propose.transactions.to_vec();
 
-        // Todo generate block with tnx_hashes
-        let block_hash = zero_hash!();
-        unimplemented!();
+        let block_hash =
+            self.generate_block(propose.validator, propose.height, tnx_hashes.as_slice());
+
+        self.add_block(block_hash, tnx_hashes, propose.validator);
 
         self.get_mut_propose(propose_hash)
             .unwrap()
@@ -616,6 +665,34 @@ impl NodeState {
         block_hash
     }
 
+    /// Adds block to the list of blocks for the current height. Returns `BlockState` if it is a
+    /// new block.
+    pub fn add_block(
+        &mut self,
+        block_hash: Hash,
+        txs: Vec<Hash>,
+        proposer_id: ValidatorId,
+    ) -> Option<&BlockState> {
+        match self.blocks.entry(block_hash) {
+            Entry::Occupied(..) => None,
+            Entry::Vacant(e) => Some(e.insert(BlockState {
+                hash: block_hash,
+                txs,
+                proposer_id,
+            })),
+        }
+    }
+
+    /// Creates block with given transaction and returns its hash and corresponding changes.
+    fn generate_block(
+        &mut self,
+        proposer_id: ValidatorId,
+        height: usize,
+        tx_hashes: &[Hash],
+    ) -> Hash {
+        // Todo call Block Controller's generate block service
+        unimplemented!();
+    }
 
     /// Returns `true` if the node doesn't have proposes different from the locked one.
     pub fn have_prevote_ready(&self) -> bool {
@@ -632,5 +709,14 @@ impl NodeState {
             }
         }
         true
+    }
+
+    pub fn commit(
+        &mut self,
+        block_hash: Hash,
+        precommits: Vec<Precommit>,
+        round: usize,
+    ) {
+        unimplemented!();
     }
 }

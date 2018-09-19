@@ -34,7 +34,24 @@ fn propose_handler(session: &mut Session, msg: &SocketMessage, name: String) -> 
             return false;
         }
 
-        state.add_propose(&propose);
+        let has_unknown_tnxs = match state.add_propose(&propose) {
+            Ok(propose_state) => propose_state.has_unknown_tnxs(),
+            Err(err) => {
+                return false;
+            }
+        };
+
+        let propose_hash = propose.hash();
+
+        // Remove request info
+        state.remove_request(&RequestData::Propose(propose_hash));
+
+        if has_unknown_tnxs {
+            session.send_request(RequestData::ProposeTransactions(propose_hash));
+
+        } else {
+            state.handle_full_propose(propose_hash, propose.round);
+        }
         // Todo add propose and check if there are unknown tnxs
         true
     } else {
@@ -113,7 +130,6 @@ fn precommit_handler(session: &mut Session, msg: &SocketMessage, name: String) -
         // Has majority precommits
         if has_consensus {
             let has_unknown_tnxs = state.handle_majority_precommits(precommit.round, &precommit.propose_hash, &precommit.block_hash);
-            // Todo handle majority precommits
             session.send_request(RequestData::ProposeTransactions(precommit.propose_hash));
         }
 
