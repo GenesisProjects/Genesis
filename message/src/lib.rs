@@ -1,30 +1,26 @@
 //! This crate allows Genesis send message async between different thread.
 //!
 //! ```
-//! use gen_message::MESSAGE_CENTER;
 //!
 //! let ch_name = "test".to_string();
-//! let ch_pair = MESSAGE_CENTER
+//! MESSAGE_CENTER
 //!     .lock()
 //!     .unwrap()
 //!     .subscribe(ch_name)
-//!     .clone();
 //!
 //! ```
 
 #[macro_use]
 extern crate lazy_static;
-extern crate rand;
 
-pub mod observe;
+pub mod observer;
 
-use std::sync::{Arc, Mutex, Condvar};
-use std::cell::RefCell;
-use std::collections::{LinkedList, HashMap};
+pub use observer::Observer;
+use std::sync::Mutex;
+use std::sync::mpsc::{channel, Sender, Receiver};
+use std::collections::HashMap;
 
-pub use observe::Observe;
-
-const DEFAULT_MSG_QUEUE_SIZE: usize = 1024;
+pub struct MessageCenterError(String);
 
 /// Message center singleton
 lazy_static! {
@@ -33,217 +29,79 @@ lazy_static! {
     };
 }
 
-fn random_string(length: usize) -> String {
-    use rand::Rng;
-    let result = rand::thread_rng()
-        .gen_ascii_chars()
-        .take(length)
-        .collect::<String>();
-    result
-}
-
 /// Inter-thread message
 #[derive(Debug, Clone)]
 pub struct Message {
-    pub op: u16,
-    pub msg: String
+    msg: String,
+    body: Vec<u8>
 }
 
 impl Message {
-    pub fn new(op: u16, msg: String) -> Self {
+    pub fn new(msg: String, body: Vec<u8>) -> Self {
         Message {
-            op: op,
-            msg: msg
-        }
-    }
-}
-
-/// Message queue will buffer unprocessed messages.
-pub struct MessageQueue {
-    queue: LinkedList<Message>,
-    limit: usize
-}
-
-impl MessageQueue {
-    pub fn new(limit: usize) -> Self {
-        MessageQueue {
-            queue: LinkedList::<Message>::new(),
-            limit: limit
+            msg: msg,
+            body: body
         }
     }
 
-    pub fn size(&self) -> usize {
-        self.queue.len()
+    pub fn msg(&self) -> String {
+        self.msg.clone()
     }
 
-    pub fn limit(&self) -> usize {
-        self.limit
-    }
-
-    pub fn enqueue_msg(&mut self, msg: Message) -> Result<usize, &'static str> {
-        let cur_size = self.queue.len();
-        if cur_size >= self.limit {
-            Err("The message queue is full.")
-        } else {
-            self.queue.push_back(msg);
-            Ok(cur_size + 1)
-        }
-    }
-
-    pub fn dequeue_msg(&mut self) -> Option<Message> {
-        self.queue.pop_front()
-    }
-
-    pub fn flush(&mut self) -> LinkedList<Message> {
-        let mut result = LinkedList::<Message>::new();
-        loop {
-            if self.queue.is_empty() { break; }
-            result.push_front(self.queue.pop_back().unwrap());
-        }
-        result
-    }
-
-    pub fn get_size(&self) -> usize {
-        self.queue.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.queue.is_empty()
-    }
-}
-
-pub struct MessageChannel {
-    pub uid: String,
-    pub queue: RefCell<MessageQueue>
-}
-
-impl PartialEq for MessageChannel {
-    fn eq(&self, other: &MessageChannel) -> bool {
-        self.uid == other.uid
-    }
-}
-
-unsafe impl std::marker::Send for MessageChannel {}
-unsafe impl std::marker::Sync for MessageChannel {}
-
-impl MessageChannel {
-    pub fn new() -> Self {
-        let msg_queue = MessageQueue::new(DEFAULT_MSG_QUEUE_SIZE);
-        MessageChannel {
-            uid: random_string(32),
-            queue: RefCell::new(msg_queue)
-        }
-    }
-
-    pub fn queue_size(&self) -> usize {
-        self.queue.borrow().size()
-    }
-
-    pub fn new_with_size(size: usize) -> Self {
-        let msg_queue = MessageQueue::new(size);
-        MessageChannel {
-            uid: random_string(32),
-            queue: RefCell::new(msg_queue)
-        }
-    }
-
-    pub fn send_msg(&mut self, msg: Message) -> Result<usize, &'static str> {
-        let result = self.queue.get_mut().enqueue_msg(msg);
-        result
-    }
-
-    pub fn send_msg_without_cache(&mut self, msg: Message) -> Result<usize, &'static str> {
-        self.flush();
-        self.send_msg(msg)
-    }
-
-    pub fn accept_msg_async(&mut self) -> Option<Message> {
-        self.queue.get_mut().dequeue_msg().to_owned()
-    }
-
-    pub fn flush(&mut self) -> LinkedList<Message> {
-        let result = self.queue.get_mut().flush();
-        result
+    pub fn body(&self) -> Vec<u8> {
+        self.body.clone()
     }
 }
 
 pub struct MessageCenter {
-    channel_map: HashMap<String, Vec<Arc<(Mutex<MessageChannel>, Condvar)>>>
+    channel_map: HashMap<String, Sender<Message>>
 }
-
 
 impl MessageCenter {
     pub fn new() -> Self {
         MessageCenter {
-            channel_map: HashMap::<String, Vec<Arc<(Mutex<MessageChannel>, Condvar)>>>::new()
+            channel_map: HashMap::new()
         }
     }
 
-    pub fn queue_size(&mut self, name: String) -> usize {
+    /// Subscribe a channel by name.
+    /// Return the receiving terminal for caller.
+    pub fn subscribe(&mut self, name: String) -> Result<Receiver<Message>, MessageCenterError> {
         let existed = self.channels_exist_by_name(name.to_owned());
         if existed {
-            self.channels_by_name(name.to_owned()).iter().map(|ch| {
-                ch.0.lock().unwrap().queue_size()
-            });
-            1
-        } else { 0 }
-    }
-
-    pub fn subscribe(&mut self, name: String) -> Arc<(Mutex<MessageChannel>, Condvar)> {
-        let existed = self.channels_exist_by_name(name.to_owned());
-        if existed {
-            let new_channel = MessageChannel::new();
-            let chs = self.channel_map.get_mut(&name).unwrap();
-            chs.push(Arc::new((Mutex::new(new_channel), Condvar::new() )));
-            chs.last_mut().unwrap().clone()
+            Err(MessageCenterError("Channel already existed!".into()))
         } else {
-            let new_channel = MessageChannel::new();
-            self.channel_map.insert(name.to_owned(), vec![Arc::new((Mutex::new(new_channel), Condvar::new()))]);
-            let chs = self.channel_map.get_mut(&name).unwrap();
-            chs.last_mut().unwrap().clone()
+            let (sender, receiver) = channel();
+            self.channel_map.insert(name, sender);
+            Ok(receiver)
         }
     }
 
-    pub fn unsubscribe(&mut self, name: String, uid: String) {
+    pub fn unsubscribe(&mut self, name: String) -> Result<(), MessageCenterError> {
         let existed = self.channels_exist_by_name(name.to_owned());
         if existed {
-            let chs = self.channel_map.get_mut(&name).unwrap();
-            let pos = chs.iter().position(|x| (&((*x).0)).lock().unwrap().uid == uid);
-            pos.and_then(|r| { chs.remove(r); Some(r) });
-        }
-
-        let chs_len = self.channel_map.get_mut(&name).unwrap().len();
-        if chs_len == 0 {
             self.channel_map.remove(&name);
+            Ok(())
+        } else {
+            Err(MessageCenterError("Can not find the channel.".into()))
         }
     }
 
-    pub fn send(&mut self, name: String, msg: Message) {
+    pub fn notify(&self, name: String, msg: Message) -> Result<(), MessageCenterError> {
         let existed = self.channels_exist_by_name(name.to_owned());
         if !existed {
-            return;
+            Err(MessageCenterError("Can not find the channel.".into()))
         } else {
-            let channels = self.channel_map.get_mut(&name).unwrap();
-            for i in 0 .. channels.len() {
-                let mut ch = channels[i].clone();
-                ch.0.lock().unwrap().send_msg(msg.to_owned());
-                ch.1.notify_all();
-            }
-        }
-    }
-
-    pub fn channels_by_name(&mut self, name: String) -> Vec<Arc<(Mutex<MessageChannel>, Condvar)>> {
-        let existed = self.channels_exist_by_name(name.to_owned());
-        if !existed {
-            vec![]
-        } else {
-            self.channel_map.get_mut(&name).unwrap().clone()
+            let sender = self.channel_map.get(&name).unwrap().clone();
+            sender.send(msg).map_err(|e| {
+                MessageCenterError(e.to_string())
+            })
         }
     }
 
     pub fn channels_exist_by_name(&self, name: String) -> bool {
-        let channels = self.channel_map.get(&name);
-        match channels {
+        let sender = self.channel_map.get(&name);
+        match sender {
             Some(_) => true,
             None => false
         }
