@@ -3,7 +3,7 @@
 
 use std::io::*;
 use std::thread;
-use std::sync::{Mutex, Arc, MutexGuard};
+use std::sync::{Mutex, Arc, MutexGuard, mpsc::channel};
 use std::time::Duration;
 
 use observe::*;
@@ -24,26 +24,8 @@ pub enum ThreadStatus {
 }
 
 /// Context cross thread reference
-pub struct ContextRef<T>(Arc<Mutex<T>>);
+pub type ContextRef<T> = Arc<Mutex<T>>;
 
-impl<T> ContextRef<T> {
-    pub fn wrap(obj: T) -> Self {
-        ContextRef(Arc::new(Mutex::new(obj)))
-    }
-
-    pub fn acquire(&self) -> MutexGuard<T> {
-        self.0.lock().unwrap()
-    }
-}
-
-impl<T> Clone for ContextRef<T> {
-    fn clone(&self) -> ContextRef<T> {
-        ContextRef(self.0.clone())
-    }
-}
-
-unsafe impl<T> Send for ContextRef<T> {}
-unsafe impl<T> Sync for ContextRef<T> {}
 
 /// Thread context initializer trait
 pub trait ThreadContextInitializer {
@@ -69,10 +51,10 @@ pub trait ThreadExec {
 }
 
 /// Thread service trait
-pub trait ThreadService<CONTEXT_TYPE> {
+pub trait ThreadService<ContextType> {
     /// Launch a thread.
     /// Return context reference
-    fn launch(name: String, stack_size: usize) -> ContextRef<CONTEXT_TYPE>;
+    fn launch(name: String, stack_size: usize) -> ContextRef<ContextType>;
 
     /// Start the run loop
     fn start(&mut self);
@@ -84,21 +66,23 @@ pub trait ThreadService<CONTEXT_TYPE> {
     fn stop(&mut self);
 }
 
-impl<CONTEXT_TYPE> ThreadService<CONTEXT_TYPE> for CONTEXT_TYPE where CONTEXT_TYPE: ThreadContextInitializer + ThreadInfo + ThreadExec {
-    fn launch(name: String, stack_size: usize) -> ContextRef<CONTEXT_TYPE> {
-        let mut context = CONTEXT_TYPE::init(name.to_owned());
+impl<ContextType: Send + 'static> ThreadService<ContextType> for ContextType
+    where ContextType: ThreadContextInitializer + ThreadInfo + ThreadExec {
+    fn launch(name: String, stack_size: usize) -> ContextRef<ContextType> {
+        let mut context = ContextType::init(name.to_owned());
         context.set_status(ThreadStatus::Pause);
-        let context_ref: ContextRef<CONTEXT_TYPE> = ContextRef::wrap(context);
+        let context_ref = Arc::new(Mutex::new(context));
+            //ContextRef::wrap(context);
         let thread_reserved_context_ref = context_ref.clone();
 
         // Spawn a thread to hold the run loop
         thread::Builder::new().stack_size(stack_size).name(name.to_owned()).spawn(move || {
             loop {
-                let context_guard = thread_reserved_context_ref.acquire();
-                match context_guard.status() {
+                let mut context = thread_reserved_context_ref.lock().unwrap();
+                match context.status() {
                     ThreadStatus::Running => {
                         // exec run loop
-                        context_guard.exec();
+                        context.exec();
                     },
                     ThreadStatus::Pause => {
                         // do nothing here
