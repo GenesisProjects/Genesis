@@ -16,9 +16,13 @@
 extern crate lazy_static;
 extern crate rand;
 
+pub mod observe;
+
 use std::sync::{Arc, Mutex, Condvar};
 use std::cell::RefCell;
 use std::collections::{LinkedList, HashMap};
+
+pub use observe::Observe;
 
 const DEFAULT_MSG_QUEUE_SIZE: usize = 1024;
 

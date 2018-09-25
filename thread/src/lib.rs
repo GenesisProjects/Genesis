@@ -6,9 +6,6 @@ use std::thread;
 use std::sync::{Mutex, Arc, MutexGuard, mpsc::channel};
 use std::time::Duration;
 
-use observe::*;
-use gen_message::Message;
-
 pub const LOOP_PERIOD: u64 = 100u64;
 
 

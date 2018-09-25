@@ -9,7 +9,7 @@ use super::session::*;
 
 use common::address::Address as Account;
 use common::gen_message::*;
-use common::thread::{Thread, ThreadStatus};
+use common::thread::*;
 use common::observe::Observe;
 
 use mio::*;
@@ -56,7 +56,6 @@ pub struct P2PController {
     block_list: Vec<SocketAddr>,
     max_blocked_peers: usize,
 
-    ch_pair: Option<Arc<(Mutex<MessageChannel>, Condvar)>>,
     config: P2PConfig,
     eventloop: NetworkEventLoop<Peer>,
     last_updated: DateTime<Utc>,
@@ -71,7 +70,7 @@ impl P2PController {
     /// ## Examples
     /// ```
     /// ```
-    pub fn launch_controller() {
+    pub fn launch_controller() -> ContextRef<Self> {
         P2PController::launch::<P2PController>("P2PController".to_string());
     }
 

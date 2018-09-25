@@ -26,6 +26,7 @@ bit-vec = "=0.5.0"
 common = { version = "0.1.0", path = "../common" }
 gen_core = { version = "0.1.0", path = "../core" }
 gen_message = { version = "0.1.0", path = "../message" }
+gen_thread = { version = "0.1.0", path = "../thread" }
 rlp = { version = "0.1.0", path = "../rlp" }
 role = { version = "0.1.0", path = "../role" }
 gen_utils = { version = "0.1.0", path = "../util" }

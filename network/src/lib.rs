@@ -1,7 +1,7 @@
 pub mod nat;
 pub mod eventloop;
 pub mod p2p;
-pub mod consensus;
+//pub mod consensus;
 pub mod socket;
 
 pub mod utils;
@@ -17,6 +17,7 @@ pub extern crate chrono;
 pub extern crate futures;
 pub extern crate gen_core;
 pub extern crate gen_message;
+pub extern crate gen_thread;
 pub extern crate gen_utils;
 #[macro_use]
 pub extern crate lazy_static;
