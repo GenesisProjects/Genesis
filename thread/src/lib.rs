@@ -26,7 +26,7 @@ pub type ContextRef<T> = Arc<Mutex<T>>;
 
 /// Thread context initializer trait
 pub trait ThreadContextInitializer {
-    fn init(name: String) -> Self;
+    fn init(name: String) -> ContextRef<Self>;
 }
 
 /// Thread information trait
@@ -37,8 +37,8 @@ pub trait ThreadInfo {
     /// set status
     fn set_status(&mut self, status: ThreadStatus);
 
-    /// stack size
-    fn name() -> String;
+    /// thread name
+    fn thread_name(&self) -> String;
 }
 
 /// Thread executor trait
@@ -51,7 +51,7 @@ pub trait ThreadExec {
 pub trait ThreadService<ContextType> {
     /// Launch a thread.
     /// Return context reference
-    fn launch(name: String, stack_size: usize) -> ContextRef<ContextType>;
+    fn launch(context_ref: ContextRef<ContextType>, stack_size: usize);
 
     /// Start the run loop
     fn start(&mut self);
@@ -65,17 +65,16 @@ pub trait ThreadService<ContextType> {
 
 impl<ContextType: Send + 'static> ThreadService<ContextType> for ContextType
     where ContextType: ThreadContextInitializer + ThreadInfo + ThreadExec {
-    fn launch(name: String, stack_size: usize) -> ContextRef<ContextType> {
-        let mut context = ContextType::init(name.to_owned());
+    fn launch(context_ref: ContextRef<ContextType>, stack_size: usize) {
+        let mut context = context_ref.lock().unwrap();
         context.set_status(ThreadStatus::Pause);
-        let context_ref = Arc::new(Mutex::new(context));
-            //ContextRef::wrap(context);
-        let thread_reserved_context_ref = context_ref.clone();
+        let name = context.thread_name();
+        let thread_context_ref = context_ref.clone();
 
         // Spawn a thread to hold the run loop
-        thread::Builder::new().stack_size(stack_size).name(name.to_owned()).spawn(move || {
+        thread::Builder::new().stack_size(stack_size).name(name).spawn(move || {
             loop {
-                let mut context = thread_reserved_context_ref.lock().unwrap();
+                let mut context = thread_context_ref.lock().unwrap();
                 match context.status() {
                     ThreadStatus::Running => {
                         // exec run loop
@@ -92,7 +91,6 @@ impl<ContextType: Send + 'static> ThreadService<ContextType> for ContextType
                 thread::sleep(Duration::from_millis(LOOP_PERIOD));
             }
         });
-        context_ref
     }
 
     fn start(&mut self) {
