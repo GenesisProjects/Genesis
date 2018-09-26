@@ -31,7 +31,7 @@ impl<T: Observer> Receiving for T {
     }
 }
 
-/// Observing trait
+/// Observer operations trait
 pub trait ObserverOP {
     fn subscribe(&mut self) -> Result<(), MessageCenterError>;
     fn unsubscribe(&mut self) -> Result<(), MessageCenterError>;
