@@ -32,12 +32,12 @@ impl<T: Observer> Receiving for T {
 }
 
 /// Observing trait
-pub trait Observing {
+pub trait ObserverOP {
     fn subscribe(&mut self) -> Result<(), MessageCenterError>;
     fn unsubscribe(&mut self) -> Result<(), MessageCenterError>;
 }
 
-impl<T: Observer> Observing for T {
+impl<T: Observer> ObserverOP for T {
     fn subscribe(&mut self) -> Result<(), MessageCenterError> {
         let mut guard = MESSAGE_CENTER.lock().unwrap();
         guard.subscribe(self.channel_name()).and_then(|recv| {
