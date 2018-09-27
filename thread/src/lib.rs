@@ -75,8 +75,6 @@ pub trait ThreadService<ContextType> {
 impl<ContextType> ThreadService<ContextType> for ContextType
     where ContextType: ThreadInfo + ThreadExec + Send + 'static {
     fn launch(context_ref: ContextRef<ContextType>, stack_size: usize) {
-        let mut context = context_ref.lock();
-        context.set_status(ThreadStatus::Pause);
         let name = context.thread_name();
         let thread_context_ref = context_ref.clone();
 
@@ -84,6 +82,7 @@ impl<ContextType> ThreadService<ContextType> for ContextType
         thread::Builder::new().stack_size(stack_size).name(name).spawn(move || {
             loop {
                 let mut context = thread_context_ref.lock();
+                context.set_status(ThreadStatus::Pause);
                 match context.status() {
                     ThreadStatus::Running => {
                         // exec run loop
