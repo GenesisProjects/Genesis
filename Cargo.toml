@@ -10,6 +10,5 @@ members = [
     "processor",
     "rlp",
     "role",
-    "thread",
     "util"
 ]

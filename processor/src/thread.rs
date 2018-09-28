@@ -52,13 +52,16 @@ pub trait ThreadInfo {
 
 /// Thread executor trait
 pub trait ThreadExec {
-    /// After one loop
+    /// Called before a run loop
+    fn prepare(&mut self);
+
+    /// Called at begin of the loop
     fn pre_exec(&mut self);
 
-    /// Run loop
+    /// Exec
     fn exec(&mut self) -> bool;
 
-    /// After one loop
+    /// Called at end of the loop
     fn post_exec(&mut self);
 }
 
@@ -81,15 +84,16 @@ pub trait ThreadService<ContextType> {
 impl<ContextType> ThreadService<ContextType> for ContextType
     where ContextType: ThreadInfo + ThreadExec + Send + 'static {
     fn launch(context_ref: ContextRef<ContextType>, stack_size: usize) {
-        let mut context = context_ref.lock();
+        let context = context_ref.lock();
         let name = context.thread_name();
         let thread_context_ref = context_ref.clone();
 
         // Spawn a thread to hold the run loop
         thread::Builder::new().stack_size(stack_size).name(name).spawn(move || {
+            let mut context = thread_context_ref.lock();
+            context.set_status(ThreadStatus::Pause);
+            context.prepare();
             loop {
-                let mut context = thread_context_ref.lock();
-                context.set_status(ThreadStatus::Pause);
                 match context.status() {
                     ThreadStatus::Running => {
                         // exec run loop

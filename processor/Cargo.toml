@@ -7,4 +7,3 @@ authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 lazy_static = "1.0.0"
 
 gen_message = { version = "0.1.0", path = "../message" }
-gen_thread = { version = "0.1.0", path = "../thread" }

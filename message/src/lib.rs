@@ -13,9 +13,6 @@
 #[macro_use]
 extern crate lazy_static;
 
-pub mod observer;
-
-pub use observer::Observer;
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::collections::HashMap;
