@@ -18,7 +18,7 @@ pub enum ThreadStatus {
     Pause
 }
 
-/// Context cross thread reference
+/// Thread safe context reference.
 pub struct ContextRef<T>(Arc<Mutex<T>>);
 
 impl<T> ContextRef<T> {

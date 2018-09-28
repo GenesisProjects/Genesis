@@ -1,6 +1,4 @@
 extern crate gen_message;
-#[macro_use]
-extern crate lazy_static;
 
 pub mod observer;
 pub mod thread;
@@ -9,45 +7,40 @@ use gen_message::Message;
 use observer::*;
 use thread::*;
 
-use std::boxed::Box;
-use std::collections::HashMap;
 use std::sync::Mutex;
 pub use std::sync::mpsc::Receiver;
 
-/*lazy_static! {
-    static ref HASHES: Mutex<HashMap<&'static str, Mutex<Box<Processor + 'static>>>> = {
-        Mutex::new(HashMap::new())
-    };
-}*/
+/// The max stack size for running process
+pub const PROCESSOR_STACK_SIZE: usize = 4 * 1024 * 1024 * 1024;
 
-pub const PROCESSOR_STACK_SIZE: usize = 40 * 1024 * 1024;
-
+/// The `Processor` trait is composed by `ThreadExec` trait and `Observer` trait.
+/// A struct implement `Processor` will support the run loop task and thread safe message handling.
+/// In order to make sure thread safe, we must use `launch` function to start a new thread
+/// and obtain a `ContextRef` which is thread context handler that can be used in a different thread.
 pub trait Processor {
+    /// Processor name id.
+    /// It must be unique.
+    /// The message channel and thread use the name as the unique ID.
     fn name(&self) -> String;
 
+    /// Description for this processor
     fn description(&self) -> String;
 
+    /// The current thread status
     fn status(&self) -> ThreadStatus;
 
+    /// Change thread status.
     fn set_status(&self, status: ThreadStatus);
 
+    /// Set message receiver.
+    /// Processor should store it somewhere in the current context.
     fn set_receiver(&mut self, recv: Receiver<Message>);
 
+    /// Get the current receiver
     fn receiver(&self) -> &Receiver<Message>;
 
+    /// Handle the incoming thread messages.
     fn handle_msg(&mut self, msg: Message);
-}
-
-pub struct ProcessorManager {
-    processors: HashMap<&'static str, Box<Processor + 'static>>
-}
-
-impl ProcessorManager {
-    fn register<T>(name: String, context: T)
-        where T: Processor +'static {
-        let context_ref = ContextRef::new(context);
-        context.launch(PROCESSOR_STACK_SIZE);
-    }
 }
 
 impl<T: Processor> Observer for T {

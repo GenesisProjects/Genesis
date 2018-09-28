@@ -1,6 +1,7 @@
 use super::gen_message::{Message, MessageCenterError, MESSAGE_CENTER};
 use std::sync::mpsc::Receiver;
 
+/// Observer trait will permit an object to subscribe/unsubcribe/receive message from a message center
 pub trait Observer {
     /// The unique channel name.
     /// Each Observer should return a unique channel name
@@ -16,9 +17,11 @@ pub trait Observer {
     fn receiver(&self) -> &Receiver<Message>;
 }
 
+/// To let the object receive thread messages.
+/// It's non-blocking.
 pub trait Receiving {
     /// Try to receive a message in non-blocking way.
-    /// If the channel is hangup, return `None`.
+    /// If the channel is hangup or get exception , return `None`.
     fn try_receive(&self) -> Option<Message>;
 }
 
@@ -31,13 +34,15 @@ impl<T: Observer> Receiving for T {
     }
 }
 
-/// Observer operations trait
-pub trait ObserverOP {
+/// Observer service trait
+pub trait ObserverService {
+    /// Subscribe a message center, update receiver.
     fn subscribe(&mut self) -> Result<(), MessageCenterError>;
+    /// Unsubscribe a message center.
     fn unsubscribe(&mut self) -> Result<(), MessageCenterError>;
 }
 
-impl<T: Observer> ObserverOP for T {
+impl<T: Observer> ObserverService for T {
     fn subscribe(&mut self) -> Result<(), MessageCenterError> {
         let mut guard = MESSAGE_CENTER.lock().unwrap();
         guard.subscribe(self.channel_name()).and_then(|recv| {
