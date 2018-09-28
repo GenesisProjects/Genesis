@@ -1,4 +1,6 @@
 extern crate gen_message;
+#[macro_use]
+extern crate lazy_static;
 
 pub mod observer;
 pub mod thread;
@@ -7,20 +9,49 @@ use gen_message::Message;
 use observer::*;
 use thread::*;
 
+use std::any::Any;
+use std::boxed::Box;
+use std::collections::HashMap;
+use std::sync::Mutex;
 pub use std::sync::mpsc::Receiver;
 
+/*lazy_static! {
+    static ref HASHES: Mutex<HashMap<&'static str, Mutex<Box<Processor + 'static>>>> = {
+        Mutex::new(HashMap::new())
+    };
+}*/
+
+pub const PROCESSOR_STACK_SIZE: usize = 40 * 1024 * 1024;
+
 pub trait Processor {
+    fn new(name: String) -> Self;
+
     fn name(&self) -> String;
+
+    fn description(&self) -> String;
 
     fn status(&self) -> ThreadStatus;
 
     fn set_status(&self, status: ThreadStatus);
 
-    fn reserve_msg_receiver(&mut self, recv: Receiver<Message>);
+    fn set_receiver(&mut self, recv: Receiver<Message>);
 
     fn receiver(&self) -> &Receiver<Message>;
 
     fn handle_msg(&mut self, msg: Message);
+}
+
+pub struct ProcessorManager {
+    processors: HashMap<&'static str, Box<Processor + 'static>>
+}
+
+impl ProcessorManager {
+    fn register<T>(name: String)
+        where T: Processor +'static {
+        let context = T::new(name);
+        let context_ref = ContextRef::new(context);
+        ThreadService::launch(context_ref, PROCESSOR_STACK_SIZE);
+    }
 }
 
 impl<T: Processor> Observer for T {
@@ -29,7 +60,7 @@ impl<T: Processor> Observer for T {
     }
 
     fn reserve_msg_receiver(&mut self, recv: Receiver<Message>) {
-        self.reserve_msg_receiver(recv)
+        self.set_receiver(recv)
     }
 
     fn receiver(&self) -> &Receiver<Message> {
