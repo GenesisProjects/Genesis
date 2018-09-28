@@ -3,7 +3,7 @@ extern crate gen_message;
 pub mod observer;
 pub mod thread;
 
-use gen_message::Message;
+pub use gen_message::Message;
 use observer::*;
 use thread::*;
 
