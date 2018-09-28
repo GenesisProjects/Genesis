@@ -41,6 +41,9 @@ pub trait Processor {
 
     /// Handle the incoming thread messages.
     fn handle_msg(&mut self, msg: Message);
+
+    /// Execute the run.
+    fn exec(&mut self) -> bool;
 }
 
 impl<T: Processor> Observer for T {
@@ -87,7 +90,7 @@ impl <T: Processor> ThreadExec for T {
 
     #[inline]
     fn exec(&mut self) -> bool {
-        unimplemented!()
+        self.exec()
     }
 
     #[inline]
