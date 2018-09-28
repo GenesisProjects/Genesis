@@ -38,20 +38,30 @@ impl<T: Processor> Observer for T {
 }
 
 impl <T: Processor> ThreadExec for T {
+    #[inline]
     fn prepare(&mut self) {
-        self.subscribe().unwrap();
+        self.subscribe().expect(&format!("failed to subscribe channel: {:?}", self.name()));
     }
 
+    #[inline]
     fn pre_exec(&mut self) {
         unimplemented!()
     }
 
+    #[inline]
     fn exec(&mut self) -> bool {
         unimplemented!()
     }
 
+    #[inline]
     fn post_exec(&mut self) {
         let msg = self.try_receive();
-        self.handle_msg(msg);
+        if msg.is_some() {
+            self.handle_msg(msg.unwrap());
+        }
+    }
+
+    fn end(&mut self) {
+        self.unsubscribe().expect(&format!("failed to unsubscribe channel: {:?}", self.name()));
     }
 }

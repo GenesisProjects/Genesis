@@ -17,6 +17,7 @@ use std::sync::Mutex;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
 pub struct MessageCenterError(String);
 
 /// Message center singleton

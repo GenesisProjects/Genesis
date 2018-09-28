@@ -1,4 +1,4 @@
-use super::{Message, MessageCenterError, MESSAGE_CENTER};
+use super::gen_message::{Message, MessageCenterError, MESSAGE_CENTER};
 use std::sync::mpsc::Receiver;
 
 pub trait Observer {

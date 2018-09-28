@@ -63,6 +63,9 @@ pub trait ThreadExec {
 
     /// Called at end of the loop
     fn post_exec(&mut self);
+
+    /// Called after a run loop
+    fn end(&mut self);
 }
 
 /// Thread service trait
