@@ -72,7 +72,7 @@ pub trait ThreadExec {
 pub trait ThreadService<ContextType> {
     /// Launch a thread.
     /// Return context reference
-    fn launch(context_ref: ContextRef<ContextType>, stack_size: usize);
+    fn launch(self, stack_size: usize) -> ContextRef<ContextType>;
 
     /// Start the run loop
     fn start(&mut self);
@@ -86,9 +86,9 @@ pub trait ThreadService<ContextType> {
 
 impl<ContextType> ThreadService<ContextType> for ContextType
     where ContextType: ThreadInfo + ThreadExec + Send + 'static {
-    fn launch(context_ref: ContextRef<ContextType>, stack_size: usize) {
-        let context = context_ref.lock();
-        let name = context.thread_name();
+    fn launch(self, stack_size: usize) -> ContextRef<ContextType> {
+        let name = self.thread_name();
+        let context_ref = ContextRef::new(self);
         let thread_context_ref = context_ref.clone();
 
         // Spawn a thread to hold the run loop
@@ -115,6 +115,7 @@ impl<ContextType> ThreadService<ContextType> for ContextType
                 thread::sleep(Duration::from_millis(LOOP_PERIOD));
             }
         }).unwrap();
+        context_ref
     }
 
     fn start(&mut self) {

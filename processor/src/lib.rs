@@ -9,7 +9,6 @@ use gen_message::Message;
 use observer::*;
 use thread::*;
 
-use std::any::Any;
 use std::boxed::Box;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -24,8 +23,6 @@ pub use std::sync::mpsc::Receiver;
 pub const PROCESSOR_STACK_SIZE: usize = 40 * 1024 * 1024;
 
 pub trait Processor {
-    fn new(name: String) -> Self;
-
     fn name(&self) -> String;
 
     fn description(&self) -> String;
@@ -46,11 +43,10 @@ pub struct ProcessorManager {
 }
 
 impl ProcessorManager {
-    fn register<T>(name: String)
+    fn register<T>(name: String, context: T)
         where T: Processor +'static {
-        let context = T::new(name);
         let context_ref = ContextRef::new(context);
-        ThreadService::launch(context_ref, PROCESSOR_STACK_SIZE);
+        context.launch(PROCESSOR_STACK_SIZE);
     }
 }
 
@@ -65,6 +61,23 @@ impl<T: Processor> Observer for T {
 
     fn receiver(&self) -> &Receiver<Message> {
         self.receiver()
+    }
+}
+
+impl <T: Processor> ThreadInfo for T {
+    #[inline]
+    fn status(&self) -> ThreadStatus {
+        self.status()
+    }
+
+    #[inline]
+    fn set_status(&mut self, status: ThreadStatus) {
+        self.set_status(status)
+    }
+
+    #[inline]
+    fn thread_name(&self) -> String {
+        self.name()
     }
 }
 
