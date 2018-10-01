@@ -10,4 +10,5 @@ slab = "0.4"
 common = { version = "0.1.0", path = "../common" }
 gen_core = { version = "0.1.0", path = "../core" }
 gen_message = { version = "0.1.0", path = "../message" }
+gen_processor = { version = "0.1.0", path = "../processor" }
 gen_utils = { version = "0.1.0", path = "../util" }

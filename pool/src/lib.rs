@@ -5,8 +5,8 @@ extern crate slab;
 
 use common::address::*;
 use common::hash::*;
-use common::observe::*;
 use slab::Slab;
+use gen_processor::*;
 use gen_core::blockchain::chain_service;
 use gen_core::transaction::Transaction;
 use gen_message::*;

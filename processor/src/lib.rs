@@ -4,10 +4,8 @@ pub mod observer;
 pub mod thread;
 
 pub use gen_message::Message;
-use observer::*;
-use thread::*;
-
-use std::sync::Mutex;
+pub use observer::*;
+pub use thread::*;
 pub use std::sync::mpsc::Receiver;
 
 /// The max stack size for running process
@@ -68,7 +66,7 @@ impl <T: Processor> ThreadInfo for T {
 
     #[inline]
     fn set_status(&mut self, status: ThreadStatus) {
-        self.set_status(status)
+        self.set_status(status);
     }
 
     #[inline]
@@ -85,7 +83,7 @@ impl <T: Processor> ThreadExec for T {
 
     #[inline]
     fn pre_exec(&mut self) {
-        unimplemented!()
+       // Do nothing here
     }
 
     #[inline]
