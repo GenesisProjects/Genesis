@@ -12,6 +12,7 @@ use gen_core::blockchain::chain_service;
 use gen_core::transaction::Transaction;
 use gen_message::*;
 use std::collections::HashMap;
+use std::sync::mpsc::Receiver;
 
 pub enum PoolError {
     DBError(String),
@@ -45,7 +46,7 @@ impl Poolable for Transaction {
         if self.check() {
             Ok(())
         } else {
-            Err(PoolError::TransactionError("transaction check failed"))
+            Err(PoolError::TransactionError("transaction check failed".to_string()))
         }
     }
 
@@ -135,7 +136,13 @@ impl<T> Pool<T> where T: Poolable {
 
     /// Get the account nonce from the last block in block chain
     fn get_account_nonce(&self, account_addr: Address) -> Result<u64, chain_service::DBError> {
-        self.chain_service.get_last_block_account_nonce(account_addr)
+        if let Some(n) = self.nonce_map.get(&account_addr) {
+            n
+        } else {
+            let n = self.chain_service.get_last_block_account_nonce(account_addr);
+            self.nonce_map.insert(&account_addr, &n);
+            n
+        }
     }
 
     /// Check if the transaction is valid
@@ -209,5 +216,43 @@ impl<T> Pool<T> where T: Poolable {
     pub fn count(&self) -> usize {
         self.slab.len()
     }
+}
 
+pub struct TransactionPoolManager {
+    status: ThreadStatus,
+    recv: Option<Receiver<Message>>
+}
+
+impl Processor for TransactionPoolManager {
+    fn name(&self) -> String {
+        "TransactionPoolManager".to_string()
+    }
+
+    fn description(&self) -> String {
+        "".to_string()
+    }
+
+    fn status(&self) -> ThreadStatus {
+        self.status
+    }
+
+    fn set_status(&mut self, status: ThreadStatus) {
+        self.status = status;
+    }
+
+    fn receiver(&self) -> &Receiver<Message> {
+        &self.recv
+    }
+
+    fn set_receiver(&mut self, recv: Receiver<Message>) {
+        self.recv = Some(recv);
+    }
+
+    fn handle_msg(&mut self, msg: Message) {
+        unimplemented!()
+    }
+
+    fn exec(&mut self) -> bool {
+        // do nothing here
+    }
 }

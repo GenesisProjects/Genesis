@@ -28,7 +28,7 @@ pub trait Processor {
     fn status(&self) -> ThreadStatus;
 
     /// Change thread status.
-    fn set_status(&self, status: ThreadStatus);
+    fn set_status(&mut self, status: ThreadStatus);
 
     /// Set message receiver.
     /// Processor should store it somewhere in the current context.
