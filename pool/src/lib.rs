@@ -70,7 +70,7 @@ pub struct Pool<T> where T: Poolable {
 
 impl<T> Pool<T> where T: Poolable {
     /// Init pool with capacity
-    pub fn new(name: String, size: usize, next_round: usize) -> Self {
+    pub fn new(name: String, slab_size: usize) -> Self {
         Pool {
             name: name,
             channels: vec![],
@@ -110,13 +110,13 @@ impl<T> Pool<T> where T: Poolable {
     fn notify_new_tx_recieved(&self) {
         self.channels
             .iter()
-            .map(|ch| {
+            .for_each(|ch| {
                 MESSAGE_CENTER.lock()
                     .unwrap()
                     .notify(
                         ch.to_string(),
                         Message::new("new_tx".to_string(), vec![]),
-                    );
+                    ).unwrap();
             });
     }
 
@@ -136,17 +136,16 @@ impl<T> Pool<T> where T: Poolable {
 
     /// Get the account nonce from the last block in block chain
     fn get_account_nonce(&mut self, account_addr: Address) -> Result<u64, chain_service::DBError> {
-        if let Some(n) = *self.nonce_map.get(&account_addr) {
-            Ok(*n)
-        } else {
-            let result = self.chain_service.get_last_block_account_nonce(account_addr.clone());
-            match result {
-                Ok(r) => {
-                    self.nonce_map.insert(account_addr, r);
-                    Ok(r)
-                },
-                Err(e) => Err(e)
-            }
+        if let Some(n) = self.nonce_map.get(&account_addr) {
+            return Ok(*n);
+        }
+        let result = self.chain_service.get_last_block_account_nonce(account_addr.clone());
+        match result {
+            Ok(r) => {
+                self.nonce_map.insert(account_addr, r);
+                Ok(r)
+            },
+            Err(e) => Err(e)
         }
     }
 
