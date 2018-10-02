@@ -10,7 +10,7 @@ use slab::Slab;
 use gen_processor::*;
 use gen_core::blockchain::chain_service;
 use gen_core::transaction::Transaction;
-use gen_message::*;
+use gen_message::{MESSAGE_CENTER, Message, defines::CLEAN_NONCE_CACHE};
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
@@ -63,7 +63,7 @@ pub struct Pool<T> where T: Poolable {
     channels: Vec<String>,
     slab: Slab<T>,
     slab_key_map: HashMap<Hash, usize>,
-    nonce_map: HashMap<Hash, u64>,
+    nonce_map: HashMap<Address, u64>,
     chain_service: chain_service::ChainService,
     locked: bool
 }
@@ -128,25 +128,35 @@ impl<T> Pool<T> where T: Poolable {
     }
 
     /// Check if the nonce is correct
-    fn verify_nonce(&self, obj: &T) -> Result<bool, chain_service::DBError> {
+    fn verify_nonce(&mut self, obj: &T) -> Result<bool, chain_service::DBError> {
         self.get_account_nonce(obj.account()).and_then(|nonce| {
             Ok(nonce == obj.nonce())
         })
     }
 
     /// Get the account nonce from the last block in block chain
-    fn get_account_nonce(&self, account_addr: Address) -> Result<u64, chain_service::DBError> {
-        if let Some(n) = self.nonce_map.get(&account_addr) {
-            n
+    fn get_account_nonce(&mut self, account_addr: Address) -> Result<u64, chain_service::DBError> {
+        if let Some(n) = *self.nonce_map.get(&account_addr) {
+            Ok(*n)
         } else {
-            let n = self.chain_service.get_last_block_account_nonce(account_addr);
-            self.nonce_map.insert(&account_addr, &n);
-            n
+            let result = self.chain_service.get_last_block_account_nonce(account_addr.clone());
+            match result {
+                Ok(r) => {
+                    self.nonce_map.insert(account_addr, r);
+                    Ok(r)
+                },
+                Err(e) => Err(e)
+            }
         }
     }
 
+    /// Drop the nonce cache
+    pub fn drop_nonce_cache(&mut self) {
+       self.nonce_map = HashMap::new()
+    }
+
     /// Check if the transaction is valid
-    fn check(&self, obj: &T) -> Result<(), PoolError> {
+    fn check(&mut self, obj: &T) -> Result<(), PoolError> {
         match self.verify_nonce(&obj) {
             Ok(r) => {
                 if r {
@@ -218,12 +228,13 @@ impl<T> Pool<T> where T: Poolable {
     }
 }
 
-pub struct TransactionPoolManager {
+pub struct TransactionPoolController {
+    pool: Pool<Transaction>,
     status: ThreadStatus,
     recv: Option<Receiver<Message>>
 }
 
-impl Processor for TransactionPoolManager {
+impl Processor for TransactionPoolController {
     fn name(&self) -> String {
         "TransactionPoolManager".to_string()
     }
@@ -240,7 +251,7 @@ impl Processor for TransactionPoolManager {
         self.status = status;
     }
 
-    fn receiver(&self) -> &Receiver<Message> {
+    fn receiver(&self) -> &Option<Receiver<Message>> {
         &self.recv
     }
 
@@ -249,10 +260,14 @@ impl Processor for TransactionPoolManager {
     }
 
     fn handle_msg(&mut self, msg: Message) {
-        unimplemented!()
+        match msg.msg().as_ref() {
+            CLEAN_NONCE_CACHE => self.pool.drop_nonce_cache(),
+            _ => (),
+        }
     }
 
     fn exec(&mut self) -> bool {
         // do nothing here
+        true
     }
 }

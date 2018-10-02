@@ -35,7 +35,7 @@ pub trait Processor {
     fn set_receiver(&mut self, recv: Receiver<Message>);
 
     /// Get the current receiver
-    fn receiver(&self) -> &Receiver<Message>;
+    fn receiver(&self) -> &Option<Receiver<Message>>;
 
     /// Handle the incoming thread messages.
     fn handle_msg(&mut self, msg: Message);
@@ -45,15 +45,18 @@ pub trait Processor {
 }
 
 impl<T: Processor> Observer for T {
+    #[inline]
     fn channel_name(&self) -> String {
        self.name()
     }
 
+    #[inline]
     fn reserve_msg_receiver(&mut self, recv: Receiver<Message>) {
         self.set_receiver(recv)
     }
 
-    fn receiver(&self) -> &Receiver<Message> {
+    #[inline]
+    fn receiver(&self) -> &Option<Receiver<Message>> {
         self.receiver()
     }
 }

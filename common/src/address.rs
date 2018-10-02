@@ -3,8 +3,8 @@ use std::string::String;
 use rlp::RLPSerialize;
 use rlp::types::*;
 use key::*;
-
 use rust_base58::{ToBase58, FromBase58};
+use std::borrow::Borrow;
 
 /// Common key operations
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Hash)]
@@ -40,6 +40,12 @@ impl Address {
             Ok(r) => Ok(Address {text: r}),
             Err(_) => Err(())
         }
+    }
+}
+
+impl Borrow<str> for Address {
+    fn borrow(&self) -> &str {
+        &self.text
     }
 }
 

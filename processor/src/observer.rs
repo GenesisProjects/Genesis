@@ -14,7 +14,7 @@ pub trait Observer {
     fn reserve_msg_receiver(&mut self, recv: Receiver<Message>);
 
     /// Get receiver ref
-    fn receiver(&self) -> &Receiver<Message>;
+    fn receiver(&self) -> &Option<Receiver<Message>>;
 }
 
 /// To let the object receive thread messages.
@@ -27,9 +27,12 @@ pub trait Receiving {
 
 impl<T: Observer> Receiving for T {
     fn try_receive(&self) -> Option<Message> {
-        match self.receiver().try_recv() {
-            Ok(msg) => Some(msg),
-            Err(_) => None
+        match self.receiver() {
+            Some(recv) => match recv.try_recv() {
+                Ok(msg) => Some(msg),
+                Err(_) => None
+            },
+            None => None
         }
     }
 }

@@ -13,6 +13,8 @@
 #[macro_use]
 extern crate lazy_static;
 
+pub mod defines;
+
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::collections::HashMap;
