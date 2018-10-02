@@ -30,12 +30,12 @@ pub trait Processor {
     /// Change thread status.
     fn set_status(&mut self, status: ThreadStatus);
 
+    /// Get the current receiver
+    fn receiver(&self) -> &Option<Receiver<Message>>;
+
     /// Set message receiver.
     /// Processor should store it somewhere in the current context.
     fn set_receiver(&mut self, recv: Receiver<Message>);
-
-    /// Get the current receiver
-    fn receiver(&self) -> &Option<Receiver<Message>>;
 
     /// Handle the incoming thread messages.
     fn handle_msg(&mut self, msg: Message);
