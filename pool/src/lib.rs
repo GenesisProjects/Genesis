@@ -1,6 +1,7 @@
 extern crate common;
 extern crate gen_core;
 extern crate gen_message;
+extern crate gen_processor;
 extern crate slab;
 
 use common::address::*;
@@ -10,15 +11,13 @@ use gen_processor::*;
 use gen_core::blockchain::chain_service;
 use gen_core::transaction::Transaction;
 use gen_message::*;
-
 use std::collections::HashMap;
-use std::cmp::Ordering;
-use std::mem;
 
 pub enum PoolError {
     DBError(String),
     Duplicate(Hash),
     NonceError,
+    TransactionError(String),
     Locked,
 }
 
@@ -43,7 +42,11 @@ impl Poolable for Transaction {
     }
 
     fn verify(&self) -> Result<(), PoolError> {
-        self.check()
+        if self.check() {
+            Ok(())
+        } else {
+            Err(PoolError::TransactionError("transaction check failed"))
+        }
     }
 
     fn account(&self) -> Address {
@@ -109,9 +112,9 @@ impl<T> Pool<T> where T: Poolable {
             .map(|ch| {
                 MESSAGE_CENTER.lock()
                     .unwrap()
-                    .send(
+                    .notify(
                         ch.to_string(),
-                        Message::new(0, "new_tx".to_string()),
+                        Message::new("new_tx".to_string(), vec![]),
                     );
             });
     }
