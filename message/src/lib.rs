@@ -29,6 +29,30 @@ lazy_static! {
     };
 }
 
+#[macro_export]
+macro_rules! notify {
+    ($name: expr, $msg: expr) => {{
+        let guard = MESSAGE_CENTER.lock().unwrap();
+        guard.notify($name, $msg)
+    }};
+}
+
+#[macro_export]
+macro_rules! subscribe {
+    ($name: expr) => {{
+        let mut guard = MESSAGE_CENTER.lock().unwrap();
+        guard.subscribe($name)
+    }};
+}
+
+#[macro_export]
+macro_rules! unsubscribe {
+    ($name: expr) => {{
+        let mut guard = MESSAGE_CENTER.lock().unwrap();
+        guard.unsubscribe($name)
+    }};
+}
+
 /// Inter-thread message
 #[derive(Debug, Clone)]
 pub struct Message {

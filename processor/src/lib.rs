@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate gen_message;
 
 pub mod observer;

@@ -47,14 +47,13 @@ pub trait ObserverService {
 
 impl<T: Observer> ObserverService for T {
     fn subscribe(&mut self) -> Result<(), MessageCenterError> {
-        let mut guard = MESSAGE_CENTER.lock().unwrap();
-        guard.subscribe(self.channel_name()).and_then(|recv| {
+        let result = subscribe!(self.channel_name());
+        result.and_then(|recv| {
             Ok(self.reserve_msg_receiver(recv))
         })
     }
 
     fn unsubscribe(&mut self) -> Result<(), MessageCenterError> {
-        let mut guard = MESSAGE_CENTER.lock().unwrap();
-        guard.unsubscribe(self.channel_name())
+        unsubscribe!(self.channel_name())
     }
 }

@@ -272,7 +272,7 @@ impl Processor for TransactionPoolController {
 }
 
 impl TransactionPoolController {
-    pub fn run(slab_size: usize, name: String, stack_size: usize) -> ContextRef<Self> {
+    pub fn create(slab_size: usize, name: String, stack_size: usize) -> ContextRef<Self> {
         let pool: Pool<Transaction> = Pool::new(name, slab_size);
         let controller = TransactionPoolController {
             pool: pool,
