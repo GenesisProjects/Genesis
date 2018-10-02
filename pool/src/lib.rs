@@ -6,11 +6,11 @@ extern crate slab;
 
 use common::address::*;
 use common::hash::*;
-use slab::Slab;
 use gen_processor::*;
 use gen_core::blockchain::chain_service;
 use gen_core::transaction::Transaction;
 use gen_message::{MESSAGE_CENTER, Message, defines::CLEAN_NONCE_CACHE};
+use slab::Slab;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 

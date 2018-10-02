@@ -45,56 +45,46 @@ pub trait Processor {
 }
 
 impl<T: Processor> Observer for T {
-    #[inline]
     fn channel_name(&self) -> String {
        self.name()
     }
 
-    #[inline]
     fn reserve_msg_receiver(&mut self, recv: Receiver<Message>) {
         self.set_receiver(recv)
     }
 
-    #[inline]
     fn receiver(&self) -> &Option<Receiver<Message>> {
         self.receiver()
     }
 }
 
 impl <T: Processor> ThreadInfo for T {
-    #[inline]
     fn status(&self) -> ThreadStatus {
         self.status()
     }
 
-    #[inline]
     fn set_status(&mut self, status: ThreadStatus) {
         self.set_status(status);
     }
 
-    #[inline]
     fn thread_name(&self) -> String {
         self.name()
     }
 }
 
 impl <T: Processor> ThreadExec for T {
-    #[inline]
     fn prepare(&mut self) {
         self.subscribe().expect(&format!("failed to subscribe channel: {:?}", self.name()));
     }
 
-    #[inline]
     fn pre_exec(&mut self) {
        // Do nothing here
     }
 
-    #[inline]
     fn exec(&mut self) -> bool {
         self.exec()
     }
 
-    #[inline]
     fn post_exec(&mut self) {
         let msg = self.try_receive();
         if msg.is_some() {
