@@ -14,9 +14,6 @@ use gen_message::{MESSAGE_CENTER, Message, defines::CLEAN_NONCE_CACHE};
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
-const DEFAULT_SLAB_SIZE: usize = 512 * 1024 * 1024;
-const DEFAULT_STACK_SIZE: usize = 4 * 1024 * 1024;
-
 pub enum PoolError {
     DBError(String),
     Duplicate(Hash),
@@ -275,13 +272,21 @@ impl Processor for TransactionPoolController {
 }
 
 impl TransactionPoolController {
-    pub fn begin(slab_size: usize) -> ContextRef<Self> {
-        let pool: Pool<Transaction> = Pool::new("Transaction Pool".to_string(), slab_size);
-        let context = TransactionPoolController {
+    pub fn run(slab_size: usize, name: String, stack_size: usize) -> ContextRef<Self> {
+        let pool: Pool<Transaction> = Pool::new(name, slab_size);
+        let controller = TransactionPoolController {
             pool: pool,
             status: ThreadStatus::Stop,
             recv: None
         };
-        context.launch(DEFAULT_STACK_SIZE)
+        controller.launch(stack_size)
+    }
+
+    pub fn pool(&self) -> &Pool<Transaction> {
+        &self.pool
+    }
+
+    pub fn mut_pool(&mut self) -> &mut Pool<Transaction> {
+        &mut self.pool
     }
 }
