@@ -84,8 +84,8 @@ use std::net::{Shutdown, SocketAddr};
 pub mod message;
 use self::message::{SocketMessageHeader, MSG_HEADER_LEN};
 
-const MAX_LINE_CAHCE_LEN: usize = 1024 * 1024 * 4;
 const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 1024;
+const MAX_READ_BUFF_SIZE: usize = 1024 * 1024 * 1024;
 
 /// The max mio data window size.
 pub const MIO_WINDOW_SIZE: usize = 1024;
@@ -97,8 +97,7 @@ pub const MIO_WINDOW_SIZE: usize = 1024;
 pub struct PeerSocket {
     stream: TcpStream,
     read_buffer: Vec<u8>,
-    write_buffer: Vec<u8>,
-    line_cache: Vec<u8>,
+    write_buffer: Vec<u8>
 }
 
 impl PeerSocket {
@@ -111,8 +110,7 @@ impl PeerSocket {
         PeerSocket {
             stream: socket,
             read_buffer: vec![],
-            write_buffer: vec![],
-            line_cache: vec![],
+            write_buffer: vec![]
         }
     }
 
@@ -124,28 +122,15 @@ impl PeerSocket {
             Ok(r) => Ok(PeerSocket {
                 stream: r,
                 read_buffer: vec![],
-                write_buffer: vec![],
-                line_cache: vec![],
+                write_buffer: vec![]
             }),
             Err(e) => Err(e)
         }
     }
 
-    /// Send binary data directly into the socket.
-    #[deprecated(since="0.1.0", note="please use `send_msg` instead")]
+    /// Try to write socket message to the buffer.
     #[inline]
-    pub fn send_data(&mut self, data: &[u8]) -> STDResult<usize> { unimplemented!() }
-
-    /// Receive binary data directly from the socket
-    #[deprecated(since="0.1.0", note="please use `receive_msgs` instead")]
-    #[inline]
-    pub fn receive_data(&mut self, remain_size: usize) -> STDResult<Vec<u8>> {
-        unimplemented!()
-    }
-
-    /// Send socket message to the socket.
-    #[inline]
-    pub fn send_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
+    pub fn write_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
         // serialize the socket message
         let mut new_data = serde_json::to_string(&msg).unwrap().into_bytes();
         let size = new_data.len();
@@ -157,9 +142,16 @@ impl PeerSocket {
         // write body
         self.write_buffer.append(&mut new_data);
         if self.write_buffer.len() > MAX_WRITE_BUFF_SIZE {
-            return Err(Error::new(ErrorKind::ConnectionAborted, "Buffer overflow"))
+            return Err(Error::new(ErrorKind::Other, "Buffer overflow"));
         }
+        Ok(())
+    }
 
+    /// Send buffer to the socket
+    /// Will return `Err(ErrorKind::Interrupted)` if the socket is not ready yet, please try again.
+    /// If return another I/O exceptions, socket could be broken.
+    #[inline]
+    pub fn send_buffer(&mut self) -> STDResult<()> {
         // send to the socket
         match self.stream.write(&self.write_buffer[..]) {
             Ok(size) => {
@@ -171,26 +163,29 @@ impl PeerSocket {
         }
     }
 
-    /// Receive list of socket messages from the socket.
-    /// The remain bytes will buffer in read buffer if not deserialize to socket message.
+
+    /// Try to receive bytes and store them into buffer.
     /// Will return `Err(ErrorKind::WouldBlock)` if the socket is not ready yet, please try again.
     /// If return another I/O exceptions, socket could be broken.
     #[inline]
-    pub fn receive_msgs(&mut self) -> STDResult<Vec<SocketMessage>> {
+    pub fn receive_buffer(&mut self) -> STDResult<()> {
         let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
         match self.stream.read(&mut temp_buf) {
             Ok(size) => {
                 println!("data chunk recieved: {}!!!", size);
                 self.read_buffer.append(&mut temp_buf[..size].to_vec());
-                self.fetch_messages_from_buffer()
+                if self.read_buffer.len() > MAX_READ_BUFF_SIZE {
+                    return Err(Error::new(ErrorKind::Other, "Buffer overflow"))
+                }
+                Ok(())
             }
             Err(e) => Err(e)
         }
     }
 
-    // Try to fetch messages from the socket buffer.
+    /// Try to read list of socket messages from the buffer.
     #[inline]
-    fn fetch_messages_from_buffer(&mut self) -> STDResult<Vec<SocketMessage>> {
+    fn read_msg(&mut self) -> STDResult<Vec<SocketMessage>> {
         let buff_size = self.read_buffer.len();
         let mut lines: Vec<Vec<u8>> = vec![];
         loop {
@@ -200,7 +195,6 @@ impl PeerSocket {
                 if buff_size < header.body_size() + MSG_HEADER_LEN {
                     break;
                 }
-
                 // start parsing message
                 // consume header bytes
                 &self.read_buffer.drain(..MSG_HEADER_LEN);
@@ -225,19 +219,6 @@ impl PeerSocket {
                 }
             }).collect::<Vec<SocketMessage>>()
         )
-    }
-
-    // Flush the current line buffer back to read_buffer
-    #[inline]
-    fn flush_line_cache(&mut self) {
-        self.read_buffer.write_all(&self.line_cache[..]).unwrap();
-        self.line_cache = vec![];
-    }
-
-    // Clean the line cache
-    #[inline]
-    fn clean_line_cache(&mut self) {
-        self.line_cache = vec![];
     }
 }
 
