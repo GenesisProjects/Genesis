@@ -85,6 +85,7 @@ use std::net::{Shutdown, SocketAddr};
 use std::str;
 
 pub mod message;
+use self::message::{SocketMessageHeader, MSG_HEADER_LEN};
 
 const MAX_LINE_CAHCE_LEN: usize = 1024 * 1024 * 4;
 const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 1024;
@@ -183,44 +184,48 @@ impl PeerSocket {
         }
     }
 
+    // Read header of incoming message
+    fn read_msg_header(read_buff: &mut [u8]) {
+        let buff_size = read_buffer.len();
+    }
+
     // Try to fetch messages from the socket buffer.
+    #[inline]
     fn fetch_messages_from_buffer(&mut self) -> STDResult<Vec<SocketMessage>> {
-        let buff_size = self.read_buffer.len() as u64;
+        let buff_size = self.read_buffer.len();
         let mut lines: Vec<Vec<u8>> = vec![];
         loop {
-            // check if contains size bytes
-            if buff_size < 8u64 {
-                break;
-            }
-            // read size bytes
-            let mut size_buf: [u8; 8] = [0; 8];
-            size_buf.clone_from_slice(&self.read_buffer[..8]);
-            let msg_size = (&size_buf.to_vec()[..])
-                .read_u64::<BigEndian>()
-                .unwrap();
-            // check if contains full msg body
-            if buff_size - 8u64 < msg_size {
-                break;
-            }
+            // try read header
+            if let Some(header) = SocketMessageHeader::read_header(self.read_buffer) {
+                // check if contains full msg body
+                if buff_size < header.body_size() + MSG_HEADER_LEN {
+                    break;
+                }
 
-            // start parse
-            // consume size bytes
-            &self.read_buffer.drain(..8);
-            // read msg body
-            let line = (&self.read_buffer[..msg_size as usize]).to_vec();
-            // consume mesg bytes
-            &self.read_buffer.drain(..msg_size as usize);
-            lines.push(line);
+                // start parsing message
+                // consume header bytes
+                &self.read_buffer.drain(..MSG_HEADER_LEN);
+                // read msg body
+                let line = (&self.read_buffer[..header.body_size()]).to_vec();
+                // consume msg bytes
+                &self.read_buffer.drain(..header.body_size() as usize);
+                lines.push(line);
+            } else {
+                break;
+            }
         }
 
-        Ok(lines.into_iter().map(|line| {
-            let line_string = unsafe { String::from_utf8_unchecked(line) };
-            let line_str = line_string.as_str();
-            match serde_json::from_str(line_str) {
-                Ok(r) => r,
-                _ => SocketMessage::exception("cannot parse msg")
-            }
-        }).collect::<Vec<SocketMessage>>())
+        // deserialize line buffers into socket message
+        Ok(
+            lines.into_iter().map(|line| {
+                let line_string = unsafe { String::from_utf8_unchecked(line) };
+                let line_str = line_string.as_str();
+                match serde_json::from_str(line_str) {
+                    Ok(r) => r,
+                    _ => SocketMessage::exception("cannot parse msg")
+                }
+            }).collect::<Vec<SocketMessage>>()
+        )
     }
 
     // Flush the current line buffer back to read_buffer
