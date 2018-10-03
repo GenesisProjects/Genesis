@@ -169,6 +169,7 @@ impl PeerSocket {
     }
 
     /// Receive list of socket messages from the socket.
+    /// The remain bytes will buffer in read buffer if not deserialize to socket message.
     /// Will return `Err(ErrorKind::WouldBlock)` if the socket is not ready yet, please try again.
     /// If return another I/O exceptions, socket could be broken.
     #[inline]
