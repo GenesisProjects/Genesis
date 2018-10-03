@@ -5,7 +5,7 @@
 //! Inside one tick, NetworkEventLoop will poll and refresh I/O events.
 //! Objects implemented `Evented` could be registered in the NetworkEventLoop and obtain an auto-increase.
 //!
-use common::thread::ThreadStatus;
+use gen_processor::ThreadStatus;
 use mio::*;
 use mio::net::TcpListener;
 

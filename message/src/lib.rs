@@ -3,10 +3,8 @@
 //! ```
 //!
 //! let ch_name = "test".to_string();
-//! MESSAGE_CENTER
-//!     .lock()
-//!     .unwrap()
-//!     .subscribe(ch_name)
+//! subscribe!(ch_name);
+//! unsubscribe!(ch_name);
 //!
 //! ```
 
