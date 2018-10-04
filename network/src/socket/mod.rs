@@ -91,7 +91,7 @@ const MAX_READ_BUFF_SIZE: usize = 1024 * 1024 * 1024;
 /// The max mio data window size.
 pub const MIO_WINDOW_SIZE: usize = 1024;
 
-
+#[derive(Debug, Clone)]
 pub struct PeerSocketStat {
     data_send: usize,
     data_recv: usize,
@@ -108,8 +108,8 @@ impl PeerSocketStat {
             data_recv: 0,
             last_send_time: Utc::now(),
             last_recv_time: Utc::now(),
-            send_speed: 0,
-            recv_speed: 0
+            send_speed: 0.0,
+            recv_speed: 0.0
         }
     }
 
@@ -121,28 +121,28 @@ impl PeerSocketStat {
         self.data_recv
     }
 
-    pub fn send_speed(&self) -> usize {
+    pub fn send_speed(&self) -> f64 {
         self.send_speed
     }
 
-    pub fn recv_speed(&self) -> usize {
+    pub fn recv_speed(&self) -> f64 {
         self.recv_speed
     }
 
     pub fn notify_send(&mut self, size: usize) {
         let time_now = Utc::now();
-        let duration = time_now.signed_duration_since(self.last_send_time).to_std().unwrap();
-        if duration.milliseconds() > 0.0f64 {
-            self.send_speed = (size as f64) / duration.milliseconds();
+        let duration = time_now - self.last_send_time;
+        if duration.num_milliseconds() > 0 {
+            self.send_speed = (size as f64) / (duration.num_milliseconds() as f64);
         }
         self.last_send_time = time_now;
     }
 
     pub fn notify_recv(&mut self, size: usize) {
         let time_now = Utc::now();
-        let duration = time_now.signed_duration_since(self.last_recv_time).to_std().unwrap();
-        if duration.milliseconds() > 0.0f64 {
-            self.recv_speed = (size as f64) / duration.milliseconds();
+        let duration = time_now - self.last_recv_time;
+        if duration.num_milliseconds() > 0 {
+            self.recv_speed = (size as f64) / (duration.num_milliseconds() as f64);
         }
         self.last_recv_time = time_now;
     }
@@ -261,7 +261,7 @@ impl PeerSocket {
             if let Some(header) = SocketMessageHeader::read_header(&mut self.read_buffer) {
                 // if
                 if header.body_size() > MSG_PAYLOAD_LEN {
-                    Err(Error::new(ErrorKind::InvalidData, "The msg body size id over limit"));
+                    return Err(Error::new(ErrorKind::InvalidData, "The msg body size id over limit"));
                 }
                 // check if contains full msg body
                 if buff_size < header.body_size() + MSG_HEADER_LEN {
