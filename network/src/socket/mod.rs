@@ -83,7 +83,7 @@ use std::io::Result as STDResult;
 use std::net::{Shutdown, SocketAddr};
 
 pub mod message;
-use self::message::{SocketMessageHeader, MSG_HEADER_LEN};
+use self::message::{SocketMessageHeader, MSG_HEADER_LEN, MSG_PAYLOAD_LEN};
 
 const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 1024;
 const MAX_READ_BUFF_SIZE: usize = 1024 * 1024 * 1024;
@@ -97,8 +97,8 @@ pub struct PeerSocketStat {
     data_recv: usize,
     last_send_time: DateTime<Utc>,
     last_recv_time: DateTime<Utc>,
-    send_speed: usize,
-    recv_speed: usize
+    send_speed: f64,
+    recv_speed: f64
 }
 
 impl PeerSocketStat {
@@ -131,12 +131,20 @@ impl PeerSocketStat {
 
     pub fn notify_send(&mut self, size: usize) {
         let time_now = Utc::now();
-
-        unimplemented!()
+        let duration = time_now.signed_duration_since(self.last_send_time).to_std().unwrap();
+        if duration.milliseconds() > 0.0f64 {
+            self.send_speed = (size as f64) / duration.milliseconds();
+        }
+        self.last_send_time = time_now;
     }
 
     pub fn notify_recv(&mut self, size: usize) {
-        unimplemented!()
+        let time_now = Utc::now();
+        let duration = time_now.signed_duration_since(self.last_recv_time).to_std().unwrap();
+        if duration.milliseconds() > 0.0f64 {
+            self.recv_speed = (size as f64) / duration.milliseconds();
+        }
+        self.last_recv_time = time_now;
     }
 }
 
@@ -208,6 +216,8 @@ impl PeerSocket {
         // send to the socket
         match self.stream.write(&self.write_buffer[..]) {
             Ok(size) => {
+                // update statistic
+                self.stat.notify_send(size);
                 // clean buffer
                 self.write_buffer.drain(0..size);
                 Ok(())
@@ -225,10 +235,15 @@ impl PeerSocket {
         let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
         match self.stream.read(&mut temp_buf) {
             Ok(size) => {
-                println!("data chunk recieved: {}!!!", size);
+                // update statistic
+                self.stat.notify_recv(size);
+
+                // error out if buffer overflow
                 if self.read_buffer.len() + size > MAX_READ_BUFF_SIZE {
                     return Err(Error::new(ErrorKind::WouldBlock, "Buffer overflow"))
                 }
+
+                // write the buffer
                 self.read_buffer.append(&mut temp_buf[..size].to_vec());
                 Ok(())
             }
@@ -244,6 +259,10 @@ impl PeerSocket {
         loop {
             // try read header
             if let Some(header) = SocketMessageHeader::read_header(&mut self.read_buffer) {
+                // if
+                if header.body_size() > MSG_PAYLOAD_LEN {
+                    Err(Error::new(ErrorKind::InvalidData, "The msg body size id over limit"));
+                }
                 // check if contains full msg body
                 if buff_size < header.body_size() + MSG_HEADER_LEN {
                     break;

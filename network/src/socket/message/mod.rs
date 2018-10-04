@@ -13,6 +13,9 @@ use std::mem::transmute;
 /// The socket message header size
 pub const MSG_HEADER_LEN: usize = 8;
 
+/// The max msg payload
+pub const MSG_PAYLOAD_LEN: usize = 4 * 1024 * 1024;
+
 pub struct SocketMessageHeader {
     body_size: usize
 }
