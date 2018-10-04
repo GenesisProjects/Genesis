@@ -140,10 +140,10 @@ impl PeerSocket {
         header.write_header(&mut self.write_buffer);
 
         // write body
-        self.write_buffer.append(&mut new_data);
-        if self.write_buffer.len() > MAX_WRITE_BUFF_SIZE {
-            return Err(Error::new(ErrorKind::Other, "Buffer overflow"));
+        if self.write_buffer.len() + new_data.len() > MAX_WRITE_BUFF_SIZE {
+            return Err(Error::new(ErrorKind::WouldBlock, "Buffer overflow"));
         }
+        self.write_buffer.append(&mut new_data);
         Ok(())
     }
 
@@ -173,10 +173,10 @@ impl PeerSocket {
         match self.stream.read(&mut temp_buf) {
             Ok(size) => {
                 println!("data chunk recieved: {}!!!", size);
-                self.read_buffer.append(&mut temp_buf[..size].to_vec());
-                if self.read_buffer.len() > MAX_READ_BUFF_SIZE {
-                    return Err(Error::new(ErrorKind::Other, "Buffer overflow"))
+                if self.read_buffer.len() + size > MAX_READ_BUFF_SIZE {
+                    return Err(Error::new(ErrorKind::WouldBlock, "Buffer overflow"))
                 }
+                self.read_buffer.append(&mut temp_buf[..size].to_vec());
                 Ok(())
             }
             Err(e) => Err(e)
