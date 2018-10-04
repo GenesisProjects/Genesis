@@ -73,6 +73,7 @@
 //! }
 //! ```
 //!
+use chrono::*;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
 use self::message::defines::*;
@@ -90,6 +91,55 @@ const MAX_READ_BUFF_SIZE: usize = 1024 * 1024 * 1024;
 /// The max mio data window size.
 pub const MIO_WINDOW_SIZE: usize = 1024;
 
+
+pub struct PeerSocketStat {
+    data_send: usize,
+    data_recv: usize,
+    last_send_time: DateTime<Utc>,
+    last_recv_time: DateTime<Utc>,
+    send_speed: usize,
+    recv_speed: usize
+}
+
+impl PeerSocketStat {
+    pub fn new() -> Self {
+        PeerSocketStat {
+            data_send: 0,
+            data_recv: 0,
+            last_send_time: Utc::now(),
+            last_recv_time: Utc::now(),
+            send_speed: 0,
+            recv_speed: 0
+        }
+    }
+
+    pub fn data_send(&self) -> usize {
+        self.data_send
+    }
+
+    pub fn data_recv(&self) -> usize {
+        self.data_recv
+    }
+
+    pub fn send_speed(&self) -> usize {
+        self.send_speed
+    }
+
+    pub fn recv_speed(&self) -> usize {
+        self.recv_speed
+    }
+
+    pub fn notify_send(&mut self, size: usize) {
+        let time_now = Utc::now();
+
+        unimplemented!()
+    }
+
+    pub fn notify_recv(&mut self, size: usize) {
+        unimplemented!()
+    }
+}
+
 /// A non-blocking TCP socket between peer and peer.
 /// The data send by socket is sealed within [SocketMessage](message/defines/SocketMessage.t.html)..
 /// PeerSocket only support `ipv4` address now.
@@ -97,7 +147,8 @@ pub const MIO_WINDOW_SIZE: usize = 1024;
 pub struct PeerSocket {
     stream: TcpStream,
     read_buffer: Vec<u8>,
-    write_buffer: Vec<u8>
+    write_buffer: Vec<u8>,
+    stat: PeerSocketStat
 }
 
 impl PeerSocket {
@@ -110,7 +161,8 @@ impl PeerSocket {
         PeerSocket {
             stream: socket,
             read_buffer: vec![],
-            write_buffer: vec![]
+            write_buffer: vec![],
+            stat: PeerSocketStat::new()
         }
     }
 
@@ -122,7 +174,8 @@ impl PeerSocket {
             Ok(r) => Ok(PeerSocket {
                 stream: r,
                 read_buffer: vec![],
-                write_buffer: vec![]
+                write_buffer: vec![],
+                stat: PeerSocketStat::new()
             }),
             Err(e) => Err(e)
         }
