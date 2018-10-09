@@ -8,6 +8,7 @@
 use gen_processor::ThreadStatus;
 use mio::*;
 use mio::net::TcpListener;
+use socket::*;
 
 use std::io::*;
 use std::sync::Mutex;
@@ -36,7 +37,6 @@ pub struct NetworkEventLoop<T> {
     pub events: Events,
     pub events_size: usize,
     pub round: usize,
-    pub status: ThreadStatus,
     poll: Poll,
     phantom: PhantomData<T>
 }
@@ -53,7 +53,6 @@ impl<T> NetworkEventLoop<T> where T: Evented {
             events: events,
             events_size: events_size,
             poll: poll,
-            status: ThreadStatus::Stop,
             phantom: PhantomData
         }
     }
@@ -93,7 +92,11 @@ impl<T> NetworkEventLoop<T> where T: Evented {
     /// ```
     pub fn register_server(&self, listener: &TcpListener) {
         let new_token = SERVER_TOKEN;
-        let _ = self.poll.register(listener, new_token, Ready::readable(), PollOpt::edge());
+        self.poll.register(listener, new_token, Ready::readable(), PollOpt::edge()).unwrap();
+    }
+
+    pub fn reregister_server(&self, listener: &TcpListener) {
+        self.poll.reregister(listener, SERVER_TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
     }
 
     pub fn register_peer(&self, peer: &T) -> Result<(Token)> {

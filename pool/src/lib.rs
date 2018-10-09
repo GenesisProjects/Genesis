@@ -269,6 +269,11 @@ impl Processor for TransactionPoolController {
         // do nothing here
         true
     }
+
+    fn pre_exec(&mut self) -> bool {
+        // do nothing here
+        true
+    }
 }
 
 impl TransactionPoolController {

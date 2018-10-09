@@ -41,6 +41,9 @@ pub trait Processor {
     /// Handle the incoming thread messages.
     fn handle_msg(&mut self, msg: Message);
 
+    /// Before execute the run.
+    fn pre_exec(&mut self) -> bool;
+
     /// Execute the run.
     fn exec(&mut self) -> bool;
 }
@@ -79,7 +82,7 @@ impl <T: Processor> ThreadExec for T {
     }
 
     fn pre_exec(&mut self) {
-       // Do nothing here
+        self.pre_exec();
     }
 
     fn exec(&mut self) -> bool {

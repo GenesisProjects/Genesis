@@ -73,23 +73,27 @@
 //! }
 //! ```
 //!
+pub mod message;
+
 use chrono::*;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::tcp::TcpStream;
-use self::message::defines::*;
+
 use serde_json;
 use std::io::{Error, ErrorKind, Read, Write};
 use std::io::Result as STDResult;
 use std::net::{Shutdown, SocketAddr};
 
-pub mod message;
-use self::message::{SocketMessageHeader, MSG_HEADER_LEN, MSG_PAYLOAD_LEN};
+use self::message::{defines::*, SocketMessageHeader, MSG_HEADER_LEN, MSG_PAYLOAD_LEN};
 
-const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 1024;
-const MAX_READ_BUFF_SIZE: usize = 1024 * 1024 * 1024;
+pub const MAX_WRITE_BUFF_SIZE: usize = 1024 * 1024 * 1024;
+pub const MAX_READ_BUFF_SIZE: usize = 1024 * 1024 * 1024;
 
 /// The max mio data window size.
 pub const MIO_WINDOW_SIZE: usize = 1024;
+
+/// The max mio data window size.
+pub const KEEP_ALIVE_MS: u32 = 100;
 
 #[derive(Debug, Clone)]
 pub struct PeerSocketStat {
@@ -153,6 +157,7 @@ impl PeerSocketStat {
 /// PeerSocket only support `ipv4` address now.
 #[derive(Debug)]
 pub struct PeerSocket {
+    token: Option<Token>,
     stream: TcpStream,
     read_buffer: Vec<u8>,
     write_buffer: Vec<u8>,
@@ -163,15 +168,15 @@ impl PeerSocket {
     /// Init a peer socket with mio [TcpStream](../../mio/tcp/TcpStream.t.html)
     #[inline]
     pub fn new(socket: TcpStream) -> Self {
-        // set the socket to nodelay mode
-        socket.set_nodelay(true).unwrap();
-
-        PeerSocket {
+        let result = PeerSocket {
+            token: None,
             stream: socket,
             read_buffer: vec![],
             write_buffer: vec![],
             stat: PeerSocketStat::new()
-        }
+        };
+        result.setup_socket();
+        result
     }
 
     /// Establish a connection to the a socket address directly.
@@ -179,14 +184,36 @@ impl PeerSocket {
     #[inline]
     pub fn connect(addr: &SocketAddr) -> STDResult<Self> {
         match TcpStream::connect(addr) {
-            Ok(r) => Ok(PeerSocket {
-                stream: r,
-                read_buffer: vec![],
-                write_buffer: vec![],
-                stat: PeerSocketStat::new()
-            }),
+            Ok(r) => {
+                let socket = PeerSocket {
+                    token: None,
+                    stream: r,
+                    read_buffer: vec![],
+                    write_buffer: vec![],
+                    stat: PeerSocketStat::new()
+                };
+                socket.setup_socket();
+                Ok(socket)
+            },
             Err(e) => Err(e)
         }
+    }
+
+    fn setup_socket(&self) {
+        self.stream.set_nodelay(true);
+        self.stream.set_keepalive_ms(Some(KEEP_ALIVE_MS));
+    }
+
+    /// Update a mio event loop token
+    #[inline]
+    pub fn set_token(&mut self, token: Token) {
+        self.token = Some(token);
+    }
+
+    /// Get the mio event loop token
+    #[inline]
+    pub fn token(&self) -> Option<Token> {
+        self.token.clone()
     }
 
     /// Try to write socket message to the buffer.
@@ -261,7 +288,7 @@ impl PeerSocket {
             if let Some(header) = SocketMessageHeader::read_header(&mut self.read_buffer) {
                 // if
                 if header.body_size() > MSG_PAYLOAD_LEN {
-                    return Err(Error::new(ErrorKind::InvalidData, "The msg body size id over limit"));
+                    return Err(Error::new(ErrorKind::InvalidData, "The msg body size is over limit"));
                 }
                 // check if contains full msg body
                 if buff_size < header.body_size() + MSG_HEADER_LEN {
