@@ -2,7 +2,7 @@ pub mod nat;
 pub mod eventloop;
 //pub mod p2p;
 //pub mod consensus;
-//pub mod peer_controller;
+pub mod peer_controller;
 pub mod socket;
 
 pub mod utils;

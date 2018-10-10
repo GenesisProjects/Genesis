@@ -112,8 +112,16 @@ impl<T> NetworkEventLoop<T> where T: Evented {
         let _ = self.poll.reregister(peer, token, Ready::readable(), PollOpt::edge());
     }
 
-    pub fn deregister(&self, peer: &T) {
-        let _ = self.poll.deregister(peer);
+    pub fn deregister(&self, peer: &T) -> Result<()> {
+        self.poll.deregister(peer)
+    }
+
+    pub fn ready_tokens(&self) -> Vec<Token> {
+        let mut result: Vec<Token> = Vec::new();
+        for event in &(self.events) {
+            result.push(event.token());
+        }
+        result
     }
 
     /// Fetch new I/O ready events from sockets registered in the eventloop.

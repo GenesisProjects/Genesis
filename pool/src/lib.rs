@@ -1,5 +1,6 @@
 extern crate common;
 extern crate gen_core;
+#[macro_use]
 extern crate gen_message;
 extern crate gen_processor;
 extern crate slab;
@@ -111,12 +112,7 @@ impl<T> Pool<T> where T: Poolable {
         self.channels
             .iter()
             .for_each(|ch| {
-                MESSAGE_CENTER.lock()
-                    .unwrap()
-                    .notify(
-                        ch.to_string(),
-                        Message::new("new_tx".to_string(), vec![]),
-                    ).unwrap();
+                notify!(ch.to_string(), Message::new("new_tx".to_string(), vec![]));
             });
     }
 
