@@ -31,7 +31,7 @@ pub struct P2PController {
     receiver: Option<Receiver<Message>>,
 
     peer_map: HashMap<Token, PeerSocket>,
-    ban_list: Vec<(SocketAddr, PeerSocket)>,
+    ban_list: Vec<SocketAddr>,
     waiting_list: Vec<(SocketAddr, PeerSocket)>,
     eventloop: NetworkEventLoop<PeerSocket>,
 }
@@ -98,6 +98,7 @@ impl P2PController {
         self.peer_map = HashMap::<Token, PeerSocket>::new();
     }
 
+    /// Existed in peer map or not
     fn existed_in_peer_map(&self, addr: &SocketAddr) -> bool {
         self.peer_map.iter().any(|(key, val)| {
             val.addr() == *addr
@@ -121,9 +122,24 @@ impl P2PController {
         self.waiting_list = Vec::new();
     }
 
+    /// Existed in waiting list or not
     fn existed_in_waiting_list(&self, addr: &SocketAddr) -> bool {
         self.waiting_list.iter().any(|pair| {
             pair.0 == *addr
+        })
+    }
+
+    /// Ban a peer
+    pub fn ban(&mut self, addr: &SocketAddr) {
+       if !self.existed_in_ban_list(addr) {
+            self.ban_list.push(addr.to_owned())
+       }
+    }
+
+    /// Existed in ban list or not
+    fn existed_in_ban_list(&self, addr: &SocketAddr) -> bool {
+        self.ban_list.iter().any(|&e| {
+            e == *addr
         })
     }
 
@@ -150,8 +166,10 @@ impl P2PController {
                             // init peer
                             let mut peer = PeerSocket::new(socket);
                             let peer_addr = peer.addr();
-                            // push to the waiting list if addr not exist
-                            if !self.existed_in_waiting_list(&peer_addr) && !self.existed_in_peer_map(&peer_addr) {
+                            // push to the waiting list if available
+                            if !self.existed_in_waiting_list(&peer_addr)
+                                && !self.existed_in_peer_map(&peer_addr)
+                                && !self.existed_in_ban_list(&peer_addr) {
                                 new_peers.push((peer.addr(), peer));
                             }
                         },
