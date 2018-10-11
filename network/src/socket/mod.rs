@@ -179,6 +179,13 @@ impl PeerSocket {
         result
     }
 
+    /// Get the socket address.
+    /// The address string should be unique for different socket.
+    #[inline]
+    pub fn addr(&self) -> SocketAddr {
+        self.stream.peer_addr().unwrap()
+    }
+
     /// Establish a connection to the a socket address directly.
     /// Will return standard I/O Exception if failed.
     #[inline]

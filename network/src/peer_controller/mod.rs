@@ -18,6 +18,11 @@ use std::net::*;
 use std::str::FromStr;
 use std::time::Duration;
 
+pub const BAN_LIST_LIMIT: usize     = 1024;
+pub const PEER_MAP_LIMIT: usize     = 1024;
+pub const WAITING_LIST_LIMIT: usize = 1024;
+
+
 /// P2PController
 pub struct P2PController {
     name: String,
@@ -26,7 +31,8 @@ pub struct P2PController {
     receiver: Option<Receiver<Message>>,
 
     peer_map: HashMap<Token, PeerSocket>,
-    waiting_list: Vec<(Token, PeerSocket)>,
+    ban_list: Vec<(SocketAddr, PeerSocket)>,
+    waiting_list: Vec<(SocketAddr, PeerSocket)>,
     eventloop: NetworkEventLoop<PeerSocket>,
 }
 
@@ -38,6 +44,7 @@ impl P2PController {
             listener: server,
             receiver: None,
             peer_map: HashMap::new(),
+            ban_list: Vec::new(),
             waiting_list: Vec::new(),
             eventloop: NetworkEventLoop::new(events_size)
         }
@@ -66,6 +73,9 @@ impl P2PController {
 
     /// Register peer
     pub fn register_peer(&mut self, mut peer: PeerSocket) -> Result<Token> {
+        if self.peer_map.len() >= PEER_MAP_LIMIT {
+            return Err(Error::new(ErrorKind::Other, "peer map is over limited"));
+        }
         let result = self.eventloop.register_peer(&peer);
         if let Ok(token) = result {
             peer.set_token(token.clone());
@@ -84,13 +94,37 @@ impl P2PController {
     }
 
     /// Drop all peers
-    pub fn clear_peers(&mut self) {
+    fn clear_peer_map(&mut self) {
         self.peer_map = HashMap::<Token, PeerSocket>::new();
     }
 
+    fn existed_in_peer_map(&self, addr: &SocketAddr) -> bool {
+        self.peer_map.iter().any(|(key, val)| {
+            val.addr() == *addr
+        })
+    }
+
+    /// Append waiting list
+    fn append_waiting_list(&mut self, new_peers: &mut Vec<(SocketAddr, PeerSocket)>) {
+        let remain_size = WAITING_LIST_LIMIT - self.waiting_list.len();
+        let end_pos = if remain_size > self.waiting_list.len() {
+            self.waiting_list.len()
+        } else {
+            remain_size
+        };
+        let mut target_peers: Vec<(SocketAddr, PeerSocket)> = new_peers.drain(0..end_pos).collect();
+        self.waiting_list.append(&mut target_peers);
+    }
+
     /// Drop all peers in the waiting list
-    pub fn clear_waiting_list(&mut self) {
+    fn clear_waiting_list(&mut self) {
         self.waiting_list = Vec::new();
+    }
+
+    fn existed_in_waiting_list(&self, addr: &SocketAddr) -> bool {
+        self.waiting_list.iter().any(|pair| {
+            pair.0 == *addr
+        })
     }
 
     fn peer_ref(&self, token: Token) -> Option<&PeerSocket> {
@@ -104,7 +138,7 @@ impl P2PController {
 
     // process mio events
     fn process_events(&mut self) {
-        let mut new_peers: Vec<(Token, PeerSocket)> = vec![];
+        let mut new_peers: Vec<(SocketAddr, PeerSocket)> = vec![];
         let ready_tokens = self.eventloop.ready_tokens();
         for token in ready_tokens {
             match token {
@@ -113,13 +147,12 @@ impl P2PController {
                     // accept the inbound connection
                     match self.listener.accept() {
                         Ok((socket, addr)) => {
-                            println!("Accepting a new peer...");
                             // init peer
                             let mut peer = PeerSocket::new(socket);
-                            // register peer
-                            if let Ok(token) = self.eventloop.register_peer(&mut peer) {
-                                peer.set_token(token.clone());
-                                new_peers.push((token, peer));
+                            let peer_addr = peer.addr();
+                            // push to the waiting list if addr not exist
+                            if !self.existed_in_waiting_list(&peer_addr) && !self.existed_in_peer_map(&peer_addr) {
+                                new_peers.push((peer.addr(), peer));
                             }
                         },
                         Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
@@ -145,8 +178,8 @@ impl P2PController {
                 }
             }
         }
-        // put new sockets in the waiting list
-        self.waiting_list.append(&mut new_peers);
+        // put new peers in the waiting list
+        self.append_waiting_list(&mut new_peers);
     }
 }
 
@@ -201,7 +234,6 @@ impl Drop for P2PController {
 
     }
 }
-
 
 #[cfg(test)]
 mod p2p {
