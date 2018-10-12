@@ -134,6 +134,7 @@ impl PeerSocketStat {
     }
 
     pub fn notify_send(&mut self, size: usize) {
+        self.data_send += size;
         let time_now = Utc::now();
         let duration = time_now - self.last_send_time;
         if duration.num_milliseconds() > 0 {
@@ -143,6 +144,7 @@ impl PeerSocketStat {
     }
 
     pub fn notify_recv(&mut self, size: usize) {
+        self.data_recv += size;
         let time_now = Utc::now();
         let duration = time_now - self.last_recv_time;
         if duration.num_milliseconds() > 0 {
@@ -161,7 +163,9 @@ pub struct PeerSocket {
     stream: TcpStream,
     read_buffer: Vec<u8>,
     write_buffer: Vec<u8>,
-    stat: PeerSocketStat
+    stat: PeerSocketStat,
+    r_prep: bool,
+    w_prep: bool
 }
 
 impl PeerSocket {
@@ -173,7 +177,9 @@ impl PeerSocket {
             stream: socket,
             read_buffer: vec![],
             write_buffer: vec![],
-            stat: PeerSocketStat::new()
+            stat: PeerSocketStat::new(),
+            r_prep: false,
+            w_prep: false
         };
         result.setup_socket();
         result
@@ -197,7 +203,9 @@ impl PeerSocket {
                     stream: r,
                     read_buffer: vec![],
                     write_buffer: vec![],
-                    stat: PeerSocketStat::new()
+                    stat: PeerSocketStat::new(),
+                    r_prep: false,
+                    w_prep: false
                 };
                 socket.setup_socket();
                 Ok(socket)
@@ -239,6 +247,9 @@ impl PeerSocket {
             return Err(Error::new(ErrorKind::WouldBlock, "Buffer overflow"));
         }
         self.write_buffer.append(&mut new_data);
+
+        // write buffer is prepared
+        self.w_prep = true;
         Ok(())
     }
 
@@ -254,6 +265,10 @@ impl PeerSocket {
                 self.stat.notify_send(size);
                 // clean buffer
                 self.write_buffer.drain(0..size);
+                if self.write_buffer.len() == 0 {
+                    // write buffer is not prepared any longer
+                    self.w_prep = false;
+                }
                 Ok(())
             }
             Err(e) => Err(e)
@@ -279,6 +294,10 @@ impl PeerSocket {
 
                 // write the buffer
                 self.read_buffer.append(&mut temp_buf[..size].to_vec());
+
+                // read buffer is prepared
+                self.r_prep = true;
+
                 Ok(())
             }
             Err(e) => Err(e)
@@ -314,6 +333,9 @@ impl PeerSocket {
             }
         }
 
+        // read buffer is not prepared any longer
+        self.r_prep = false;
+
         // deserialize line buffers into socket message
         Ok(
             lines.into_iter().map(|line| {
@@ -325,6 +347,18 @@ impl PeerSocket {
                 }
             }).collect::<Vec<SocketMessage>>()
         )
+    }
+
+    /// Prepared to send data
+    #[inline]
+    pub fn prepare_to_send_data(&self) -> bool {
+        self.w_prep
+    }
+
+    /// Prepared to recv message
+    #[inline]
+    pub fn prepare_to_recv_msg(&self) -> bool {
+        self.r_prep
     }
 }
 
