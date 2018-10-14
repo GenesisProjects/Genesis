@@ -12,6 +12,9 @@ use serde::de::*;
 
 static DATE_FMT: &'static str = "%Y-%m-%d-%H-%M-%S-%f";
 
+const EXCEPTION_STR: &'static str = "EXCEPTION";
+const HEARTBEAT_STR: &'static str = "HEARTBEAT";
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SocketMessageArg {
     Int { value: i64 },
@@ -170,18 +173,28 @@ impl SocketMessage {
     /// Build a heartbeat message.
     pub fn heartbeat() -> Self {
         SocketMessage {
-            event: "HEARTBEAT".to_string(),
+            event: String::from(HEARTBEAT_STR),
             arg: vec![],
             payload: vec![]
         }
     }
 
+    /// Detect if the message is exception
+    pub fn is_heartbeat(&self) -> bool {
+        self.event == String::from(HEARTBEAT_STR)
+    }
+
     /// Build a exception message.
     pub fn exception(reason: &str) -> Self {
         SocketMessage {
-            event: "EXCEPTION".to_string(),
+            event: String::from(EXCEPTION_STR),
             arg: vec![SocketMessageArg::String { value: reason.to_string() }],
             payload: vec![]
         }
+    }
+
+    /// Detect if the message is exception
+    pub fn is_exception(&self) -> bool {
+        self.event == String::from(EXCEPTION_STR)
     }
 }

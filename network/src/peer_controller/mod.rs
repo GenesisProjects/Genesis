@@ -143,12 +143,12 @@ impl P2PController {
         })
     }
 
-    fn peer_ref(&self, token: Token) -> Option<&PeerSocket> {
-        self.peer_map.get(&token)
+    fn peer_ref(&self, token: Token) -> &PeerSocket {
+        self.peer_map.get(&token).unwrap()
     }
 
-    fn peer_mut_ref(&mut self, token: Token) -> Option<&mut PeerSocket> {
-        self.peer_map.get_mut(&token)
+    fn peer_mut_ref(&mut self, token: Token) -> &mut PeerSocket {
+        self.peer_map.get_mut(&token).unwrap()
     }
 
 
@@ -174,8 +174,8 @@ impl P2PController {
                             }
                         },
                         Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
-                            // EAGAIN
-                            println!("Socket is not ready anymore, stop accepting");
+                            // try again
+                            println!("Server socket is not ready anymore, stop accepting");
                         },
                         e => {
                             panic!("{:?}", e)
@@ -184,15 +184,9 @@ impl P2PController {
                 },
                 peer_token => {
                     // process peer event
-                    if let Some(ref mut peer) = self.peer_mut_ref(peer_token) {
-                        let result = peer.receive_buffer();
-                        match result {
-                            Ok(_) => {},
-                            Err(_) => {
-                                self.eventloop.reregister_peer(peer_token.clone(), peer);
-                            }
-                        }
-                    }
+                    //let peer = self.peer_mut_ref(peer_token);
+                    let result = self.peer_mut_ref(peer_token).store_buffer();
+                    self.eventloop.reregister_peer(peer_token.clone(), self.peer_ref(peer_token));
                 }
             }
         }

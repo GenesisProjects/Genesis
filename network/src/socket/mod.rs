@@ -95,6 +95,9 @@ pub const MIO_WINDOW_SIZE: usize = 1024;
 /// The max mio data window size.
 pub const KEEP_ALIVE_MS: u32 = 100;
 
+/// Init retry times.
+pub const INIT_RETRY_TIMES: u32 = 255u32;
+
 #[derive(Debug, Clone)]
 pub struct PeerSocketStat {
     data_send: usize,
@@ -165,7 +168,9 @@ pub struct PeerSocket {
     write_buffer: Vec<u8>,
     stat: PeerSocketStat,
     r_prep: bool,
-    w_prep: bool
+    w_prep: bool,
+    retry_times: u32,
+    alive: bool
 }
 
 impl PeerSocket {
@@ -179,7 +184,9 @@ impl PeerSocket {
             write_buffer: vec![],
             stat: PeerSocketStat::new(),
             r_prep: false,
-            w_prep: false
+            w_prep: false,
+            retry_times: INIT_RETRY_TIMES,
+            alive: true
         };
         result.setup_socket();
         result
@@ -205,7 +212,9 @@ impl PeerSocket {
                     write_buffer: vec![],
                     stat: PeerSocketStat::new(),
                     r_prep: false,
-                    w_prep: false
+                    w_prep: false,
+                    retry_times: INIT_RETRY_TIMES,
+                    alive: true
                 };
                 socket.setup_socket();
                 Ok(socket)
@@ -215,8 +224,8 @@ impl PeerSocket {
     }
 
     fn setup_socket(&self) {
-        self.stream.set_nodelay(true);
-        self.stream.set_keepalive_ms(Some(KEEP_ALIVE_MS));
+        self.stream.set_nodelay(true).unwrap();
+        self.stream.set_keepalive_ms(Some(KEEP_ALIVE_MS)).unwrap();
     }
 
     /// Update a mio event loop token
@@ -234,22 +243,24 @@ impl PeerSocket {
     /// Try to write socket message to the buffer.
     #[inline]
     pub fn write_msg(&mut self, msg: SocketMessage) -> STDResult<()> {
+        // do nothing if the peer was killed
+        if !self.is_alive() {
+            return Err(Error::new(ErrorKind::Other, "Peer has been killed"));
+        }
         // serialize the socket message
         let mut new_data = serde_json::to_string(&msg).unwrap().into_bytes();
         let size = new_data.len();
-
         // write header
         let header = SocketMessageHeader::new(size);
         header.write_header(&mut self.write_buffer);
-
         // write body
         if self.write_buffer.len() + new_data.len() > MAX_WRITE_BUFF_SIZE {
             return Err(Error::new(ErrorKind::WouldBlock, "Buffer overflow"));
         }
         self.write_buffer.append(&mut new_data);
-
         // write buffer is prepared
         self.w_prep = true;
+
         Ok(())
     }
 
@@ -258,20 +269,35 @@ impl PeerSocket {
     /// If return another I/O exceptions, socket could be broken.
     #[inline]
     pub fn send_buffer(&mut self) -> STDResult<()> {
+        // do nothing if the peer was killed
+        if !self.is_alive() {
+            return Err(Error::new(ErrorKind::Other, "Peer has been killed"));
+        }
         // send to the socket
         match self.stream.write(&self.write_buffer[..]) {
             Ok(size) => {
                 // update statistic
                 self.stat.notify_send(size);
+                // reset retry times
+                self.reset_retry_times();
                 // clean buffer
                 self.write_buffer.drain(0..size);
+                // write buffer is not prepared any longer
                 if self.write_buffer.len() == 0 {
-                    // write buffer is not prepared any longer
                     self.w_prep = false;
                 }
                 Ok(())
+            },
+            Err(ref e) if e.kind() == ErrorKind::Interrupted => {
+                // try again
+                self.retry();
+                Err(Error::new(ErrorKind::WouldBlock, ""))
+            },
+            Err(e) => {
+                // kill the peer
+                self.kill();
+                Err(e)
             }
-            Err(e) => Err(e)
         }
     }
 
@@ -280,33 +306,52 @@ impl PeerSocket {
     /// Will return `Err(ErrorKind::WouldBlock)` if the socket is not ready yet, please try again.
     /// If return another I/O exceptions, socket could be broken.
     #[inline]
-    pub fn receive_buffer(&mut self) -> STDResult<()> {
+    pub fn store_buffer(&mut self) -> STDResult<()> {
+        // do nothing if the peer was killed
+        if !self.is_alive() {
+            return Err(Error::new(ErrorKind::Other, "Peer has been killed"));
+        }
         let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
         match self.stream.read(&mut temp_buf) {
             Ok(size) => {
                 // update statistic
                 self.stat.notify_recv(size);
-
+                // reset retry times
+                self.reset_retry_times();
                 // error out if buffer overflow
                 if self.read_buffer.len() + size > MAX_READ_BUFF_SIZE {
+                    // kill the peer
+                    self.kill();
                     return Err(Error::new(ErrorKind::WouldBlock, "Buffer overflow"))
                 }
-
                 // write the buffer
                 self.read_buffer.append(&mut temp_buf[..size].to_vec());
-
                 // read buffer is prepared
                 self.r_prep = true;
 
                 Ok(())
+            },
+            Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+                // try again
+                self.retry();
+                Err(Error::new(ErrorKind::WouldBlock, ""))
+            },
+            Err(e) => {
+                // kill the peer
+                self.kill();
+                Err(e)
             }
-            Err(e) => Err(e)
         }
     }
 
     /// Try to read list of socket messages from the buffer.
     #[inline]
     fn read_msg(&mut self) -> STDResult<Vec<SocketMessage>> {
+        // do nothing if the peer was killed
+        if !self.is_alive() {
+            return Err(Error::new(ErrorKind::Other, "Peer has been killed"));
+        }
+
         let buff_size = self.read_buffer.len();
         let mut lines: Vec<Vec<u8>> = vec![];
         loop {
@@ -314,6 +359,8 @@ impl PeerSocket {
             if let Some(header) = SocketMessageHeader::read_header(&mut self.read_buffer) {
                 // if
                 if header.body_size() > MSG_PAYLOAD_LEN {
+                    // kill the peer
+                    self.kill();
                     return Err(Error::new(ErrorKind::InvalidData, "The msg body size is over limit"));
                 }
                 // check if contains full msg body
@@ -343,7 +390,10 @@ impl PeerSocket {
                 let line_str = line_string.as_str();
                 match serde_json::from_str(line_str) {
                     Ok(r) => r,
-                    _ => SocketMessage::exception("cannot parse msg")
+                    _ => {
+                        self.kill();
+                        SocketMessage::exception("socket send a bad message, terminate connection")
+                    }
                 }
             }).collect::<Vec<SocketMessage>>()
         )
@@ -359,6 +409,31 @@ impl PeerSocket {
     #[inline]
     pub fn prepare_to_recv_msg(&self) -> bool {
         self.r_prep
+    }
+
+    #[inline]
+    fn retry(&mut self) {
+        self.retry_times -= 1;
+        if self.retry_times <= 0 {
+            self.kill();
+        }
+    }
+
+    #[inline]
+    fn reset_retry_times(&mut self) {
+        self.retry_times = INIT_RETRY_TIMES;
+    }
+
+    #[inline]
+    fn kill(&mut self) {
+        self.alive = false;
+    }
+
+    /// If the peer is alive or not.
+    /// The dead peer should do nothing.
+    #[inline]
+    pub fn is_alive(&self) -> bool {
+        self.alive
     }
 }
 
