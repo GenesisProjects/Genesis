@@ -424,8 +424,9 @@ impl PeerSocket {
         self.retry_times = INIT_RETRY_TIMES;
     }
 
+    /// Kill the peer.
     #[inline]
-    fn kill(&mut self) {
+    pub fn kill(&mut self) {
         self.alive = false;
     }
 

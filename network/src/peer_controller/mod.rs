@@ -193,6 +193,19 @@ impl P2PController {
         // put new peers in the waiting list
         self.append_waiting_list(&mut new_peers);
     }
+
+    // remove all dead peer
+    fn remove_dead_peers(&mut self) {
+        let dead_tokens: Vec<Token> = self.peer_map.iter().filter(|&(key, val)| {
+            val.is_alive()
+        }).map(|(key, val)| {
+            key.clone()
+        }).collect();
+
+        for token in dead_tokens {
+            self.peer_map.remove(&token);
+        }
+    }
 }
 
 impl Processor for P2PController {
@@ -221,13 +234,14 @@ impl Processor for P2PController {
     }
 
     fn handle_msg(&mut self, msg: Message) {
-        unimplemented!()
+        // do nothing
     }
 
     fn exec(&mut self) -> bool {
         match self.eventloop.next_tick() {
             Ok(_size) => {
                 self.process_events();
+                self.remove_dead_peers();
             },
             Err(e) => {
                 panic!("exception: {:?}", e);
