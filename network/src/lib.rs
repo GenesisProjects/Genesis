@@ -2,9 +2,9 @@ pub mod nat;
 pub mod eventloop;
 //pub mod p2p;
 //pub mod consensus;
-pub mod peer_controller;
+pub mod peer_manager;
+pub mod service;
 pub mod socket;
-
 pub mod utils;
 
 pub extern crate byteorder;

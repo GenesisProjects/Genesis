@@ -15,6 +15,8 @@ use slab::Slab;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
+const TIME_SPAN: u64 = 100;
+
 pub enum PoolError {
     DBError(String),
     Duplicate(Hash),
@@ -269,6 +271,10 @@ impl Processor for TransactionPoolController {
     fn pre_exec(&mut self) -> bool {
         // do nothing here
         true
+    }
+
+    fn time_span(&self) -> u64 {
+        TIME_SPAN
     }
 }
 

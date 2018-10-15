@@ -46,6 +46,9 @@ pub trait Processor {
 
     /// Execute the run.
     fn exec(&mut self) -> bool;
+
+    /// Span
+    fn time_span(&self) -> u64;
 }
 
 impl<T: Processor> Observer for T {
@@ -73,6 +76,10 @@ impl <T: Processor> ThreadInfo for T {
 
     fn thread_name(&self) -> String {
         self.name()
+    }
+
+    fn thread_update_time_span(&self) -> u64 {
+        self.time_span()
     }
 }
 

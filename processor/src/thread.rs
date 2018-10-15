@@ -5,8 +5,6 @@ use std::thread;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 
-pub const LOOP_PERIOD: u64 = 100u64;
-
 /// Thread status
 #[derive(Copy, Clone)]
 pub enum ThreadStatus {
@@ -48,6 +46,9 @@ pub trait ThreadInfo {
 
     /// thread name
     fn thread_name(&self) -> String;
+
+    /// time to sleep until next run
+    fn thread_update_time_span(&self) -> u64;
 }
 
 /// Thread executor trait
@@ -88,6 +89,7 @@ impl<ContextType> ThreadService<ContextType> for ContextType
     where ContextType: ThreadInfo + ThreadExec + Send + 'static {
     fn launch(self, stack_size: usize) -> ContextRef<ContextType> {
         let name = self.thread_name();
+        let time_span = self.thread_update_time_span();
         let context_ref = ContextRef::new(self);
         let thread_context_ref = context_ref.clone();
 
@@ -112,7 +114,7 @@ impl<ContextType> ThreadService<ContextType> for ContextType
                         break;
                     }
                 }
-                thread::sleep(Duration::from_millis(LOOP_PERIOD));
+                thread::sleep(Duration::from_millis(time_span));
             }
         }).unwrap();
         context_ref

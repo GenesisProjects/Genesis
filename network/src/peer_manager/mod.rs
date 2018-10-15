@@ -19,13 +19,10 @@ use std::net::*;
 use std::str::FromStr;
 use std::time::Duration;
 
-pub const BAN_LIST_LIMIT: usize     = 1024;
-pub const PEER_MAP_LIMIT: usize     = 1024;
-pub const WAITING_LIST_LIMIT: usize = 1024;
-
+const TIME_SPAN: u64 = 100;
 
 /// P2PController
-pub struct P2PController {
+pub struct P2PManager {
     name: String,
     thread_status: ThreadStatus,
     listener: TcpListener,
@@ -35,11 +32,22 @@ pub struct P2PController {
     ban_list: Vec<SocketAddr>,
     waiting_list: Vec<(SocketAddr, PeerSocket)>,
     eventloop: NetworkEventLoop<PeerSocket>,
+
+    peer_map_limit: usize,
+    ban_list_limit: usize,
+    waiting_list_limit: usize
 }
 
-impl P2PController {
-    fn new(name: String, server: TcpListener, events_size: usize) -> Self {
-        P2PController {
+impl P2PManager {
+    fn new(
+        name: String,
+        server: TcpListener,
+        events_size: usize,
+        peer_map_limit: usize,
+        ban_list_limit: usize,
+        waiting_list_limit: usize
+    ) -> Self {
+        P2PManager {
             name: name,
             thread_status: ThreadStatus::Pause,
             listener: server,
@@ -47,16 +55,32 @@ impl P2PController {
             peer_map: HashMap::new(),
             ban_list: Vec::new(),
             waiting_list: Vec::new(),
-            eventloop: NetworkEventLoop::new(events_size)
+            eventloop: NetworkEventLoop::new(events_size),
+            peer_map_limit: peer_map_limit,
+            ban_list_limit: ban_list_limit,
+            waiting_list_limit: waiting_list_limit
         }
     }
 
+    /// Create a P2PController.
+    /// Return contextref.
     pub fn create(
         name: String,
         server_socket: TcpListener,
         events_size: usize,
-        stack_size: usize) -> ContextRef<Self> {
-        let controller: P2PController = P2PController::new(name, server_socket, events_size);
+        stack_size: usize,
+        peer_map_limit: usize,
+        ban_list_limit: usize,
+        waiting_list_limit: usize
+    ) -> ContextRef<Self> {
+        let controller: P2PManager = P2PManager::new(
+            name,
+            server_socket,
+            events_size,
+            peer_map_limit,
+            ban_list_limit,
+            waiting_list_limit
+        );
         controller.launch(stack_size)
     }
 
@@ -77,7 +101,7 @@ impl P2PController {
 
     /// Accept and register peer
     pub fn accept_peer(&mut self, mut peer: PeerSocket) -> Result<Token> {
-        if self.peer_map.len() >= PEER_MAP_LIMIT {
+        if self.peer_map.len() >= self.peer_map_limit {
             return Err(Error::new(ErrorKind::Other, "peer map is over limited"));
         }
         let result = self.eventloop.register_peer(&peer);
@@ -126,7 +150,7 @@ impl P2PController {
 
     /// Append waiting list
     fn append_waiting_list(&mut self, new_peers: &mut Vec<(SocketAddr, PeerSocket)>) {
-        let remain_size = WAITING_LIST_LIMIT - self.waiting_list.len();
+        let remain_size = self.waiting_list_limit - self.waiting_list.len();
         let end_pos = if remain_size > self.waiting_list.len() {
             self.waiting_list.len()
         } else {
@@ -230,9 +254,9 @@ impl P2PController {
 
     // remove all dead peer
     fn remove_dead_peers(&mut self) {
-        let dead_tokens: Vec<Token> = self.peer_map.iter().filter(|&(token, peer)| {
+        let dead_tokens: Vec<Token> = self.peer_map.iter().filter(|&(_token, peer)| {
             peer.is_alive()
-        }).map(|(token, peer)| {
+        }).map(|(token, _peer)| {
             token.clone()
         }).collect();
 
@@ -243,18 +267,18 @@ impl P2PController {
 
     // select all prepared socket and send data
     fn send_all(&mut self) {
-        self.peer_map.iter_mut().filter(|&(ref token, ref peer)| {
+        self.peer_map.iter_mut().filter(|&(ref _token, ref peer)| {
             peer.prepare_to_send_data()
-        }).for_each(|(token, peer)| {
+        }).for_each(|(_token, peer)| {
             peer.send_buffer().unwrap();
         });
     }
 
     // select all prepared socket and read message
     fn read_all(&mut self) {
-        self.peer_map.iter_mut().filter(|&(ref token, ref peer)| {
+        self.peer_map.iter_mut().filter(|&(ref _token, ref peer)| {
             peer.prepare_to_recv_msg()
-        }).for_each(|(token, peer)| {
+        }).for_each(|(_token, peer)| {
             if let Ok(msgs) = peer.read_msg() {
 
             }
@@ -262,7 +286,7 @@ impl P2PController {
     }
 }
 
-impl Processor for P2PController {
+impl Processor for P2PManager {
     fn name(&self) -> String {
         self.name.clone()
     }
@@ -308,9 +332,11 @@ impl Processor for P2PController {
     fn pre_exec(&mut self) -> bool {
         true
     }
+
+    fn time_span(&self) -> u64 { TIME_SPAN }
 }
 
-impl Drop for P2PController {
+impl Drop for P2PManager {
     fn drop(&mut self) {
 
     }
