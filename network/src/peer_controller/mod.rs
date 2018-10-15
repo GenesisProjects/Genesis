@@ -60,7 +60,10 @@ impl P2PController {
     }
 
     /// Connect
-   pub fn connect(&mut self, addr: SocketInfo) -> Result<Token> {
+   pub fn connect(&mut self, addr: SocketAddr) -> Result<Token> {
+        if !self.addr_is_valid(&addr) {
+            return Err(Error::new(ErrorKind::Other, "the socket address is not valid."));
+        }
         match TcpStream::connect(&addr) {
             Ok(stream) => {
                 let mut peer = PeerSocket::new(stream);
@@ -151,6 +154,9 @@ impl P2PController {
         self.peer_map.get_mut(&token).unwrap()
     }
 
+    fn addr_is_valid(&self, peer_addr: &SocketAddr) -> bool {
+        !self.existed_in_waiting_list(&peer_addr) && !self.existed_in_peer_map(&peer_addr) && !self.existed_in_ban_list(&peer_addr)
+    }
 
     // process mio events
     fn process_events(&mut self) {
@@ -167,9 +173,7 @@ impl P2PController {
                             let mut peer = PeerSocket::new(socket);
                             let peer_addr = peer.addr();
                             // push to the waiting list if available
-                            if !self.existed_in_waiting_list(&peer_addr)
-                                && !self.existed_in_peer_map(&peer_addr)
-                                && !self.existed_in_ban_list(&peer_addr) {
+                            if self.addr_is_valid(&peer_addr) {
                                 new_peers.push((peer.addr(), peer));
                             }
                         },
@@ -205,6 +209,15 @@ impl P2PController {
         for token in dead_tokens {
             self.peer_map.remove(&token);
         }
+    }
+
+    // select all prepared socket and send data
+    fn send_all(&mut self) {
+        self.peer_map.iter_mut().filter(|&(ref key, ref peer)| {
+            peer.prepare_to_send_data()
+        }).for_each(|(key, peer)| {
+            peer.send_buffer().unwrap();
+        });
     }
 }
 
@@ -242,6 +255,7 @@ impl Processor for P2PController {
             Ok(_size) => {
                 self.process_events();
                 self.remove_dead_peers();
+                self.send_all();
             },
             Err(e) => {
                 panic!("exception: {:?}", e);
