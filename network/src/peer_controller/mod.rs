@@ -5,6 +5,7 @@ use eventloop::*;
 use common::address::Address as Account;
 use gen_processor::*;
 use socket::*;
+use socket::message::defines::*;
 
 use mio::*;
 use mio::net::{TcpListener, TcpStream};
@@ -68,14 +69,14 @@ impl P2PController {
             Ok(stream) => {
                 let mut peer = PeerSocket::new(stream);
                 // register peer
-                self.register_peer(peer)
+                self.accept_peer(peer)
             },
             Err(e) => Err(e)
         }
     }
 
-    /// Register peer
-    pub fn register_peer(&mut self, mut peer: PeerSocket) -> Result<Token> {
+    /// Accept and register peer
+    pub fn accept_peer(&mut self, mut peer: PeerSocket) -> Result<Token> {
         if self.peer_map.len() >= PEER_MAP_LIMIT {
             return Err(Error::new(ErrorKind::Other, "peer map is over limited"));
         }
@@ -87,8 +88,8 @@ impl P2PController {
         result
     }
 
-    /// Deregister peer
-    pub fn deregister_peer(&mut self, token: Token) -> Result<()> {
+    /// Deregister and drop peer
+    pub fn drop_peer(&mut self, token: Token) -> Result<()> {
         if let Some(peer) = self.peer_map.remove(&token) {
             self.eventloop.deregister(&peer)
         } else {
@@ -98,7 +99,12 @@ impl P2PController {
 
     /// Drop all peers
     fn clear_peer_map(&mut self) {
-        self.peer_map = HashMap::<Token, PeerSocket>::new();
+        let tokens: Vec<Token> = self.peer_map.iter().map(|(key, val)| {
+            key.clone()
+        }).collect();
+        for token in tokens {
+            self.drop_peer(token);
+        }
     }
 
     /// Existed in peer map or not
@@ -144,6 +150,11 @@ impl P2PController {
         self.ban_list.iter().any(|&e| {
             e == *addr
         })
+    }
+
+    /// Send message
+    pub fn send_msg(&mut self, token: Token, msg: SocketMessage) -> Result<()> {
+        self.peer_mut_ref(token).write_msg(msg)
     }
 
     fn peer_ref(&self, token: Token) -> &PeerSocket {
@@ -217,6 +228,17 @@ impl P2PController {
             peer.prepare_to_send_data()
         }).for_each(|(key, peer)| {
             peer.send_buffer().unwrap();
+        });
+    }
+
+    // select all prepared socket and read message
+    fn read_all(&mut self) {
+        self.peer_map.iter_mut().filter(|&(ref key, ref peer)| {
+            peer.prepare_to_recv_msg()
+        }).for_each(|(key, peer)| {
+            if let Ok(msgs) = peer.read_msg() {
+
+            }
         });
     }
 }

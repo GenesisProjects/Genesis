@@ -255,7 +255,7 @@ impl PeerSocket {
         header.write_header(&mut self.write_buffer);
         // write body
         if self.write_buffer.len() + new_data.len() > MAX_WRITE_BUFF_SIZE {
-            return Err(Error::new(ErrorKind::WouldBlock, "Buffer overflow"));
+            return Err(Error::new(ErrorKind::WouldBlock, "Buffer is full, please try again"));
         }
         self.write_buffer.append(&mut new_data);
         // write buffer is prepared
@@ -346,7 +346,7 @@ impl PeerSocket {
 
     /// Try to read list of socket messages from the buffer.
     #[inline]
-    fn read_msg(&mut self) -> STDResult<Vec<SocketMessage>> {
+    pub fn read_msg(&mut self) -> STDResult<Vec<SocketMessage>> {
         // do nothing if the peer was killed
         if !self.is_alive() {
             return Err(Error::new(ErrorKind::Other, "Peer has been killed"));
