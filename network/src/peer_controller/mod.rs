@@ -97,10 +97,20 @@ impl P2PController {
         }
     }
 
+    /// If the peer is alive or not
+    pub fn peer_is_alive(&self, token: Token) -> bool {
+        self.peer_ref(token).is_alive()
+    }
+
+    /// Peer socket address
+    pub fn peer_addr(&self, token: Token) -> SocketAddr {
+        self.peer_ref(token).addr()
+    }
+
     /// Drop all peers
     fn clear_peer_map(&mut self) {
-        let tokens: Vec<Token> = self.peer_map.iter().map(|(key, val)| {
-            key.clone()
+        let tokens: Vec<Token> = self.peer_map.iter().map(|(token, peer)| {
+            token.clone()
         }).collect();
         for token in tokens {
             self.drop_peer(token);
@@ -109,8 +119,8 @@ impl P2PController {
 
     /// Existed in peer map or not
     fn existed_in_peer_map(&self, addr: &SocketAddr) -> bool {
-        self.peer_map.iter().any(|(key, val)| {
-            val.addr() == *addr
+        self.peer_map.iter().any(|(token, peer)| {
+            peer.addr() == *addr
         })
     }
 
@@ -143,6 +153,15 @@ impl P2PController {
        if !self.existed_in_ban_list(addr) {
             self.ban_list.push(addr.to_owned())
        }
+    }
+
+    /// Unban a peer
+    pub fn unban(&mut self, addr: &SocketAddr) {
+        let index_option = self.ban_list.iter().position(|x| x == addr);
+        match index_option {
+            Some(index) => { self.ban_list.remove(index); }
+            _ => {}
+        }
     }
 
     /// Existed in ban list or not
@@ -211,10 +230,10 @@ impl P2PController {
 
     // remove all dead peer
     fn remove_dead_peers(&mut self) {
-        let dead_tokens: Vec<Token> = self.peer_map.iter().filter(|&(key, val)| {
-            val.is_alive()
-        }).map(|(key, val)| {
-            key.clone()
+        let dead_tokens: Vec<Token> = self.peer_map.iter().filter(|&(token, peer)| {
+            peer.is_alive()
+        }).map(|(token, peer)| {
+            token.clone()
         }).collect();
 
         for token in dead_tokens {
@@ -224,18 +243,18 @@ impl P2PController {
 
     // select all prepared socket and send data
     fn send_all(&mut self) {
-        self.peer_map.iter_mut().filter(|&(ref key, ref peer)| {
+        self.peer_map.iter_mut().filter(|&(ref token, ref peer)| {
             peer.prepare_to_send_data()
-        }).for_each(|(key, peer)| {
+        }).for_each(|(token, peer)| {
             peer.send_buffer().unwrap();
         });
     }
 
     // select all prepared socket and read message
     fn read_all(&mut self) {
-        self.peer_map.iter_mut().filter(|&(ref key, ref peer)| {
+        self.peer_map.iter_mut().filter(|&(ref token, ref peer)| {
             peer.prepare_to_recv_msg()
-        }).for_each(|(key, peer)| {
+        }).for_each(|(token, peer)| {
             if let Ok(msgs) = peer.read_msg() {
 
             }
