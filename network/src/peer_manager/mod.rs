@@ -41,24 +41,27 @@ pub struct P2PManager {
 impl P2PManager {
     fn new(
         name: String,
-        server: TcpListener,
+        listener_addr: SocketAddr,
         events_size: usize,
         peer_map_limit: usize,
         ban_list_limit: usize,
-        waiting_list_limit: usize
-    ) -> Self {
-        P2PManager {
-            name: name,
-            thread_status: ThreadStatus::Pause,
-            listener: server,
-            receiver: None,
-            peer_map: HashMap::new(),
-            ban_list: Vec::new(),
-            waiting_list: Vec::new(),
-            eventloop: NetworkEventLoop::new(events_size),
-            peer_map_limit: peer_map_limit,
-            ban_list_limit: ban_list_limit,
-            waiting_list_limit: waiting_list_limit
+        waiting_list_limit: usize,
+    ) -> Result<Self> {
+        match TcpListener::bind(&listener_addr) {
+            Ok(listerner) => Ok(P2PManager {
+                name: name,
+                thread_status: ThreadStatus::Pause,
+                listener: listerner,
+                receiver: None,
+                peer_map: HashMap::new(),
+                ban_list: Vec::new(),
+                waiting_list: Vec::new(),
+                eventloop: NetworkEventLoop::new(events_size),
+                peer_map_limit: peer_map_limit,
+                ban_list_limit: ban_list_limit,
+                waiting_list_limit: waiting_list_limit
+            }),
+            Err(e) => Err(e)
         }
     }
 
@@ -66,22 +69,23 @@ impl P2PManager {
     /// Return contextref.
     pub fn create(
         name: String,
-        server_socket: TcpListener,
+        listener_addr: SocketAddr,
         events_size: usize,
         stack_size: usize,
         peer_map_limit: usize,
         ban_list_limit: usize,
         waiting_list_limit: usize
-    ) -> ContextRef<Self> {
-        let controller: P2PManager = P2PManager::new(
+    ) -> Result<ContextRef<Self>> {
+        P2PManager::new(
             name,
-            server_socket,
+            listener_addr,
             events_size,
             peer_map_limit,
             ban_list_limit,
             waiting_list_limit
-        );
-        controller.launch(stack_size)
+        ).and_then(|controller| {
+            Ok(controller.launch(stack_size))
+        })
     }
 
     /// Connect
