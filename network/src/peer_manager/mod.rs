@@ -21,6 +21,10 @@ use std::time::Duration;
 
 const TIME_SPAN: u64 = 100;
 
+pub trait SocketMessageListener {
+
+}
+
 /// P2PController
 pub struct P2PManager {
     name: String,
@@ -35,7 +39,9 @@ pub struct P2PManager {
 
     peer_map_limit: usize,
     ban_list_limit: usize,
-    waiting_list_limit: usize
+    waiting_list_limit: usize,
+
+    msg_listener: ContextRef<SocketMessageListener>
 }
 
 impl P2PManager {
@@ -46,6 +52,7 @@ impl P2PManager {
         peer_map_limit: usize,
         ban_list_limit: usize,
         waiting_list_limit: usize,
+        msg_listener: ContextRef<SocketMessageListener>
     ) -> Result<Self> {
         match TcpListener::bind(&listener_addr) {
             Ok(listerner) => Ok(P2PManager {
@@ -59,7 +66,8 @@ impl P2PManager {
                 eventloop: NetworkEventLoop::new(events_size),
                 peer_map_limit: peer_map_limit,
                 ban_list_limit: ban_list_limit,
-                waiting_list_limit: waiting_list_limit
+                waiting_list_limit: waiting_list_limit,
+                msg_listener: msg_listener
             }),
             Err(e) => Err(e)
         }
@@ -74,7 +82,8 @@ impl P2PManager {
         stack_size: usize,
         peer_map_limit: usize,
         ban_list_limit: usize,
-        waiting_list_limit: usize
+        waiting_list_limit: usize,
+        msg_listener: ContextRef<SocketMessageListener>
     ) -> Result<ContextRef<Self>> {
         P2PManager::new(
             name,
@@ -82,7 +91,8 @@ impl P2PManager {
             events_size,
             peer_map_limit,
             ban_list_limit,
-            waiting_list_limit
+            waiting_list_limit,
+            msg_listener
         ).and_then(|controller| {
             Ok(controller.launch(stack_size))
         })

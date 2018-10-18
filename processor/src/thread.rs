@@ -17,7 +17,7 @@ pub enum ThreadStatus {
 }
 
 /// Thread safe context reference.
-pub struct ContextRef<T>(Arc<Mutex<T>>);
+pub struct ContextRef<T: ?Sized>(Arc<Mutex<T>>);
 
 impl<T> ContextRef<T> {
     pub fn new(context: T) -> Self {
