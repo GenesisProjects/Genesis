@@ -23,6 +23,8 @@ pub extern crate gen_utils;
 #[macro_use]
 pub extern crate lazy_static;
 pub extern crate libc;
+#[macro_use]
+pub extern crate log;
 pub extern crate mio;
 pub extern crate mio_extras;
 pub extern crate igd;

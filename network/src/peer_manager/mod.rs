@@ -21,8 +21,53 @@ use std::time::Duration;
 
 const TIME_SPAN: u64 = 100;
 
+/// Socket message listener
 pub trait SocketMessageListener: Send {
     fn notify(&mut self, msg: SocketMessage);
+}
+
+pub struct P2PConfig {
+    port: u16,
+    peer_map_limit: usize,
+    ban_list_limit: usize,
+    waiting_list_limit: usize,
+    min_peers: usize,
+    white_list: Vec<SocketAddr>,
+    bootstrap_peers: Vec<SocketAddr>,
+}
+
+impl P2PConfig {
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+
+    pub fn peer_map_limit(&self) -> usize {
+        self.peer_map_limit
+    }
+
+    pub fn ban_list_limit(&self) -> usize {
+        self.ban_list_limit
+    }
+
+    pub fn waiting_list_limit(&self) -> usize {
+        self.waiting_list_limit
+    }
+
+    pub fn min_peers(&self) -> usize {
+        self.min_peers
+    }
+
+    pub fn white_list(&self) -> Vec<SocketAddr> {
+        self.white_list.clone()
+    }
+
+    pub fn set_white_list(&mut self, list: Vec<SocketAddr>) {
+        self.white_list = list
+    }
+
+    pub fn bootstrap_peers(&self) -> Vec<SocketAddr> {
+        self.bootstrap_peers.clone()
+    }
 }
 
 /// P2PController
@@ -31,30 +76,23 @@ pub struct P2PManager {
     thread_status: ThreadStatus,
     listener: TcpListener,
     receiver: Option<Receiver<Message>>,
-
     peer_map: HashMap<Token, PeerSocket>,
     ban_list: Vec<SocketAddr>,
-    waiting_list: Vec<(SocketAddr, PeerSocket)>,
+    waiting_list: Vec<SocketAddr>,
     eventloop: NetworkEventLoop<PeerSocket>,
-
-    peer_map_limit: usize,
-    ban_list_limit: usize,
-    waiting_list_limit: usize,
-
-    msg_listener: ContextRef<SocketMessageListener>
+    msg_listener: ContextRef<SocketMessageListener>,
+    config: P2PConfig
 }
 
 impl P2PManager {
     fn new(
         name: String,
-        listener_addr: SocketAddr,
-        events_size: usize,
-        peer_map_limit: usize,
-        ban_list_limit: usize,
-        waiting_list_limit: usize,
-        msg_listener: ContextRef<SocketMessageListener>
+        msg_listener: ContextRef<SocketMessageListener>,
+        event_size: usize,
+        config: P2PConfig
     ) -> Result<Self> {
-        match TcpListener::bind(&listener_addr) {
+        let server_addr: SocketAddr = format!("127.0.0.1:{}", config.port()).parse().unwrap();
+        match TcpListener::bind(&server_addr) {
             Ok(listerner) => Ok(P2PManager {
                 name: name,
                 thread_status: ThreadStatus::Pause,
@@ -63,11 +101,9 @@ impl P2PManager {
                 peer_map: HashMap::new(),
                 ban_list: Vec::new(),
                 waiting_list: Vec::new(),
-                eventloop: NetworkEventLoop::new(events_size),
-                peer_map_limit: peer_map_limit,
-                ban_list_limit: ban_list_limit,
-                waiting_list_limit: waiting_list_limit,
-                msg_listener: msg_listener
+                eventloop: NetworkEventLoop::new(event_size),
+                msg_listener: msg_listener,
+                config: config
             }),
             Err(e) => Err(e)
         }
@@ -77,29 +113,23 @@ impl P2PManager {
     /// Return contextref.
     pub fn create(
         name: String,
-        listener_addr: SocketAddr,
-        events_size: usize,
+        config: P2PConfig,
+        event_size: usize,
         stack_size: usize,
-        peer_map_limit: usize,
-        ban_list_limit: usize,
-        waiting_list_limit: usize,
         msg_listener: ContextRef<SocketMessageListener>
     ) -> Result<ContextRef<Self>> {
         P2PManager::new(
             name,
-            listener_addr,
-            events_size,
-            peer_map_limit,
-            ban_list_limit,
-            waiting_list_limit,
-            msg_listener
+            msg_listener,
+            event_size,
+            config
         ).and_then(|controller| {
             Ok(controller.launch(stack_size))
         })
     }
 
-    /// Connect
-   pub fn connect(&mut self, addr: SocketAddr) -> Result<Token> {
+    // Obtain new peers from the waiting list
+    /*fn obtain_peers(&mut self) -> Result<Token> {
         if !self.addr_is_valid(&addr) {
             return Err(Error::new(ErrorKind::Other, "the socket address is not valid."));
         }
@@ -111,11 +141,11 @@ impl P2PManager {
             },
             Err(e) => Err(e)
         }
-    }
+    }*/
 
     /// Accept and register peer
-    pub fn accept_peer(&mut self, mut peer: PeerSocket) -> Result<Token> {
-        if self.peer_map.len() >= self.peer_map_limit {
+    fn accept_peer(&mut self, mut peer: PeerSocket) -> Result<Token> {
+        if self.peer_map.len() >= self.config.peer_map_limit() {
             return Err(Error::new(ErrorKind::Other, "peer map is over limited"));
         }
         let result = self.eventloop.register_peer(&peer);
@@ -127,7 +157,7 @@ impl P2PManager {
     }
 
     /// Deregister and drop peer
-    pub fn drop_peer(&mut self, token: Token) -> Result<()> {
+    fn drop_peer(&mut self, token: Token) -> Result<()> {
         if let Some(peer) = self.peer_map.remove(&token) {
             self.eventloop.deregister(&peer)
         } else {
@@ -163,14 +193,14 @@ impl P2PManager {
     }
 
     /// Append waiting list
-    fn append_waiting_list(&mut self, new_peers: &mut Vec<(SocketAddr, PeerSocket)>) {
-        let remain_size = self.waiting_list_limit - self.waiting_list.len();
+    fn append_waiting_list(&mut self, new_peers: &mut Vec<SocketAddr>) {
+        let remain_size = self.config.waiting_list_limit() - self.waiting_list.len();
         let end_pos = if remain_size > self.waiting_list.len() {
             self.waiting_list.len()
         } else {
             remain_size
         };
-        let mut target_peers: Vec<(SocketAddr, PeerSocket)> = new_peers.drain(0..end_pos).collect();
+        let mut target_peers: Vec<SocketAddr> = new_peers.drain(0..end_pos).collect();
         self.waiting_list.append(&mut target_peers);
     }
 
@@ -181,8 +211,8 @@ impl P2PManager {
 
     /// Existed in waiting list or not
     fn existed_in_waiting_list(&self, addr: &SocketAddr) -> bool {
-        self.waiting_list.iter().any(|pair| {
-            pair.0 == *addr
+        self.waiting_list.iter().any(|elem| {
+            elem == addr
         })
     }
 
@@ -222,8 +252,12 @@ impl P2PManager {
         self.peer_map.get_mut(&token).unwrap()
     }
 
-    fn addr_is_valid(&self, peer_addr: &SocketAddr) -> bool {
-        !self.existed_in_waiting_list(&peer_addr) && !self.existed_in_peer_map(&peer_addr) && !self.existed_in_ban_list(&peer_addr)
+    fn addr_is_valid_to_accept(&self, peer_addr: &SocketAddr) -> bool {
+        !self.existed_in_peer_map(&peer_addr) && !self.existed_in_ban_list(&peer_addr)
+    }
+
+    fn addr_is_valid_for_waiting_list(&self, peer_addr: &SocketAddr) -> bool {
+        !self.existed_in_waiting_list(&peer_addr) && !self.existed_in_ban_list(&peer_addr)
     }
 
     // process mio events
@@ -240,9 +274,12 @@ impl P2PManager {
                             // init peer
                             let mut peer = PeerSocket::new(socket);
                             let peer_addr = peer.addr();
-                            // push to the waiting list if available
-                            if self.addr_is_valid(&peer_addr) {
-                                new_peers.push((peer.addr(), peer));
+                            // accept peer if valid
+                            if self.addr_is_valid_to_accept(&peer_addr) {
+                               match self.accept_peer(peer) {
+                                   Ok(r) => info!("New peer({:?}) accepted", r),
+                                   Err(e) => warn!("Failed to accept new peer, {:?}", e)
+                               }
                             }
                         },
                         Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
@@ -263,7 +300,7 @@ impl P2PManager {
             }
         }
         // put new peers in the waiting list
-        self.append_waiting_list(&mut new_peers);
+        // self.append_waiting_list(&mut new_peers);
     }
 
     // remove all dead peer
