@@ -20,7 +20,9 @@ use std::str::FromStr;
 use std::time::Duration;
 
 const TIME_SPAN: u64 = 100;
+
 const ROUND_HEART_BEAT: usize = 50;
+const ROUND_PRUNE: usize = 50;
 
 /// Socket message listener
 pub trait SocketMessageListener: Send {
@@ -307,14 +309,16 @@ impl P2PManager {
 
     // remove all dead peer
     fn remove_dead_peers(&mut self) {
-        let dead_tokens: Vec<Token> = self.peer_map.iter().filter(|&(_token, peer)| {
-            peer.is_alive()
-        }).map(|(token, _peer)| {
-            token.clone()
-        }).collect();
+        if self.eventloop.round > 0 &&  self.eventloop.round % ROUND_PRUNE == 0 {
+            let dead_tokens: Vec<Token> = self.peer_map.iter().filter(|&(_token, peer)| {
+                peer.is_alive()
+            }).map(|(token, _peer)| {
+                token.clone()
+            }).collect();
 
-        for token in dead_tokens {
-            self.peer_map.remove(&token);
+            for token in dead_tokens {
+                self.peer_map.remove(&token);
+            }
         }
     }
 
