@@ -21,8 +21,8 @@ use std::time::Duration;
 
 const TIME_SPAN: u64 = 100;
 
-pub trait SocketMessageListener {
-
+pub trait SocketMessageListener: Send {
+    fn notify(&mut self, msg: SocketMessage);
 }
 
 /// P2PController
@@ -290,13 +290,19 @@ impl P2PManager {
 
     // select all prepared socket and read message
     fn read_all(&mut self) {
+        let mut dispatch_msgs: Vec<SocketMessage> = vec![];
         self.peer_map.iter_mut().filter(|&(ref _token, ref peer)| {
             peer.prepare_to_recv_msg()
         }).for_each(|(_token, peer)| {
             if let Ok(msgs) = peer.read_msg() {
-
+                for msg in msgs {
+                    dispatch_msgs.push(msg);
+                }
             }
         });
+        for msg in dispatch_msgs {
+            self.msg_listener.lock_trait_obj().notify(msg);
+        }
     }
 }
 
