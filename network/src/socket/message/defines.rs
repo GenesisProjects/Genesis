@@ -14,6 +14,7 @@ static DATE_FMT: &'static str = "%Y-%m-%d-%H-%M-%S-%f";
 
 pub const EXCEPTION_STR: &'static str = "EXCEPTION";
 pub const HEARTBEAT_STR: &'static str = "HEARTBEAT";
+pub const DISCOVERY_STR: &'static str = "DISCOVERY";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SocketMessageArg {
@@ -196,5 +197,24 @@ impl SocketMessage {
     /// Detect if the message is exception
     pub fn is_exception(&self) -> bool {
         self.event == String::from(EXCEPTION_STR)
+    }
+
+    /// Detect if the message is exception
+    pub fn exception_msg(&self) -> Option<String> {
+        self.string_at(0)
+    }
+
+    /// Build a discovery message
+    pub fn discovery() -> Self {
+        SocketMessage {
+            event: String::from(DISCOVERY_STR),
+            arg: vec![],
+            payload: vec![]
+        }
+    }
+
+    /// Detect if the message is discovery
+    pub fn is_discovery(&self) -> bool {
+        self.event == String::from(DISCOVERY_STR)
     }
 }

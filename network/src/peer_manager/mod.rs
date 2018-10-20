@@ -345,6 +345,17 @@ impl P2PManager {
                     if msg.is_heartbeat() {
                         continue
                     }
+                    if msg.is_discovery() {
+                        unimplemented!();
+                        continue
+                    }
+                    if msg.is_exception() {
+                        if let Some(reason) = msg.exception_msg() {
+                            warn!("Peer receive an exception: {:?}, try to close connection...", reason);
+                            peer.kill();
+                        }
+                        continue
+                    }
                     dispatch_msgs.push(msg);
                 }
             }
