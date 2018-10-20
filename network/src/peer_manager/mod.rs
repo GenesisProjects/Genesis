@@ -1,3 +1,5 @@
+mod protocol;
+
 use chrono::*;
 use nat::*;
 use eventloop::*;
@@ -129,19 +131,20 @@ impl P2PManager {
     }
 
     // Obtain new peers from the waiting list
-    /*fn obtain_peers(&mut self) -> Result<Token> {
-        if !self.addr_is_valid(&addr) {
-            return Err(Error::new(ErrorKind::Other, "the socket address is not valid."));
+    fn obtain_peers(&mut self) -> Result<Token> {
+        if let Some(addr) = self.waiting_list.pop() {
+            match TcpStream::connect(&addr) {
+                Ok(stream) => {
+                    let mut peer = PeerSocket::new(stream);
+                    // register peer
+                    self.accept_peer(peer)
+                },
+                Err(e) => Err(e)
+            }
+        } else {
+            Err(Error::new(ErrorKind::Other, "Waiting list is empty"))
         }
-        match TcpStream::connect(&addr) {
-            Ok(stream) => {
-                let mut peer = PeerSocket::new(stream);
-                // register peer
-                self.accept_peer(peer)
-            },
-            Err(e) => Err(e)
-        }
-    }*/
+    }
 
     /// Accept and register peer
     fn accept_peer(&mut self, mut peer: PeerSocket) -> Result<Token> {
@@ -193,7 +196,7 @@ impl P2PManager {
     }
 
     /// Append waiting list
-    fn append_waiting_list(&mut self, new_peers: &mut Vec<SocketAddr>) {
+    pub fn append_waiting_list(&mut self, new_peers: &mut Vec<SocketAddr>) {
         let remain_size = self.config.waiting_list_limit() - self.waiting_list.len();
         let end_pos = if remain_size > self.waiting_list.len() {
             self.waiting_list.len()
@@ -378,6 +381,14 @@ impl Processor for P2PManager {
                 self.process_events();
                 self.remove_dead_peers();
                 self.send_all();
+
+                // obtain a new peer
+                if self.peer_map.len() < self.config.min_peers {
+                    match self.obtain_peers() {
+                        Ok(token) => info!("Discover a new peer({:?})", token),
+                        Err(e) => warn!("Can not descover a new peer: {:?}", e)
+                    }
+                }
             },
             Err(e) => {
                 panic!("exception: {:?}", e);
