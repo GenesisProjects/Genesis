@@ -1,5 +1,3 @@
-mod protocol;
-
 use chrono::*;
 use nat::*;
 use eventloop::*;
@@ -22,6 +20,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 const TIME_SPAN: u64 = 100;
+const ROUND_HEART_BEAT: usize = 50;
 
 /// Socket message listener
 pub trait SocketMessageListener: Send {
@@ -323,8 +322,11 @@ impl P2PManager {
     fn send_all(&mut self) {
         self.peer_map.iter_mut().filter(|&(ref _token, ref peer)| {
             peer.prepare_to_send_data()
-        }).for_each(|(_token, peer)| {
-            peer.send_buffer().unwrap();
+        }).for_each(|(token, peer)| {
+            match peer.send_buffer() {
+                Ok(r) => {},
+                Err(e) => warn!("Can not send data to peer({:?}), {:?}", token, e)
+            }
         });
     }
 
@@ -336,12 +338,32 @@ impl P2PManager {
         }).for_each(|(_token, peer)| {
             if let Ok(msgs) = peer.read_msg() {
                 for msg in msgs {
+                    if msg.is_heartbeat() {
+                        continue
+                    }
                     dispatch_msgs.push(msg);
                 }
             }
         });
         for msg in dispatch_msgs {
             self.msg_listener.lock_trait_obj().notify(msg);
+        }
+    }
+
+    // send heart beat to all peers
+    #[inline]
+    fn send_heart_beat(&mut self) {
+        let tokens: Vec<Token> = self.peer_map.iter_mut().map(|(token, peer)| {
+            peer.update_ttl();
+            token.clone()
+        }).collect();
+        for token in tokens.clone() {
+            self.send_msg(token, SocketMessage::heartbeat());
+        }
+        if self.eventloop.round > 0 && self.eventloop.round % ROUND_HEART_BEAT == 0 {
+            for token in tokens {
+                self.send_msg(token, SocketMessage::heartbeat());
+            }
         }
     }
 }
@@ -379,9 +401,9 @@ impl Processor for P2PManager {
         match self.eventloop.next_tick() {
             Ok(_size) => {
                 self.process_events();
+                self.send_heart_beat();
                 self.remove_dead_peers();
                 self.send_all();
-
                 // obtain a new peer
                 if self.peer_map.len() < self.config.min_peers {
                     match self.obtain_peers() {

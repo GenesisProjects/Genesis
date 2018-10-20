@@ -92,11 +92,14 @@ pub const MAX_READ_BUFF_SIZE: usize = 1024 * 1024 * 1024;
 /// The max mio data window size.
 pub const MIO_WINDOW_SIZE: usize = 1024;
 
-/// The max mio data window size.
+/// Socket opt, duration to send keep_alive msg.
 pub const KEEP_ALIVE_MS: u32 = 100;
 
-/// Init retry times.
+/// Max retry times.
 pub const INIT_RETRY_TIMES: u32 = 255u32;
+
+/// TTL.
+pub const TTL: u64 = 1000u64;
 
 #[derive(Debug, Clone)]
 pub struct PeerSocketStat {
@@ -170,7 +173,8 @@ pub struct PeerSocket {
     r_prep: bool,
     w_prep: bool,
     retry_times: u32,
-    alive: bool
+    alive: bool,
+    ttl: u64
 }
 
 impl PeerSocket {
@@ -186,7 +190,8 @@ impl PeerSocket {
             r_prep: false,
             w_prep: false,
             retry_times: INIT_RETRY_TIMES,
-            alive: true
+            alive: true,
+            ttl: TTL
         };
         result.setup_socket();
         result
@@ -214,7 +219,8 @@ impl PeerSocket {
                     r_prep: false,
                     w_prep: false,
                     retry_times: INIT_RETRY_TIMES,
-                    alive: true
+                    alive: true,
+                    ttl: TTL
                 };
                 socket.setup_socket();
                 Ok(socket)
@@ -314,6 +320,8 @@ impl PeerSocket {
         let mut temp_buf: [u8; MIO_WINDOW_SIZE] = [0; MIO_WINDOW_SIZE];
         match self.stream.read(&mut temp_buf) {
             Ok(size) => {
+                // reset ttl
+                self.reset_ttl();
                 // update statistic
                 self.stat.notify_recv(size);
                 // reset retry times
@@ -424,10 +432,24 @@ impl PeerSocket {
         self.retry_times = INIT_RETRY_TIMES;
     }
 
+    #[inline]
+    fn reset_ttl(&mut self) {
+        self.ttl = TTL;
+    }
+
     /// Kill the peer.
     #[inline]
     pub fn kill(&mut self) {
         self.alive = false;
+    }
+
+    /// Update the peer ttl.
+    #[inline]
+    pub fn update_ttl(&mut self) {
+        self.ttl -= 1;
+        if self.ttl <= 0 {
+            self.alive = false;
+        }
     }
 
     /// If the peer is alive or not.

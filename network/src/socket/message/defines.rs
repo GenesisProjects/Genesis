@@ -12,8 +12,8 @@ use serde::de::*;
 
 static DATE_FMT: &'static str = "%Y-%m-%d-%H-%M-%S-%f";
 
-const EXCEPTION_STR: &'static str = "EXCEPTION";
-const HEARTBEAT_STR: &'static str = "HEARTBEAT";
+pub const EXCEPTION_STR: &'static str = "EXCEPTION";
+pub const HEARTBEAT_STR: &'static str = "HEARTBEAT";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SocketMessageArg {
