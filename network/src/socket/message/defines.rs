@@ -237,6 +237,11 @@ impl SocketMessage {
     }
 
     /// Build a peer info message
+    pub fn is_peer_info(&self) -> bool {
+        self.event == String::from(PEER_INFO_STR)
+    }
+
+    /// Build a peer info message
     pub fn parse_peer_info(&self) -> Result<Vec<SocketAddr>> {
         // clone the payload
         let mut palyload = self.clone_payload();
