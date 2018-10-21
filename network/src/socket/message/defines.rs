@@ -6,15 +6,18 @@ use common::address::Address as Account;
 use common::hash::{Hash, HASH_LEN};
 use chrono::*;
 use rust_base58::{ToBase58, FromBase58};
-
 use serde::ser::*;
 use serde::de::*;
+use serde_json;
+use serde_json::Result;
+use std::net::SocketAddr;
 
 static DATE_FMT: &'static str = "%Y-%m-%d-%H-%M-%S-%f";
 
 pub const EXCEPTION_STR: &'static str = "EXCEPTION";
 pub const HEARTBEAT_STR: &'static str = "HEARTBEAT";
 pub const DISCOVERY_STR: &'static str = "DISCOVERY";
+pub const PEER_INFO_STR: &'static str = "PEER_INFO";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SocketMessageArg {
@@ -86,6 +89,10 @@ impl SocketMessage {
             arg: arg,
             payload: payload
         }
+    }
+
+    pub fn clone_payload(&self) -> Vec<u8> {
+        self.payload.clone()
     }
 
     /// Set message event name.
@@ -216,5 +223,25 @@ impl SocketMessage {
     /// Detect if the message is discovery
     pub fn is_discovery(&self) -> bool {
         self.event == String::from(DISCOVERY_STR)
+    }
+
+    /// Build a peer info message
+    pub fn peer_info(peer_addrs: Vec<SocketAddr>) -> Self {
+        // serialize the socket message
+        let mut new_data = serde_json::to_string(&peer_addrs).unwrap().into_bytes();
+        SocketMessage {
+            event: String::from(PEER_INFO_STR),
+            arg: vec![],
+            payload: new_data
+        }
+    }
+
+    /// Build a peer info message
+    pub fn parse_peer_info(&self) -> Result<Vec<SocketAddr>> {
+        // clone the payload
+        let mut palyload = self.clone_payload();
+        let json_str = unsafe { String::from_utf8_unchecked(palyload) };
+        let peer_addrs: Result<Vec<SocketAddr>> = serde_json::from_str(&json_str);
+        peer_addrs
     }
 }
