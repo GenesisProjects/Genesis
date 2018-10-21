@@ -236,7 +236,7 @@ impl SocketMessage {
         }
     }
 
-    /// Build a peer info message
+    /// Detect if the message is peer info
     pub fn is_peer_info(&self) -> bool {
         self.event == String::from(PEER_INFO_STR)
     }
