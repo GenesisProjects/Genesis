@@ -244,7 +244,7 @@ impl SocketMessage {
     /// Build a peer info message
     pub fn parse_peer_info(&self) -> Result<Vec<SocketAddr>> {
         // clone the payload
-        let mut palyload = self.clone_payload();
+        let palyload = self.clone_payload();
         let json_str = unsafe { String::from_utf8_unchecked(palyload) };
         let peer_addrs: Result<Vec<SocketAddr>> = serde_json::from_str(&json_str);
         peer_addrs

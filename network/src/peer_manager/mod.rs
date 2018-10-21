@@ -131,9 +131,10 @@ impl P2PManager {
         })
     }
 
-    // Obtain new peers from the waiting list
-    fn obtain_peers(&mut self) -> Result<Token> {
+    // Obtain a new peer from the waiting list
+    fn obtain_peer(&mut self) -> Result<Token> {
         if let Some(addr) = self.waiting_list.pop() {
+            if !self.addr_is_valid_for_waiting_list(&addr)
             match TcpStream::connect(&addr) {
                 Ok(stream) => {
                     let mut peer = PeerSocket::new(stream);
@@ -336,6 +337,7 @@ impl P2PManager {
 
     // select all prepared socket and read message
     fn read_all(&mut self) {
+        let mut new_waiting_peers: Vec<SocketAddr> = vec![];
         let mut dispatch_msgs: Vec<SocketMessage> = vec![];
         self.peer_map.iter_mut().filter(|&(ref _token, ref peer)| {
             peer.prepare_to_recv_msg()
@@ -356,10 +358,20 @@ impl P2PManager {
                         }
                         continue
                     }
+                    if msg.is_peer_info() {
+                        match msg.parse_peer_info() {
+                            Ok(mut new_list) => {
+                                new_waiting_peers.append(&mut new_list);
+                            },
+                            _ => {}
+                        };
+                        continue
+                    }
                     dispatch_msgs.push(msg);
                 }
             }
         });
+        self.append_waiting_list(&mut new_waiting_peers);
         for msg in dispatch_msgs {
             self.msg_listener.lock_trait_obj().notify(msg);
         }
