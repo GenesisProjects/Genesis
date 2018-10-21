@@ -134,7 +134,9 @@ impl P2PManager {
     // Obtain a new peer from the waiting list
     fn obtain_peer(&mut self) -> Result<Token> {
         if let Some(addr) = self.waiting_list.pop() {
-            if !self.addr_is_valid_for_waiting_list(&addr)
+            if !self.addr_is_valid_to_accept(&addr) {
+                return Err(Error::new(ErrorKind::Other, "The address is not valid"));
+            }
             match TcpStream::connect(&addr) {
                 Ok(stream) => {
                     let mut peer = PeerSocket::new(stream);
@@ -257,12 +259,19 @@ impl P2PManager {
         self.peer_map.get_mut(&token).unwrap()
     }
 
+    fn peer_info(&self) -> Vec<SocketAddr> {
+        let peer_info: Vec<SocketAddr> = self.peer_map.iter().map(|(_token, peer)| {
+            peer.addr()
+        }).collect();
+        peer_info
+    }
+
     fn addr_is_valid_to_accept(&self, peer_addr: &SocketAddr) -> bool {
         !self.existed_in_peer_map(&peer_addr) && !self.existed_in_ban_list(&peer_addr)
     }
 
     fn addr_is_valid_for_waiting_list(&self, peer_addr: &SocketAddr) -> bool {
-        !self.existed_in_waiting_list(&peer_addr) && !self.existed_in_ban_list(&peer_addr)
+        !self.existed_in_waiting_list(&peer_addr) && !self.existed_in_ban_list(&peer_addr) && !self.existed_in_peer_map(&peer_addr)
     }
 
     // process mio events
@@ -304,8 +313,6 @@ impl P2PManager {
                 }
             }
         }
-        // put new peers in the waiting list
-        // self.append_waiting_list(&mut new_peers);
     }
 
     // remove all dead peer
@@ -339,6 +346,7 @@ impl P2PManager {
     fn read_all(&mut self) {
         let mut new_waiting_peers: Vec<SocketAddr> = vec![];
         let mut dispatch_msgs: Vec<SocketMessage> = vec![];
+        let peer_info = self.peer_info();
         self.peer_map.iter_mut().filter(|&(ref _token, ref peer)| {
             peer.prepare_to_recv_msg()
         }).for_each(|(_token, peer)| {
@@ -348,7 +356,7 @@ impl P2PManager {
                         continue
                     }
                     if msg.is_discovery() {
-                        unimplemented!();
+                        SocketMessage::peer_info(peer_info.clone());
                         continue
                     }
                     if msg.is_exception() {
@@ -371,6 +379,12 @@ impl P2PManager {
                 }
             }
         });
+        new_waiting_peers.dedup();
+        new_waiting_peers = new_waiting_peers.iter().filter(|&addr| {
+            self.addr_is_valid_for_waiting_list(addr)
+        }).map(|addr| {
+            addr.clone()
+        }).collect::<Vec<SocketAddr>>();
         self.append_waiting_list(&mut new_waiting_peers);
         for msg in dispatch_msgs {
             self.msg_listener.lock_trait_obj().notify(msg);
@@ -433,7 +447,7 @@ impl Processor for P2PManager {
                 self.send_all();
                 // obtain a new peer
                 if self.peer_map.len() < self.config.min_peers {
-                    match self.obtain_peers() {
+                    match self.obtain_peer() {
                         Ok(token) => info!("Discover a new peer({:?})", token),
                         Err(e) => warn!("Can not descover a new peer: {:?}", e)
                     }
