@@ -36,14 +36,10 @@
   "network": {
     "p2p": {
       "port": 39999,
-      "events_size": 1024,
-      "max_allowed_peers": 100,
-      "max_blocklist_size": 1024,
-      "max_waitinglist_size": 1024,
-      "min_required_peer": 4,
-      "update_timebase": 3000,
-      "connect_timeout": 3000,
-      "peer_expire": 60000,
+      "peer_map_limit": 1024,
+      "ban_list_limit": 100,
+      "waiting_list_limit": 1024,
+      "min_peers": 5,
       "bootstrap_peers": [
         "127.0.0.1:40001",
         "127.0.0.1:40002",

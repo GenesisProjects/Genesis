@@ -12,7 +12,9 @@ use mio::net::{TcpListener, TcpStream};
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use config::{ Config, Value, File };
 use std::io::*;
+use std::path::Path;
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 use std::net::*;
@@ -27,6 +29,8 @@ const ROUND_PRUNE: usize = 50;
 /// Socket message listener
 pub trait SocketMessageListener: Send {
     fn notify(&mut self, msg: SocketMessage);
+    fn peer_accepted(&mut self, token: Token);
+    fn peer_droped(&mut self, token: Token);
 }
 
 pub struct P2PConfig {
@@ -40,6 +44,41 @@ pub struct P2PConfig {
 }
 
 impl P2PConfig {
+    pub fn load(service: &str) -> Self {
+        let mut config = Config::default();
+        let path = Path::new("../config/application.json");
+        config.merge(File::from(path))
+            .expect("Could not open config");
+        let service_config: HashMap<String, Value> = config.get_table(service)
+            .expect("Could not find the p2p field in the config file");
+
+        let port: i64 = service_config["port"].clone().into_int().unwrap();
+        let peer_map_limit: i64 = service_config["peer_map_limit"].clone().into_int().unwrap();
+        let ban_list_limit: i64 = service_config["ban_list_limit"].clone().into_int().unwrap();
+        let waiting_list_limit: i64 = service_config["waiting_list_limit"].clone().into_int().unwrap();
+        let min_peers: i64 = service_config["min_peers"].clone().into_int().unwrap();
+        let bootstrap_peers: Vec<SocketAddr> = service_config["bootstrap_peers"].clone()
+            .into_array().expect("The `bootstrap_peers` is not an array")
+            .into_iter().map(|value| {
+            let socket_addr = value
+                .into_str()
+                .expect("The bootstrap peer address should be a string")
+                .parse()
+                .expect("Unable to parse socket address");
+            socket_addr
+        }).collect();
+
+        P2PConfig {
+            port: port as u16,
+            peer_map_limit: peer_map_limit as usize,
+            ban_list_limit: ban_list_limit as usize,
+            waiting_list_limit: waiting_list_limit as usize,
+            min_peers: min_peers as usize,
+            white_list: vec![],
+            bootstrap_peers: bootstrap_peers
+        }
+    }
+
     pub fn port(&self) -> u16 {
         self.port
     }
@@ -173,6 +212,7 @@ impl P2PManager {
         if let Ok(token) = result {
             peer.set_token(token.clone());
             self.peer_map.insert(token.clone(), peer);
+            self.msg_listener.lock_trait_obj().peer_accepted(token.clone());
         }
         result
     }
@@ -180,6 +220,7 @@ impl P2PManager {
     /// Deregister and drop peer
     fn drop_peer(&mut self, token: Token) -> Result<()> {
         if let Some(peer) = self.peer_map.remove(&token) {
+            self.msg_listener.lock_trait_obj().peer_droped(token.clone());
             self.eventloop.deregister(&peer)
         } else {
             Ok(())
@@ -342,7 +383,7 @@ impl P2PManager {
             }).collect();
 
             for token in dead_tokens {
-                self.peer_map.remove(&token);
+                self.drop_peer(token.to_owned());
             }
         }
     }
@@ -494,6 +535,11 @@ impl Drop for P2PManager {
 #[cfg(test)]
 mod p2p {
     use super::*;
+
+    #[test]
+    fn test_config() {
+        P2PConfig::load("network.p2p");
+    }
 
     #[test]
     fn test_launch() {
