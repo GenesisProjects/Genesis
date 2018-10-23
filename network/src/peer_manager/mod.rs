@@ -68,6 +68,16 @@ impl P2PConfig {
         self.white_list = list
     }
 
+    pub fn in_white_list(&self, new_addr: &SocketAddr) -> bool {
+        if self.white_list.is_empty() {
+            true
+        } else {
+            self.white_list.iter().any(|addr| {
+                new_addr == addr
+            })
+        }
+    }
+
     pub fn bootstrap_peers(&self) -> Vec<SocketAddr> {
         self.bootstrap_peers.clone()
     }
@@ -271,7 +281,10 @@ impl P2PManager {
     }
 
     fn addr_is_valid_for_waiting_list(&self, peer_addr: &SocketAddr) -> bool {
-        !self.existed_in_waiting_list(&peer_addr) && !self.existed_in_ban_list(&peer_addr) && !self.existed_in_peer_map(&peer_addr)
+        !self.existed_in_waiting_list(peer_addr)
+            && !self.existed_in_ban_list(peer_addr)
+            && !self.existed_in_peer_map(peer_addr)
+            && self.config.in_white_list(peer_addr)
     }
 
     // process mio events
@@ -461,6 +474,7 @@ impl Processor for P2PManager {
     }
 
     fn pre_exec(&mut self) -> bool {
+        self.waiting_list = self.config.bootstrap_peers();
         true
     }
 
