@@ -141,6 +141,10 @@ impl P2PManager {
         })
     }
 
+    pub fn set_msg_listener(&mut self, listener: ContextRef<SocketMessageListener>) {
+        self.msg_listener = listener;
+    }
+
     // Obtain a new peer from the waiting list
     fn obtain_peer(&mut self) -> Result<Token> {
         if let Some(addr) = self.waiting_list.pop() {
