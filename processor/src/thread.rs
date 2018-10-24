@@ -20,6 +20,10 @@ pub enum ThreadStatus {
 pub struct ContextRef<T: ?Sized>(Arc<Mutex<T>>);
 
 impl<T: ?Sized> ContextRef<T> {
+    pub fn new_trait_obj_ref(trait_obj: Arc<Mutex<T>>) -> Self {
+        ContextRef(trait_obj)
+    }
+
     pub fn lock_trait_obj(&self) -> MutexGuard<T> {
         self.0.lock().unwrap()
     }
