@@ -117,6 +117,10 @@ impl SocketMessage {
         }
     }
 
+    pub fn into_bytes(self) -> Vec<u8> {
+        serde_json::to_string(&self).unwrap().into_bytes()
+    }
+
     pub fn clone_payload(&self) -> Vec<u8> {
         self.payload.clone()
     }
@@ -304,5 +308,12 @@ impl SocketMessage {
         let json_str = unsafe { String::from_utf8_unchecked(palyload) };
         let peer_addrs: Result<Vec<SocketAddr>> = serde_json::from_str(&json_str);
         peer_addrs
+    }
+}
+
+impl From<Vec<u8>> for SocketMessage {
+    fn from(v: Vec<u8>) -> Self {
+        let json_str = unsafe { String::from_utf8_unchecked(v) };
+        serde_json::from_str(&json_str).unwrap()
     }
 }

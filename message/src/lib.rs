@@ -55,19 +55,25 @@ macro_rules! unsubscribe {
 #[derive(Debug, Clone)]
 pub struct Message {
     msg: String,
+    id: u32,
     body: Vec<u8>
 }
 
 impl Message {
-    pub fn new(msg: String, body: Vec<u8>) -> Self {
+    pub fn new(msg: String, id: u32, body: Vec<u8>) -> Self {
         Message {
             msg: msg,
+            id: id,
             body: body
         }
     }
 
     pub fn msg(&self) -> String {
         self.msg.clone()
+    }
+
+    pub fn id(&self) -> u32 {
+        self.id
     }
 
     pub fn body(&self) -> Vec<u8> {

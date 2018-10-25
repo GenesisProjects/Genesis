@@ -17,6 +17,7 @@ pub extern crate common;
 pub extern crate chrono;
 pub extern crate futures;
 pub extern crate gen_core;
+#[macro_use]
 pub extern crate gen_message;
 pub extern crate gen_processor;
 pub extern crate gen_utils;

@@ -3,6 +3,7 @@ use nat::*;
 use eventloop::*;
 
 use common::address::Address as Account;
+use gen_message::{ Message, defines::p2p::* };
 use gen_processor::*;
 use socket::*;
 use socket::message::defines::*;
@@ -498,7 +499,17 @@ impl Processor for P2PManager {
     }
 
     fn handle_msg(&mut self, msg: Message) {
-        // do nothing
+        match msg.msg().as_str() {
+            SEND_MESSAGE => {
+                let s_msg : SocketMessage = msg.body().into();
+                let token : usize = msg.id() as usize;
+                match self.send_msg(Token(token), s_msg) {
+                    Ok(r) => {}
+                    Err(e) => { warn!("Can not send message: {:?}", e); }
+                }
+            }
+            _ => {}
+        }
     }
 
     fn exec(&mut self) -> bool {

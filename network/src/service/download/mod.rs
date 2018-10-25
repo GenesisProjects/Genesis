@@ -9,6 +9,7 @@ use gen_core::account::Account;
 use gen_core::block::*;
 use gen_core::transaction::*;
 use gen_processor::ContextRef;
+use gen_message::{ Message, MESSAGE_CENTER, defines::p2p::* };
 use mio::Token;
 use std::collections::HashMap;
 use std::io::Result;
@@ -16,7 +17,7 @@ use std::sync::{ Arc, Mutex };
 
 const P2P_MANAGER_CH_NAME: &'static str = "download_p2p_manager";
 const P2P_MANAGER_EVENT_SIZE: usize = 1024;
-const P2P_MANAGER_STACK_SIZE: usize = 1024;
+const P2P_MANAGER_STACK_SIZE: usize = 4 * 1024 * 1024 * 1024;
 
 pub enum DownloadServiceSessionStatus {
     Init,
@@ -93,6 +94,11 @@ impl DownloadMessageHook {
             P2P_MANAGER_STACK_SIZE,
             new_trait_obj_ref(self)
         )
+    }
+
+    fn notify_send_msg(&self, token: &Token, msg: SocketMessage) {
+        let id = token.0;
+        notify!(P2P_MANAGER_CH_NAME.to_string(), Message::new(SEND_MESSAGE.to_string(), id as u32, msg.into_bytes())).unwrap();
     }
 }
 

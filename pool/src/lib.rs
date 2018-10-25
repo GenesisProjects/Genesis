@@ -10,7 +10,7 @@ use common::hash::*;
 use gen_processor::*;
 use gen_core::blockchain::chain_service;
 use gen_core::transaction::Transaction;
-use gen_message::{MESSAGE_CENTER, Message, defines::CLEAN_NONCE_CACHE};
+use gen_message::{MESSAGE_CENTER, Message, defines::pool::*};
 use slab::Slab;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
@@ -114,7 +114,7 @@ impl<T> Pool<T> where T: Poolable {
         self.channels
             .iter()
             .for_each(|ch| {
-                notify!(ch.to_string(), Message::new("new_tx".to_string(), vec![]));
+                notify!(ch.to_string(), Message::new("new_tx".to_string(), 0, vec![]));
             });
     }
 
