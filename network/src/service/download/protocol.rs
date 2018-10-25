@@ -56,11 +56,17 @@ impl PeerInfo {
 }
 
 #[derive(Debug, Clone)]
-pub struct DownloadMessage {
+pub struct DownloadProtocol {
     vesion: String,
 }
 
-impl DownloadMessage {
+impl DownloadProtocol {
+    pub fn new(vesion: &str) -> Self {
+        DownloadProtocol {
+            vesion: vesion.to_string()
+        }
+    }
+
     fn verify_version(&self, msg: &SocketMessage) -> bool {
         if let Some(v) = msg.version_at(0) {
            v == self.vesion

@@ -5,6 +5,7 @@ use eventloop::*;
 use common::address::Address as Account;
 use gen_message::{ Message, defines::p2p::* };
 use gen_processor::*;
+use gen_utils::config_parser::load_table;
 use socket::*;
 use socket::message::defines::*;
 
@@ -15,7 +16,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use config::{ Config, Value, File };
 use std::io::*;
-use std::path::Path;
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 use std::net::*;
@@ -46,12 +46,7 @@ pub struct P2PConfig {
 
 impl P2PConfig {
     pub fn load(service: &str) -> Self {
-        let mut config = Config::default();
-        let path = Path::new("../config/application.json");
-        config.merge(File::from(path))
-            .expect("Could not open config");
-        let service_config: HashMap<String, Value> = config.get_table(service)
-            .expect("Could not find the p2p field in the config file");
+        let service_config: HashMap<String, Value> = load_table(service);
 
         let port: i64 = service_config["port"].clone().into_int().unwrap();
         let peer_map_limit: i64 = service_config["peer_map_limit"].clone().into_int().unwrap();

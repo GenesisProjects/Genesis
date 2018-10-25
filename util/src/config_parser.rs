@@ -1,36 +1,19 @@
-use config;
-use std::sync::RwLock;
-use std::env;
+use config::*;
+use std::collections::HashMap;
+use std::path::Path;
 
-lazy_static! {
-	pub static ref SETTINGS: RwLock<config::Config> = RwLock::new({
-	    let mut setting = config::Config::default();
-	    let mut path_buff = env::current_dir().unwrap();
-	    path_buff.push("config");
-	    path_buff.push("application");
-	    path_buff.set_extension("json");
-	    setting.merge(config::File::from(path_buff)).unwrap();
-        setting
-	});
-
-	pub static ref BLOCK_SETTINGS: RwLock<config::Config> = RwLock::new({
-	    let mut setting = config::Config::default();
-	    let mut path_buff = env::current_dir().unwrap();
-	    path_buff.push("config");
-	    path_buff.push("block");
-	    path_buff.set_extension("json");
-	    setting.merge(config::File::from(path_buff)).unwrap();
-        setting
-	});
-
-	pub static ref NETWORK_SETTINGS: RwLock<config::Config> = RwLock::new({
-	    let mut setting = config::Config::default();
-	    let mut path_buff = env::current_dir().unwrap();
-	    path_buff.push("config");
-	    path_buff.push("network");
-	    path_buff.set_extension("json");
-	    setting.merge(config::File::from(path_buff)).unwrap();
-        setting
-	});
+pub fn version() -> String {
+    let mut config = Config::default();
+    let path = Path::new("../config/application.json");
+    config.merge(File::from(path))
+        .expect("Could not open config");
+    config.get_str("version").expect("Could not find version")
 }
 
+pub fn load_table(service: &str) -> HashMap<String, Value> {
+    let mut config = Config::default();
+    let path = Path::new("../config/application.json");
+    config.merge(File::from(path))
+        .expect("Could not open config");
+    config.get_table(service).expect("Could not load table")
+}

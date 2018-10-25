@@ -1,4 +1,5 @@
 mod protocol;
+use self::protocol::*;
 
 use super::super::peer_manager::*;
 use super::super::socket::message::message_handler::*;
@@ -10,6 +11,7 @@ use gen_core::block::*;
 use gen_core::transaction::*;
 use gen_processor::ContextRef;
 use gen_message::{ Message, MESSAGE_CENTER, defines::p2p::* };
+use gen_utils::config_parser::version;
 use mio::Token;
 use std::collections::HashMap;
 use std::io::Result;
@@ -33,12 +35,12 @@ pub enum DownloadServiceSessionStatus {
 }
 
 pub struct DownloadServiceSession {
-    account: Option<Address>,
-    cur_height: Option<usize>,
-    tail_hash: Option<Hash>,
-    handshaked: bool,
-    status: DownloadServiceSessionStatus,
-    pending_chain: Vec<Block>
+    pub account: Option<Address>,
+    pub cur_height: Option<usize>,
+    pub tail_hash: Option<Hash>,
+    pub handshaked: bool,
+    pub status: DownloadServiceSessionStatus,
+    pub pending_chain: Vec<Block>
 }
 
 impl DownloadServiceSession {
@@ -74,14 +76,32 @@ impl DownloadController {
 
 }
 
+//////////////////////////////////////////////////////////////////
+// Message Handlers                                             //
+//////////////////////////////////////////////////////////////////
+// Sync peer message handler
+fn sync_peer_handler(session: &mut DownloadServiceSession, msg: &SocketMessage, name: String) -> bool {
+    let version = version();
+    if let Some(info) = DownloadProtocol::new(version.as_str()).parse_sync(msg) {
+        session.account = Some(info.account());
+        session.cur_height = Some(info.cur_height() as usize);
+        session.tail_hash = Some(info.tail_hash());
+        session.handshaked = true;
+    }
+    true
+}
+
+/// Download message hook
 pub struct DownloadMessageHook {
     handler: SocketMessageHandler<DownloadServiceSession>
 }
 
 impl DownloadMessageHook {
     pub fn new() -> Self {
+        let mut handle: SocketMessageHandler<DownloadServiceSession> = SocketMessageHandler::new();
+        handle.add_event_handler(PEER_SYNC_STR.to_string(), sync_peer_handler);
         DownloadMessageHook {
-            handler: SocketMessageHandler::new()
+            handler: handle
         }
     }
 
