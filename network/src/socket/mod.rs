@@ -270,6 +270,19 @@ impl PeerSocket {
         Ok(())
     }
 
+    /// Stop sending.
+    /// Clean write buffer
+    #[inline]
+    pub fn stop_sending(&mut self) -> STDResult<()> {
+        // do nothing if the peer was killed
+        if !self.is_alive() {
+            return Err(Error::new(ErrorKind::Other, "Peer has been killed"));
+        }
+        self.write_buffer = vec![];
+        self.w_prep = false;
+        Ok(())
+    }
+
     /// Send buffer to the socket
     /// Will return `Err(ErrorKind::Interrupted)` if the socket is not ready yet, please try again.
     /// If return another I/O exceptions, socket could be broken.
@@ -306,7 +319,6 @@ impl PeerSocket {
             }
         }
     }
-
 
     /// Try to receive bytes and store them into buffer.
     /// Will return `Err(ErrorKind::WouldBlock)` if the socket is not ready yet, please try again.

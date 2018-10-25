@@ -27,8 +27,8 @@ const ROUND_HEART_BEAT: usize = 50;
 const ROUND_PRUNE: usize = 50;
 
 /// Socket message listener
-pub trait SocketMessageListener: Send {
-    fn notify(&mut self, msg: SocketMessage);
+pub trait SocketMessageHook: Send {
+    fn notify(&mut self, msg: SocketMessage, token: Token);
     fn peer_accepted(&mut self, token: Token);
     fn peer_droped(&mut self, token: Token);
 }
@@ -132,14 +132,14 @@ pub struct P2PManager {
     ban_list: Vec<SocketAddr>,
     waiting_list: Vec<SocketAddr>,
     eventloop: NetworkEventLoop<PeerSocket>,
-    msg_listener: ContextRef<SocketMessageListener>,
+    msg_listener: ContextRef<SocketMessageHook>,
     config: P2PConfig
 }
 
 impl P2PManager {
     fn new(
         name: String,
-        msg_listener: ContextRef<SocketMessageListener>,
+        msg_listener: ContextRef<SocketMessageHook>,
         event_size: usize,
         config: P2PConfig
     ) -> Result<Self> {
@@ -168,7 +168,7 @@ impl P2PManager {
         config: P2PConfig,
         event_size: usize,
         stack_size: usize,
-        msg_listener: ContextRef<SocketMessageListener>
+        msg_listener: ContextRef<SocketMessageHook>
     ) -> Result<ContextRef<Self>> {
         P2PManager::new(
             name,
@@ -180,7 +180,7 @@ impl P2PManager {
         })
     }
 
-    pub fn set_msg_listener(&mut self, listener: ContextRef<SocketMessageListener>) {
+    pub fn set_msg_listener(&mut self, listener: ContextRef<SocketMessageHook>) {
         self.msg_listener = listener;
     }
 
@@ -306,6 +306,11 @@ impl P2PManager {
         self.peer_mut_ref(token).write_msg(msg)
     }
 
+    /// Stop current sending task
+    pub fn stop_sending(&mut self, token: Token) -> Result<()> {
+        self.peer_mut_ref(token).stop_sending()
+    }
+
     fn peer_ref(&self, token: Token) -> &PeerSocket {
         self.peer_map.get(&token).unwrap()
     }
@@ -403,11 +408,11 @@ impl P2PManager {
     // select all prepared socket and read message
     fn read_all(&mut self) {
         let mut new_waiting_peers: Vec<SocketAddr> = vec![];
-        let mut dispatch_msgs: Vec<SocketMessage> = vec![];
+        let mut dispatch_msgs: Vec<(Token, SocketMessage)> = vec![];
         let peer_info = self.peer_info();
         self.peer_map.iter_mut().filter(|&(ref _token, ref peer)| {
             peer.prepare_to_recv_msg()
-        }).for_each(|(_token, peer)| {
+        }).for_each(|(token, peer)| {
             if let Ok(msgs) = peer.read_msg() {
                 for msg in msgs {
                     if msg.is_heartbeat() {
@@ -433,7 +438,7 @@ impl P2PManager {
                         };
                         continue
                     }
-                    dispatch_msgs.push(msg);
+                    dispatch_msgs.push((token.clone(), msg));
                 }
             }
         });
@@ -444,8 +449,8 @@ impl P2PManager {
             addr.clone()
         }).collect::<Vec<SocketAddr>>();
         self.append_waiting_list(&mut new_waiting_peers);
-        for msg in dispatch_msgs {
-            self.msg_listener.lock_trait_obj().notify(msg);
+        for (token, msg) in dispatch_msgs {
+            self.msg_listener.lock_trait_obj().notify(msg, token);
         }
     }
 

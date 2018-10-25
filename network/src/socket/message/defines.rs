@@ -22,6 +22,7 @@ pub const PEER_INFO_STR: &'static str = "PEER_INFO";
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SocketMessageArg {
     Int { value: i64 },
+    Uint { value: u64 },
     String { value: String },
     Account { value: String },
     Hash { value: Hash },
@@ -45,6 +46,31 @@ impl From<DateTime<Utc>> for SocketMessageArg {
         }
     }
 }
+
+impl From<u64> for SocketMessageArg {
+    fn from(val: u64) -> Self {
+        SocketMessageArg::Uint {
+            value: val
+        }
+    }
+}
+
+impl From<i64> for SocketMessageArg {
+    fn from(val: i64) -> Self {
+        SocketMessageArg::Int {
+            value: val
+        }
+    }
+}
+
+impl From<Hash> for SocketMessageArg {
+    fn from(val: Hash) -> Self {
+        SocketMessageArg::Hash {
+            value: val
+        }
+    }
+}
+
 
 /// Socket message.
 /// The following example shows how to build a message.
@@ -103,8 +129,23 @@ impl SocketMessage {
     /// Fetch integer argument with the index.
     /// Return `None` if type dismatch.
     pub fn int_at(&self, index: usize) -> Option<i64> {
+        if self.arg.len() <= index {
+            return None;
+        }
         match self.arg[index] {
             SocketMessageArg::Int { value } => Some(value),
+            _ => None
+        }
+    }
+
+    /// Fetch unsigned integer argument with the index.
+    /// Return `None` if type dismatch.
+    pub fn uint_at(&self, index: usize) -> Option<u64> {
+        if self.arg.len() <= index {
+            return None;
+        }
+        match self.arg[index] {
+            SocketMessageArg::Uint { value } => Some(value),
             _ => None
         }
     }
@@ -112,6 +153,9 @@ impl SocketMessage {
     /// Fetch string argument with the index.
     /// Return `None` if type dismatch.
     pub fn string_at(&self, index: usize) -> Option<String> {
+        if self.arg.len() <= index {
+            return None;
+        }
         match &self.arg[index] {
             &SocketMessageArg::String { ref value } => Some(value.clone()),
             _ => None
@@ -121,6 +165,9 @@ impl SocketMessage {
     /// Fetch account address argument with the index.
     /// Return `None` if type dismatch.
     pub fn account_at(&self, index: usize) -> Option<Account> {
+        if self.arg.len() <= index {
+            return None;
+        }
         match &self.arg[index] {
             &SocketMessageArg::Account { ref value } => {
                 if value.len() == HASH_LEN {
@@ -136,6 +183,9 @@ impl SocketMessage {
     /// Fetch sha256 hash argument with the index.
     /// Return `None` if type dismatch.
     pub fn hash_at(&self, index: usize) -> Option<Hash> {
+        if self.arg.len() <= index {
+            return None;
+        }
         match self.arg[index] {
             SocketMessageArg::Hash { value } => Some(value),
             _ => None
@@ -145,6 +195,9 @@ impl SocketMessage {
     /// Fetch `Version` argument with the index.
     /// Return `None` if type dismatch.
     pub fn version_at(&self, index: usize) -> Option<String> {
+        if self.arg.len() <= index {
+            return None;
+        }
         match &self.arg[index] {
             &SocketMessageArg::Vesion { ref value } => Some(value.clone()),
             _ => None
@@ -154,6 +207,9 @@ impl SocketMessage {
     /// Fetch Utc timestamp argument with the index.
     /// Return `None` if type dismatch.
     pub fn timestamp_at(&self, index: usize) -> Option<DateTime<Utc>> {
+        if self.arg.len() <= index {
+            return None;
+        }
         match self.arg[index] {
             SocketMessageArg::Timestamp { ref value } => {
                 match Utc.datetime_from_str(

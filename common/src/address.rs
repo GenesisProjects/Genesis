@@ -1,8 +1,8 @@
 use std::string::String;
 
+use key::*;
 use rlp::RLPSerialize;
 use rlp::types::*;
-use key::*;
 use rust_base58::{ToBase58, FromBase58};
 use std::borrow::Borrow;
 
