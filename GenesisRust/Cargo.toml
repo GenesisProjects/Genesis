@@ -10,4 +10,5 @@ rlp = { version = "0.1.0", path = "../rlp" }
 db = { version = "0.1.0", path = "../db" }
 gen_message = { version = "0.1.0", path = "../message" }
 gen_utils = { version = "0.1.0", path = "../util" }
+gen_processor = { version = "0.1.0", path = "../processor" }
 common = { version = "0.1.0", path = "../common" }

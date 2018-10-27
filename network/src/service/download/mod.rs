@@ -9,13 +9,14 @@ use common::hash::Hash;
 use gen_core::account::Account;
 use gen_core::block::*;
 use gen_core::transaction::*;
-use gen_processor::ContextRef;
+use gen_core::blockchain::*;
+use gen_processor::*;
 use gen_message::{ Message, MESSAGE_CENTER, defines::p2p::* };
 use gen_utils::config_parser::version;
 use mio::Token;
 use std::collections::HashMap;
 use std::io::Result;
-use std::sync::{ Arc, Mutex };
+use std::sync::{ Arc, Mutex, MutexGuard };
 
 const P2P_MANAGER_CH_NAME: &'static str = "download_p2p_manager";
 const P2P_MANAGER_EVENT_SIZE: usize = 1024;
@@ -34,8 +35,9 @@ pub enum DownloadServiceSessionStatus {
     SendingStorage
 }
 
-pub struct DownloadServiceSession {
+pub struct SyncServiceSession {
     pub account: Option<Address>,
+    pub ancestor: Option<Hash>,
     pub cur_height: Option<usize>,
     pub tail_hash: Option<Hash>,
     pub handshaked: bool,
@@ -43,10 +45,11 @@ pub struct DownloadServiceSession {
     pub pending_chain: Vec<Block>
 }
 
-impl DownloadServiceSession {
-    pub fn new() -> DownloadServiceSession {
-        DownloadServiceSession {
+impl SyncServiceSession {
+    pub fn new() -> SyncServiceSession {
+        SyncServiceSession {
             account: None,
+            ancestor: None,
             cur_height: None,
             tail_hash: None,
             handshaked: false,
@@ -58,31 +61,61 @@ impl DownloadServiceSession {
 
 /// Downloader Session Pool Singleton
 lazy_static! {
-    pub static ref PEER_SESSION_POOL: Mutex<HashMap<Token, DownloadServiceSession>> = {
+    pub static ref PEER_SESSION_POOL: Mutex<HashMap<Token, SyncServiceSession>> = {
         Mutex::new(HashMap::new())
     };
 }
 
-pub fn new_trait_obj_ref(service: DownloadMessageHook) -> ContextRef<SocketMessageHook> {
+fn new_trait_obj_ref(service: SyncMessageHook) -> ContextRef<SocketMessageHook> {
     let service_trait_obj = Arc::new(Mutex::new(service)) as Arc<Mutex<SocketMessageHook>>;
     ContextRef::new_trait_obj_ref(service_trait_obj)
 }
 
-pub struct DownloadController {
+fn peer_info() -> Option<PeerInfo> {
+    match Address::load() {
+        Some(addr) => Some(PeerInfo::new (
+            addr,
+            block_chain_len() as u64,
+            last_block_hash())
+        ),
+        None => None
+    }
 
 }
 
-impl DownloadController {
+/// Download controller
+pub struct SyncController {
+    p2p_manager_ref: ContextRef<P2PManager>
+}
 
+impl SyncController {
+    pub fn new() -> Result<Self> {
+        let hook = SyncMessageHook::new();
+        hook.into_p2p_manager_ref().and_then(|context_ref| {
+            Ok(SyncController { p2p_manager_ref: context_ref })
+        })
+    }
+
+    pub fn p2p_manager_ref(&self) -> ContextRef<P2PManager> {
+        self.p2p_manager_ref.clone()
+    }
+
+    pub fn start(&mut self) {
+        self.p2p_manager_ref.lock().start();
+    }
 }
 
 //////////////////////////////////////////////////////////////////
 // Message Handlers                                             //
 //////////////////////////////////////////////////////////////////
 // Sync peer message handler
-fn sync_peer_handler(session: &mut DownloadServiceSession, msg: &SocketMessage, name: String) -> bool {
+fn sync_peer_handler(session: &mut SyncServiceSession, msg: &SocketMessage, name: String) -> bool {
+    match session.status {
+        DownloadServiceSessionStatus::Init | DownloadServiceSessionStatus::Idle => {},
+        _ => { return false }
+    }
     let version = version();
-    if let Some(info) = DownloadProtocol::new(version.as_str()).parse_sync(msg) {
+    if let Some(info) = SyncProtocol::new(version.as_str()).parse_sync(msg) {
         session.account = Some(info.account());
         session.cur_height = Some(info.cur_height() as usize);
         session.tail_hash = Some(info.tail_hash());
@@ -92,15 +125,15 @@ fn sync_peer_handler(session: &mut DownloadServiceSession, msg: &SocketMessage, 
 }
 
 /// Download message hook
-pub struct DownloadMessageHook {
-    handler: SocketMessageHandler<DownloadServiceSession>
+pub struct SyncMessageHook {
+    handler: SocketMessageHandler<SyncServiceSession>
 }
 
-impl DownloadMessageHook {
+impl SyncMessageHook {
     pub fn new() -> Self {
-        let mut handle: SocketMessageHandler<DownloadServiceSession> = SocketMessageHandler::new();
+        let mut handle: SocketMessageHandler<SyncServiceSession> = SocketMessageHandler::new();
         handle.add_event_handler(PEER_SYNC_STR.to_string(), sync_peer_handler);
-        DownloadMessageHook {
+        SyncMessageHook {
             handler: handle
         }
     }
@@ -122,13 +155,13 @@ impl DownloadMessageHook {
     }
 }
 
-impl Drop for DownloadMessageHook {
+impl Drop for SyncMessageHook {
     fn drop(&mut self) {
 
     }
 }
 
-impl SocketMessageHook for DownloadMessageHook {
+impl SocketMessageHook for SyncMessageHook {
     fn notify(&mut self, msg: SocketMessage, token: Token) {
         if let Some(session) = PEER_SESSION_POOL.lock().unwrap().get_mut(&token) {
             self.handler.process_event(
@@ -140,11 +173,17 @@ impl SocketMessageHook for DownloadMessageHook {
     }
 
     fn peer_accepted(&mut self, token: Token) {
-        let new_session = DownloadServiceSession::new();
-        PEER_SESSION_POOL.lock().unwrap().insert(token, new_session);
+        let new_session = SyncServiceSession::new();
+        let mut guard = PEER_SESSION_POOL.lock().unwrap();
+        guard.insert(token.clone(), new_session);
+        let peer_info = peer_info().unwrap();
+        let version = version();
+        let msg = SyncProtocol::new(version.as_str()).sync(&peer_info);
+        self.notify_send_msg(&token, msg);
     }
 
     fn peer_droped(&mut self, token: Token) {
-        PEER_SESSION_POOL.lock().unwrap().remove(&token);
+        let mut guard =  PEER_SESSION_POOL.lock().unwrap();
+        guard.remove(&token);
     }
 }

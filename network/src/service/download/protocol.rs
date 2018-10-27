@@ -1,5 +1,5 @@
 use chrono::prelude::*;
-use common::address::Address as Account;
+use common::address::Address;
 use common::hash::Hash;
 use gen_core::transaction::Transaction;
 use nat::*;
@@ -24,13 +24,13 @@ pub const ACCOUNT_STR: &'static str = "ACCOUNT";
 
 #[derive(Debug, Clone)]
 pub struct PeerInfo {
-    account: Account,
+    account: Address,
     cur_height: u64,
     tail_hash: Hash
 }
 
 impl PeerInfo {
-    pub fn account(&self) -> Account {
+    pub fn account(&self) -> Address {
         self.account.clone()
     }
 
@@ -43,7 +43,7 @@ impl PeerInfo {
     }
 
     pub fn new(
-        account: Account,
+        account: Address,
         cur_height: u64,
         tail_hash: Hash
     ) -> PeerInfo {
@@ -56,13 +56,13 @@ impl PeerInfo {
 }
 
 #[derive(Debug, Clone)]
-pub struct DownloadProtocol {
+pub struct SyncProtocol {
     vesion: String,
 }
 
-impl DownloadProtocol {
+impl SyncProtocol {
     pub fn new(vesion: &str) -> Self {
-        DownloadProtocol {
+        SyncProtocol {
             vesion: vesion.to_string()
         }
     }
@@ -93,6 +93,7 @@ impl DownloadProtocol {
         } << Utc::now().into()
     }
 
+    /// Build peer sync message
     pub fn sync(&self, info: &PeerInfo) -> SocketMessage {
         let mut msg = SocketMessage::new(
             PEER_SYNC_STR.to_string(),
@@ -104,6 +105,7 @@ impl DownloadProtocol {
         msg
     }
 
+    /// Parse peer sync message
     pub fn parse_sync(&self, msg: &SocketMessage) -> Option<PeerInfo> {
         if !self.verify_msg_header(msg) {
             return None

@@ -141,18 +141,21 @@ impl P2PManager {
     ) -> Result<Self> {
         let server_addr: SocketAddr = format!("127.0.0.1:{}", config.port()).parse().unwrap();
         match TcpListener::bind(&server_addr) {
-            Ok(listerner) => Ok(P2PManager {
-                name: name,
-                thread_status: ThreadStatus::Pause,
-                listener: listerner,
-                receiver: None,
-                peer_map: HashMap::new(),
-                ban_list: Vec::new(),
-                waiting_list: Vec::new(),
-                eventloop: NetworkEventLoop::new(event_size),
-                msg_listener: msg_listener,
-                config: config
-            }),
+            Ok(listerner) => {
+                trace!("Listerning on port: {}", config.port());
+                Ok(P2PManager {
+                    name: name,
+                    thread_status: ThreadStatus::Pause,
+                    listener: listerner,
+                    receiver: None,
+                    peer_map: HashMap::new(),
+                    ban_list: Vec::new(),
+                    waiting_list: Vec::new(),
+                    eventloop: NetworkEventLoop::new(event_size),
+                    msg_listener: msg_listener,
+                    config: config
+                })
+            },
             Err(e) => Err(e)
         }
     }
@@ -166,14 +169,18 @@ impl P2PManager {
         stack_size: usize,
         msg_listener: ContextRef<SocketMessageHook>
     ) -> Result<ContextRef<Self>> {
-        P2PManager::new(
-            name,
-            msg_listener,
-            event_size,
-            config
-        ).and_then(|controller| {
-            Ok(controller.launch(stack_size))
-        })
+        if let Some(_account_addr) = Account::load() {
+            P2PManager::new(
+                name,
+                msg_listener,
+                event_size,
+                config
+            ).and_then(|controller| {
+                Ok(controller.launch(stack_size))
+            })
+        } else {
+            return Err(Error::new(ErrorKind::Other, "Can not find the user account."));
+        }
     }
 
     pub fn set_msg_listener(&mut self, listener: ContextRef<SocketMessageHook>) {

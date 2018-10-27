@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 
 /// Thread status
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum ThreadStatus {
     // Event loop is running
     Running,

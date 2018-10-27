@@ -15,23 +15,33 @@ pub fn cur_round() -> usize {
     unimplemented!()
 }
 
-/// Return current round base on timestamp and genesis timestamp
+/// Return current estimated round base on timestamp and genesis timestamp
+pub fn estimated_round(time: DateTime<Utc>) -> usize {
+    unimplemented!()
+}
+
+/// Return current round base on db record
 pub fn round(time: DateTime<Utc>) -> usize {
     unimplemented!()
 }
 
 /// Return self block chain length.
-pub fn self_block_chain_len() -> usize {
+pub fn block_chain_len() -> usize {
     unimplemented!()
 }
 
-/// Return current estimated block chain length.
-pub fn cur_block_chain_len() -> usize {
+/// Return estimated block chain length according to DB record.
+pub fn estimated_block_chain_len() -> usize {
     unimplemented!()
 }
 
-/// Return last block transaction hash root, if the block chain has not been sync, return None
-pub fn last_block_tx_root() -> Option<Hash> {
+/// Return last block transaction hash root
+pub fn last_block_tx_root() -> Hash {
+    unimplemented!()
+}
+
+/// Return last block header hash
+pub fn last_block_hash() -> Hash {
     unimplemented!()
 }
 
