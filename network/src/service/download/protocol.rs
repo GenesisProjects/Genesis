@@ -118,4 +118,30 @@ impl SyncProtocol {
             }
         }
     }
+
+    /// Build find ancestor message.
+    pub fn find_ancestor(&self, common_block: Hash) -> SocketMessage {
+        let mut msg = SocketMessage::new(
+            PEER_SYNC_STR.to_string(),
+            vec![],
+            vec![],
+        );
+        msg = self.add_msg_header(msg);
+        msg = msg << info.account().into() << info.cur_height().into() << info.tail_hash().into();
+        msg
+    }
+
+    /// Parse peer sync message
+    pub fn parse_find_ancestor(&self, msg: &SocketMessage) -> Option<PeerInfo> {
+        if !self.verify_msg_header(msg) {
+            return None
+        } else {
+            match (msg.account_at(2), msg.uint_at(3), msg.hash_at(4)) {
+                (Some(a), Some(u), Some(h)) => {
+                    Some(PeerInfo::new(a, u, h))
+                }
+                _ => None
+            }
+        }
+    }
 }

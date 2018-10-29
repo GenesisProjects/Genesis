@@ -118,6 +118,7 @@ impl<ContextType> ThreadService<ContextType> for ContextType
                     },
                     ThreadStatus::Pause => {
                         // do nothing here
+                        thread::sleep_ms(500);
                     },
                     ThreadStatus::Stop => {
                         // break run loop
