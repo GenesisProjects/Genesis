@@ -121,14 +121,7 @@ impl SyncProtocol {
 
     /// Build find ancestor message.
     pub fn find_ancestor(&self, common_block: Hash) -> SocketMessage {
-        let mut msg = SocketMessage::new(
-            PEER_SYNC_STR.to_string(),
-            vec![],
-            vec![],
-        );
-        msg = self.add_msg_header(msg);
-        msg = msg << info.account().into() << info.cur_height().into() << info.tail_hash().into();
-        msg
+        unimplemented!()
     }
 
     /// Parse peer sync message

@@ -1,8 +1,12 @@
 #[macro_use]
 extern crate gen_message;
 
+#[macro_use]
+extern crate lazy_static;
+
 pub mod observer;
 pub mod thread;
+pub mod thread_pool;
 
 pub use gen_message::Message;
 pub use observer::*;

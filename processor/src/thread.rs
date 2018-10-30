@@ -1,9 +1,19 @@
 //! Trait allows a thread running with a run loop
 //!
 
+use thread_pool::ThreadPool;
+
 use std::thread;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
+
+const WORKER_NUM: usize = 32;
+
+lazy_static! {
+    pub static ref THREAD_POOL: Mutex<ThreadPool> = {
+        Mutex::new(ThreadPool::new(WORKER_NUM))
+    };
+}
 
 /// Thread status
 #[derive(Debug, Copy, Clone)]
@@ -104,7 +114,7 @@ impl<ContextType> ThreadService<ContextType> for ContextType
         let thread_context_ref = context_ref.clone();
 
         // Spawn a thread to hold the run loop
-        thread::Builder::new().stack_size(stack_size).name(name).spawn(move || {
+        THREAD_POOL.lock().unwrap().execute(move || {
             let mut context = thread_context_ref.lock();
             context.set_status(ThreadStatus::Pause);
             context.prepare();
@@ -127,7 +137,7 @@ impl<ContextType> ThreadService<ContextType> for ContextType
                 }
                 thread::sleep(Duration::from_millis(time_span));
             }
-        }).unwrap();
+        });
         context_ref
     }
 
