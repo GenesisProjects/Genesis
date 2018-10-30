@@ -16,7 +16,7 @@ use gen_utils::config_parser::version;
 use mio::Token;
 use std::collections::HashMap;
 use std::io::Result;
-use std::sync::{ Arc, Mutex, MutexGuard };
+use std::sync::{ Mutex, MutexGuard };
 
 const P2P_MANAGER_CH_NAME: &'static str = "download_p2p_manager";
 const P2P_MANAGER_EVENT_SIZE: usize = 1024;
@@ -64,11 +64,6 @@ lazy_static! {
     pub static ref PEER_SESSION_POOL: Mutex<HashMap<Token, SyncServiceSession>> = {
         Mutex::new(HashMap::new())
     };
-}
-
-fn new_trait_obj_ref(service: SyncMessageHook) -> ContextRef<SocketMessageHook> {
-    let service_trait_obj = Arc::new(Mutex::new(service)) as Arc<Mutex<SocketMessageHook>>;
-    ContextRef::new_trait_obj_ref(service_trait_obj)
 }
 
 fn peer_info() -> Option<PeerInfo> {
@@ -140,13 +135,16 @@ impl SyncMessageHook {
 
     pub fn into_p2p_manager_ref(self) -> Result<ContextRef<P2PManager>> {
         let config = P2PConfig::load("network.p2p");
-        P2PManager::create(
+        let p2p_manager_ref_result = P2PManager::create(
             P2P_MANAGER_CH_NAME.to_string(),
             config,
             P2P_MANAGER_EVENT_SIZE,
             P2P_MANAGER_STACK_SIZE,
-            new_trait_obj_ref(self)
-        )
+        );
+        p2p_manager_ref_result.and_then(|p2p_manager_ref| {
+            p2p_manager_ref.lock().set_msg_hook(self);
+            Ok(p2p_manager_ref)
+        })
     }
 
     fn notify_send_msg(&self, token: &Token, msg: SocketMessage) {

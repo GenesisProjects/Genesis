@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use config::{ Config, Value, File };
 use std::io::*;
 use std::rc::Rc;
-use std::sync::mpsc::Receiver;
+use std::sync::{ Arc, Mutex, mpsc::Receiver };
 use std::net::*;
 use std::str::FromStr;
 use std::time::Duration;
@@ -128,14 +128,13 @@ pub struct P2PManager {
     ban_list: Vec<SocketAddr>,
     waiting_list: Vec<SocketAddr>,
     eventloop: NetworkEventLoop<PeerSocket>,
-    msg_listener: ContextRef<SocketMessageHook>,
+    msg_hook: Option<ContextRef<SocketMessageHook>>,
     config: P2PConfig
 }
 
 impl P2PManager {
     fn new(
         name: String,
-        msg_listener: ContextRef<SocketMessageHook>,
         event_size: usize,
         config: P2PConfig
     ) -> Result<Self> {
@@ -152,7 +151,7 @@ impl P2PManager {
                     ban_list: Vec::new(),
                     waiting_list: Vec::new(),
                     eventloop: NetworkEventLoop::new(event_size),
-                    msg_listener: msg_listener,
+                    msg_hook: None,
                     config: config
                 })
             },
@@ -166,13 +165,11 @@ impl P2PManager {
         name: String,
         config: P2PConfig,
         event_size: usize,
-        stack_size: usize,
-        msg_listener: ContextRef<SocketMessageHook>
+        stack_size: usize
     ) -> Result<ContextRef<Self>> {
         if let Some(_account_addr) = Account::load() {
             P2PManager::new(
                 name,
-                msg_listener,
                 event_size,
                 config
             ).and_then(|controller| {
@@ -183,8 +180,10 @@ impl P2PManager {
         }
     }
 
-    pub fn set_msg_listener(&mut self, listener: ContextRef<SocketMessageHook>) {
-        self.msg_listener = listener;
+    pub fn set_msg_hook<T: SocketMessageHook + 'static>(&mut self, service: T) {
+        let service_trait_obj = Arc::new(Mutex::new(service)) as Arc<Mutex<SocketMessageHook>>;
+        let v_ref = ContextRef::new_trait_obj_ref(service_trait_obj);
+        self.msg_hook = Some(v_ref);
     }
 
     // Obtain a new peer from the waiting list
@@ -215,7 +214,13 @@ impl P2PManager {
         if let Ok(token) = result {
             peer.set_token(token.clone());
             self.peer_map.insert(token.clone(), peer);
-            self.msg_listener.lock_trait_obj().peer_accepted(token.clone());
+            //let hook = self.msg_hook.clone();
+            match self.msg_hook {
+                Some(ref r) => {
+                    r.lock_trait_obj().peer_accepted(token.clone());
+                },
+                None => {}
+            }
         }
         result
     }
@@ -223,8 +228,14 @@ impl P2PManager {
     /// Deregister and drop peer
     fn drop_peer(&mut self, token: Token) -> Result<()> {
         if let Some(peer) = self.peer_map.remove(&token) {
-            self.msg_listener.lock_trait_obj().peer_droped(token.clone());
-            self.eventloop.deregister(&peer)
+            let result = self.eventloop.deregister(&peer);
+            match self.msg_hook {
+                Some(ref r) => {
+                    r.lock_trait_obj().peer_droped(token.clone());
+                },
+                None => {}
+            }
+            result
         } else {
             Ok(())
         }
@@ -461,7 +472,12 @@ impl P2PManager {
         }).collect::<Vec<SocketAddr>>();
         self.append_waiting_list(&mut new_waiting_peers);
         for (token, msg) in dispatch_msgs {
-            self.msg_listener.lock_trait_obj().notify(msg, token);
+            match self.msg_hook {
+                Some(ref r) => {
+                    r.lock_trait_obj().notify(msg, token);
+                },
+                _ => {}
+            }
         }
     }
 
