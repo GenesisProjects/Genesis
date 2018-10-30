@@ -309,6 +309,14 @@ impl P2PManager {
         self.peer_mut_ref(token).write_msg(msg)
     }
 
+    /// Broadcast message
+    pub fn broadcast_msg(&mut self, tokens: Vec<Token>, msg: SocketMessage) -> Result<()> {
+        let result: Result<()> = tokens.into_iter().map(|token| {
+            self.peer_mut_ref(token).write_msg(msg.clone())
+        }).collect();
+        result
+    }
+
     /// Stop current sending task
     pub fn stop_sending(&mut self, token: Token) -> Result<()> {
         self.peer_mut_ref(token).stop_sending()
