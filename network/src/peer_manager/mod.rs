@@ -12,6 +12,7 @@ use socket::message::defines::*;
 use mio::*;
 use mio::net::{TcpListener, TcpStream};
 
+use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use config::{ Config, Value, File };
@@ -565,6 +566,10 @@ impl Processor for P2PManager {
     }
 
     fn time_span(&self) -> u64 { TIME_SPAN }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl Drop for P2PManager {

@@ -3,8 +3,9 @@
 
 use thread_pool::ThreadPool;
 
-use std::thread;
+use std::any::Any;
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::thread;
 use std::time::Duration;
 
 const WORKER_NUM: usize = 32;
@@ -36,6 +37,10 @@ impl<T: ?Sized> ContextRef<T> {
 
     pub fn lock_trait_obj(&self) -> MutexGuard<T> {
         self.0.lock().unwrap()
+    }
+
+    pub fn into_inner(self) -> Arc<Mutex<T>> {
+        self.0
     }
 }
 

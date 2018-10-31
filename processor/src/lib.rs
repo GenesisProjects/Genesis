@@ -11,14 +11,23 @@ pub mod thread_pool;
 pub use gen_message::Message;
 pub use observer::*;
 pub use thread::*;
-pub use std::any::Any;
 pub use std::sync::mpsc::Receiver;
+
+use std::any::Any;
+use std::sync::Arc;
+use std::collections::HashMap;
+
+/*lazy_static! {
+    pub static ref THREAD_POOL: Mutex<HashMap<String, ContextRef<Processor>>> = {
+        Mutex::new(ThreadPool::new(WORKER_NUM))
+    };
+}*/
 
 /// The `Processor` trait is composed by `ThreadExec` trait and `Observer` trait.
 /// A struct implement `Processor` will support the run loop task and thread safe message handling.
 /// In order to make sure thread safe, we must use `launch` function to start a new thread
 /// and obtain a `ContextRef` which is thread context handler that can be used in a different thread.
-pub trait Processor: Any {
+pub trait Processor: Any + Send {
     /// Processor name id.
     /// It must be unique.
     /// The message channel and thread use the name as the unique ID.
@@ -51,6 +60,8 @@ pub trait Processor: Any {
 
     /// Span
     fn time_span(&self) -> u64;
+
+    fn as_any(&self) -> &dyn Any;
 }
 
 impl<T: Processor> Observer for T {

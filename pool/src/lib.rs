@@ -12,6 +12,7 @@ use gen_core::blockchain::chain_service;
 use gen_core::transaction::Transaction;
 use gen_message::{MESSAGE_CENTER, Message, defines::pool::*};
 use slab::Slab;
+use std::any::Any;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
@@ -275,6 +276,10 @@ impl Processor for TransactionPoolController {
 
     fn time_span(&self) -> u64 {
         TIME_SPAN
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
