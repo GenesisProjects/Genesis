@@ -279,14 +279,14 @@ impl Processor for TransactionPoolController {
 }
 
 impl TransactionPoolController {
-    pub fn create(slab_size: usize, name: String, stack_size: usize) -> ContextRef<Self> {
+    pub fn create(slab_size: usize, name: String) -> ContextRef<Self> {
         let pool: Pool<Transaction> = Pool::new(name, slab_size);
         let controller = TransactionPoolController {
             pool: pool,
             status: ThreadStatus::Stop,
             recv: None
         };
-        controller.launch(stack_size)
+        controller.launch()
     }
 
     pub fn pool(&self) -> &Pool<Transaction> {

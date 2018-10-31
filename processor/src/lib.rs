@@ -11,16 +11,14 @@ pub mod thread_pool;
 pub use gen_message::Message;
 pub use observer::*;
 pub use thread::*;
+pub use std::any::Any;
 pub use std::sync::mpsc::Receiver;
-
-/// The max stack size for running process
-pub const PROCESSOR_STACK_SIZE: usize = 4 * 1024 * 1024 * 1024;
 
 /// The `Processor` trait is composed by `ThreadExec` trait and `Observer` trait.
 /// A struct implement `Processor` will support the run loop task and thread safe message handling.
 /// In order to make sure thread safe, we must use `launch` function to start a new thread
 /// and obtain a `ContextRef` which is thread context handler that can be used in a different thread.
-pub trait Processor {
+pub trait Processor: Any {
     /// Processor name id.
     /// It must be unique.
     /// The message channel and thread use the name as the unique ID.

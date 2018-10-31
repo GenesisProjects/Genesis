@@ -164,8 +164,7 @@ impl P2PManager {
     pub fn create(
         name: String,
         config: P2PConfig,
-        event_size: usize,
-        stack_size: usize
+        event_size: usize
     ) -> Result<ContextRef<Self>> {
         if let Some(_account_addr) = Account::load() {
             P2PManager::new(
@@ -173,7 +172,7 @@ impl P2PManager {
                 event_size,
                 config
             ).and_then(|controller| {
-                Ok(controller.launch(stack_size))
+                Ok(controller.launch())
             })
         } else {
             return Err(Error::new(ErrorKind::Other, "Can not find the user account."));

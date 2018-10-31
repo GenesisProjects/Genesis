@@ -93,7 +93,7 @@ pub trait ThreadExec {
 pub trait ThreadService<ContextType> {
     /// Launch a thread.
     /// Return context reference
-    fn launch(self, stack_size: usize) -> ContextRef<ContextType>;
+    fn launch(self) -> ContextRef<ContextType>;
 
     /// Start the run loop
     fn start(&mut self);
@@ -107,7 +107,7 @@ pub trait ThreadService<ContextType> {
 
 impl<ContextType> ThreadService<ContextType> for ContextType
     where ContextType: ThreadInfo + ThreadExec + Send + 'static {
-    fn launch(self, stack_size: usize) -> ContextRef<ContextType> {
+    fn launch(self) -> ContextRef<ContextType> {
         let name = self.thread_name();
         let time_span = self.thread_update_time_span();
         let context_ref = ContextRef::new(self);

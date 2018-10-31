@@ -138,8 +138,7 @@ impl SyncMessageHook {
         let p2p_manager_ref_result = P2PManager::create(
             P2P_MANAGER_CH_NAME.to_string(),
             config,
-            P2P_MANAGER_EVENT_SIZE,
-            P2P_MANAGER_STACK_SIZE,
+            P2P_MANAGER_EVENT_SIZE
         );
         p2p_manager_ref_result.and_then(|p2p_manager_ref| {
             p2p_manager_ref.lock().set_msg_hook(self);
