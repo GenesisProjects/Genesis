@@ -17,6 +17,11 @@ use std::any::Any;
 use std::sync::Arc;
 use std::collections::HashMap;
 
+/// Get processor's thread context reference by name.
+/// ```
+/// let p2p_manager_context_ref = get_context_ref("p2p_manager");
+/// let p2p_manager: &P2PManager = p2p_manager_ref.lock().downcast_ref::<P2PManager>();
+/// ```
 pub fn get_context_ref(name: &str) -> Option<ContextRef<Any + Send + 'static>> {
     let guard = SHARED_THREAD_CONTEXT_REF_TABLE
         .lock()
@@ -27,7 +32,6 @@ pub fn get_context_ref(name: &str) -> Option<ContextRef<Any + Send + 'static>> {
     } else {
         None
     }
-
 }
 
 /// The `Processor` trait is composed by `ThreadExec` trait and `Observer` trait.
