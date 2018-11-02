@@ -17,11 +17,18 @@ use std::any::Any;
 use std::sync::Arc;
 use std::collections::HashMap;
 
-/*lazy_static! {
-    pub static ref THREAD_POOL: Mutex<HashMap<String, ContextRef<Processor>>> = {
-        Mutex::new(ThreadPool::new(WORKER_NUM))
-    };
-}*/
+pub fn get_context_ref(name: &str) -> Option<ContextRef<Any + Send + 'static>> {
+    let guard = SHARED_THREAD_CONTEXT_REF_TABLE
+        .lock()
+        .unwrap();
+    let result = guard.get(name);
+    if let Some(result) = result {
+        Some(result.clone_wrapper())
+    } else {
+        None
+    }
+
+}
 
 /// The `Processor` trait is composed by `ThreadExec` trait and `Observer` trait.
 /// A struct implement `Processor` will support the run loop task and thread safe message handling.
@@ -60,8 +67,6 @@ pub trait Processor: Any + Send {
 
     /// Span
     fn time_span(&self) -> u64;
-
-    fn as_any(&self) -> &dyn Any;
 }
 
 impl<T: Processor> Observer for T {

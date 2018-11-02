@@ -129,7 +129,7 @@ pub struct P2PManager {
     ban_list: Vec<SocketAddr>,
     waiting_list: Vec<SocketAddr>,
     eventloop: NetworkEventLoop<PeerSocket>,
-    msg_hook: Option<ContextRef<SocketMessageHook>>,
+    msg_hook: Option<ContextRef<dyn SocketMessageHook>>,
     config: P2PConfig
 }
 
@@ -566,10 +566,6 @@ impl Processor for P2PManager {
     }
 
     fn time_span(&self) -> u64 { TIME_SPAN }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
 }
 
 impl Drop for P2PManager {

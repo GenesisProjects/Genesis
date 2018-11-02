@@ -277,10 +277,6 @@ impl Processor for TransactionPoolController {
     fn time_span(&self) -> u64 {
         TIME_SPAN
     }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
 }
 
 impl TransactionPoolController {

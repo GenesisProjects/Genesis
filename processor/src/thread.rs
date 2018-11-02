@@ -4,6 +4,7 @@
 use thread_pool::ThreadPool;
 
 use std::any::Any;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::Duration;
@@ -13,6 +14,12 @@ const WORKER_NUM: usize = 32;
 lazy_static! {
     pub static ref THREAD_POOL: Mutex<ThreadPool> = {
         Mutex::new(ThreadPool::new(WORKER_NUM))
+    };
+}
+
+lazy_static! {
+    pub static ref SHARED_THREAD_CONTEXT_REF_TABLE: Mutex<HashMap<String, ContextRef<Any + Send + 'static>>> = {
+        Mutex::new(HashMap::new())
     };
 }
 
@@ -28,7 +35,7 @@ pub enum ThreadStatus {
 }
 
 /// Thread safe context reference.
-pub struct ContextRef<T: ?Sized>(Arc<Mutex<T>>);
+pub struct ContextRef<T: ?Sized>(pub Arc<Mutex<T>>);
 
 impl<T: ?Sized> ContextRef<T> {
     pub fn new_trait_obj_ref(trait_obj: Arc<Mutex<T>>) -> Self {
@@ -41,6 +48,10 @@ impl<T: ?Sized> ContextRef<T> {
 
     pub fn into_inner(self) -> Arc<Mutex<T>> {
         self.0
+    }
+
+    pub fn clone_wrapper(&self) -> Self {
+        ContextRef(self.0.clone())
     }
 }
 
@@ -59,7 +70,6 @@ impl<T> Clone for ContextRef<T> {
         ContextRef(self.0.clone())
     }
 }
-
 
 /// Thread information trait
 pub trait ThreadInfo {
@@ -118,6 +128,10 @@ impl<ContextType> ThreadService<ContextType> for ContextType
         let context_ref = ContextRef::new(self);
         let thread_context_ref = context_ref.clone();
 
+        // Register
+        let inner = thread_context_ref.clone().into_inner() as Arc<Mutex<Any + Send + 'static>>;
+        SHARED_THREAD_CONTEXT_REF_TABLE.lock().unwrap().insert(name.clone(), ContextRef(inner));
+
         // Spawn a thread to hold the run loop
         THREAD_POOL.lock().unwrap().execute(move || {
             let mut context = thread_context_ref.lock();
@@ -137,6 +151,7 @@ impl<ContextType> ThreadService<ContextType> for ContextType
                     },
                     ThreadStatus::Stop => {
                         // break run loop
+                        SHARED_THREAD_CONTEXT_REF_TABLE.lock().unwrap().remove(&name.clone());
                         break;
                     }
                 }
