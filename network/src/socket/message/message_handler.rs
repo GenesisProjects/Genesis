@@ -42,7 +42,8 @@ use std::collections::HashMap;
 ///
 /// ## Return
 /// return success or failed
-pub type SocketMessageCallback<T> = fn(session: &mut T, msg: &SocketMessage, name: String) -> bool;
+// pub type SocketMessageCallback<T> = fn(session: &mut T, msg: &SocketMessage, name: String) -> bool;
+pub type SocketMessageCallback<T> = Box<(Fn(&mut T, &SocketMessage, String) -> bool) + Send>;
 
 /// Implement this trait allow struct to add `SocketMessageCallback` into it's `SocketMessageHandler`
 pub trait EventRegister {
@@ -51,7 +52,6 @@ pub trait EventRegister {
 
 /// Add/Del `SocketMessageCallback`.
 /// Invoke `SocketMessageCallback` by `event` string.
-#[derive(Clone)]
 pub struct SocketMessageHandler<T>(HashMap<String, SocketMessageCallback<T>>);
 
 impl<T> SocketMessageHandler<T> {
@@ -60,8 +60,9 @@ impl<T> SocketMessageHandler<T> {
     }
 
     /// Add a `SocketMessageCallback` with an `event` name.
-    pub fn add_event_handler(&mut self, event: String, callback: SocketMessageCallback<T>) {
-        self.0.insert(event, callback);
+    pub fn add_event_handler<F>(&mut self, event: String, callback: F)
+        where F: (Fn(&mut T, &SocketMessage, String) -> bool) + Send + 'static {
+        self.0.insert(event, Box::new(callback));
     }
 
     /// Remove a `SocketMessageCallback` by the `event` name.
