@@ -144,6 +144,7 @@ impl<ContextType> ThreadService<ContextType> for ContextType
                         context.pre_exec();
                         context.exec();
                         context.post_exec();
+                        thread::sleep_ms(20);
                     },
                     ThreadStatus::Pause => {
                         // do nothing here
