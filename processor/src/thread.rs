@@ -127,20 +127,22 @@ impl<ContextType> ThreadService<ContextType> for ContextType
         let time_span = self.thread_update_time_span();
         let context_ref = ContextRef::new(self);
         let thread_context_ref = context_ref.clone();
-
+        {
+            context_ref.lock().set_status(ThreadStatus::Pause);
+            context_ref.lock().prepare();
+        }
         // Register
         let inner = thread_context_ref.clone().into_inner() as Arc<Mutex<Any + Send + 'static>>;
         SHARED_THREAD_CONTEXT_REF_TABLE.lock().unwrap().insert(name.clone(), ContextRef(inner));
 
         // Spawn a thread to hold the run loop
         THREAD_POOL.lock().unwrap().execute(move || {
-            let mut context = thread_context_ref.lock();
-            context.set_status(ThreadStatus::Pause);
-            context.prepare();
             loop {
-                match context.status() {
+                let status = thread_context_ref.lock().status();
+                match status {
                     ThreadStatus::Running => {
                         // exec run loop
+                        let mut context = thread_context_ref.lock();
                         context.pre_exec();
                         context.exec();
                         context.post_exec();
