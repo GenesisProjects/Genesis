@@ -35,7 +35,7 @@ impl SocketMessageHeader {
             // read header bytes
             let mut size_buf: [u8; MSG_HEADER_LEN] = [0; MSG_HEADER_LEN];
             size_buf.clone_from_slice(&buff[..MSG_HEADER_LEN]);
-            let msg_size = (&size_buf.to_vec()[..]).read_u64::<BigEndian>().unwrap();
+            let msg_size = (&size_buf.to_vec()[..]).read_u64::<BigEndian>().expect("could not read msg size");
             Some(SocketMessageHeader {
                 body_size: msg_size as usize
             })

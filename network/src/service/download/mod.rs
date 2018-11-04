@@ -148,7 +148,8 @@ impl SyncMessageHook {
 
     fn notify_send_msg(&self, token: &Token, msg: SocketMessage) {
         let id = token.0;
-        notify!(P2P_MANAGER_CH_NAME.to_string(), Message::new(SEND_MESSAGE.to_string(), id as u32, msg.into_bytes())).unwrap();
+        notify!(P2P_MANAGER_CH_NAME.to_string(), Message::new(SEND_MESSAGE.to_string(), id as u32, msg.into_bytes()))
+            .expect("Could not notify sending msg");
     }
 }
 
@@ -173,7 +174,7 @@ impl SocketMessageHook for SyncMessageHook {
         let new_session = SyncServiceSession::new();
         let mut guard = PEER_SESSION_POOL.lock().unwrap();
         guard.insert(token.clone(), new_session);
-        let peer_info = peer_info().unwrap();
+        let peer_info = peer_info().expect("Could not get the peer info");
         let version = version();
         let msg = SyncProtocol::new(version.as_str()).sync(&peer_info);
         self.notify_send_msg(&token, msg);

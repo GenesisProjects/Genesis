@@ -49,11 +49,16 @@ impl P2PConfig {
     pub fn load(service: &str) -> Self {
         let service_config: HashMap<String, Value> = load_table(service);
 
-        let port: i64 = service_config["port"].clone().into_int().unwrap();
-        let peer_map_limit: i64 = service_config["peer_map_limit"].clone().into_int().unwrap();
-        let ban_list_limit: i64 = service_config["ban_list_limit"].clone().into_int().unwrap();
-        let waiting_list_limit: i64 = service_config["waiting_list_limit"].clone().into_int().unwrap();
-        let min_peers: i64 = service_config["min_peers"].clone().into_int().unwrap();
+        let port: i64 = service_config["port"].clone().into_int()
+            .expect("Could not load port config");
+        let peer_map_limit: i64 = service_config["peer_map_limit"].clone().into_int()
+            .expect("Could not load peer_map_limit config");
+        let ban_list_limit: i64 = service_config["ban_list_limit"].clone().into_int()
+            .expect("Could not load ban_list_limit config");
+        let waiting_list_limit: i64 = service_config["waiting_list_limit"].clone().into_int()
+            .expect("Could not load waiting_list_limit config");
+        let min_peers: i64 = service_config["min_peers"].clone().into_int()
+            .expect("Could not load min_peers config");
         let bootstrap_peers: Vec<SocketAddr> = service_config["bootstrap_peers"].clone()
             .into_array().expect("The `bootstrap_peers` is not an array")
             .into_iter().map(|value| {
@@ -139,7 +144,10 @@ impl P2PManager {
         event_size: usize,
         config: P2PConfig
     ) -> Result<Self> {
-        let server_addr: SocketAddr = format!("127.0.0.1:{}", config.port()).parse().unwrap();
+        let server_addr: SocketAddr = format!("127.0.0.1:{}", config.port())
+            .parse()
+            .expect("can not form the server address");
+
         match TcpListener::bind(&server_addr) {
             Ok(listerner) => {
                 trace!("Listerning on port: {}", config.port());
