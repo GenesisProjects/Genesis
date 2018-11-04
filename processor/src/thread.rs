@@ -13,7 +13,7 @@ const WORKER_NUM: usize = 32;
 
 lazy_static! {
     pub static ref THREAD_POOL: Mutex<ThreadPool> = {
-        Mutex::new(ThreadPool::new(WORKER_NUM))
+        Mutex::new(ThreadPool::with_name("processor".into(), WORKER_NUM))
     };
 }
 
