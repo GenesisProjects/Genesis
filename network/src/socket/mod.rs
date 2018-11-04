@@ -492,6 +492,9 @@ impl Evented for PeerSocket {
 impl Drop for PeerSocket {
     // Shut down connection if socket dropped.
     fn drop(&mut self) {
-        self.stream.shutdown(Shutdown::Both).unwrap();
+        match self.stream.shutdown(Shutdown::Both) {
+            Ok(_) => {},
+            Err(e) => warn!("Could not close the socket: {:?}", e)
+        }
     }
 }
