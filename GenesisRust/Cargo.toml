@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
 
 [dependencies]
+error-chain = "0.12.0"
 gen_core = { version = "0.1.0", path = "../core" }
 gen_network = { version = "0.1.0", path = "../network" }
 rlp = { version = "0.1.0", path = "../rlp" }

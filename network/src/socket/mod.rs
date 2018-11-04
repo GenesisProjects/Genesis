@@ -222,16 +222,20 @@ impl PeerSocket {
                     alive: true,
                     ttl: TTL
                 };
-                socket.setup_socket();
+                match socket.setup_socket() {
+                    Ok(_) => {},
+                    Err(e) => warn!("Can not set socket options: {:?}", e)
+                };
                 Ok(socket)
             },
             Err(e) => Err(e)
         }
     }
 
-    fn setup_socket(&self) {
-        self.stream.set_nodelay(true).unwrap();
-        self.stream.set_keepalive_ms(Some(KEEP_ALIVE_MS)).unwrap();
+    fn setup_socket(&self) -> STDResult<()> {
+        self.stream.set_nodelay(true).and_then(|_| {
+            self.stream.set_keepalive_ms(Some(KEEP_ALIVE_MS))
+        })
     }
 
     /// Update a mio event loop token
