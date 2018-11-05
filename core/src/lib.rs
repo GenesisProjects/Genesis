@@ -1,17 +1,20 @@
 pub mod account;
 pub mod action;
 pub mod block;
+pub mod blockchain;
 pub mod log;
 pub mod mpt;
 pub mod storage;
 pub mod transaction;
-pub mod receipt;
+pub mod validator;
 pub mod vm;
 
 #[macro_use]
 pub extern crate common;
 pub extern crate chrono;
 pub extern crate db;
+#[macro_use]
+extern crate lazy_static;
 #[macro_use]
 pub extern crate rlp;
 pub extern crate num;

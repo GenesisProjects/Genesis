@@ -1,6 +1,7 @@
+use chrono::{DateTime, Utc};
 use common::address::Address;
-use common::key::Signature;
-use num::bigint::BigInt;
+use common::hash::{Hash, SerializableAndSHA256Hashable};
+use common::key::{Signature, KeyPair, KeyPairOp};
 use num::Zero;
 use rlp::RLPSerialize;
 use rlp::types::*;
@@ -8,50 +9,69 @@ use rlp::types::*;
 ///
 ///
 ///
-pub struct TransactionBody {
-    account_nounce: u64,
-    gas_price: BigInt,
-    gas_limit: u64,
+#[derive(Clone)]
+pub struct Transaction {
+    hash: Option<Hash>,
+    timestamp: DateTime<Utc>,
+    nonce: u64,
     sender: Address,
     recipient: Address,
-    amount: BigInt,
-    payload: Vec<u8>,
-    sig: Option<Signature>
-}
-
-///
-///
-///
-pub struct Transaction {
-    tx_body: TransactionBody
+    amount: u64,
+    signature: Option<Signature>,
 }
 
 impl Transaction {
-    pub fn new(nonce: u64,
-               from: Address,
-               to: Address,
-               amount: Option<BigInt>,
-               gas_limit: u64,
-               gas_price: Option<BigInt>,
-               data: &Vec<u8>) -> Box<Self> {
-        Box::new(Transaction {
-            tx_body: TransactionBody {
-                account_nounce: nonce,
-                gas_price: match gas_price {
-                    Some(v) => v,
-                    None => BigInt::zero()
-                },
-                gas_limit: gas_limit,
-                sender: from,
-                recipient: to,
-                amount: match amount {
-                    Some(v) => v,
-                    None => BigInt::zero()
-                },
-                payload: data.to_vec(),
-                sig: None
-            },
-        })
+    pub fn new(
+        nonce: u64,
+        from: Address,
+        to: Address,
+        amount: u64
+    ) -> Self {
+        Transaction {
+            hash: None,
+            timestamp: Utc::now(),
+            nonce: nonce,
+            sender: from,
+            recipient: to,
+            amount: amount,
+            signature: None
+        }
+    }
+
+    pub fn gen_hash(&self) -> Hash {
+        let (hash, _) = self.encrype_sha256().unwrap();
+        hash
+    }
+
+    pub fn hash(&self) -> Hash {
+        self.hash.clone().unwrap()
+    }
+
+    pub fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp.clone()
+    }
+
+    pub fn sender(&self) -> Address {
+        self.sender.clone()
+    }
+
+    pub fn recipient(&self) -> Address {
+        self.recipient.clone()
+    }
+
+    pub fn nonce(&self) -> u64 {
+        self.nonce
+    }
+
+    pub fn check(&self) -> bool {
+        self.hash.is_some()
+            && self.signature.is_some()
+            && KeyPair::verify_sig(
+                &self.sender,
+                &self.hash.unwrap()[..],
+                &self.signature.unwrap()
+            )
+            && self.hash.unwrap() == self.gen_hash()
     }
 }
 
@@ -65,8 +85,8 @@ impl RLPSerialize for Transaction {
     }
 }
 
-# [cfg(test)]
+#[cfg(test)]
 mod tests {
-    # [test]
+    #[test]
     fn test_transaction() {}
 }

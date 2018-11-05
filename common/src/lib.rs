@@ -1,8 +1,6 @@
 pub mod address;
 pub mod hash;
 pub mod key;
-pub mod thread;
-pub mod observe;
 
 pub extern crate crypto;
 pub extern crate rand;

@@ -5,10 +5,13 @@ use std::io::*;
 use std::result::Result as SerdeResult;
 
 use common::address::Address as Account;
-use message::protocol::*;
 use nat::*;
-use session::*;
-use session_state::*;
+use socket::message::message_handler::*;
+
+use super::protocol::*;
+use super::session::*;
+use super::node_state::*;
+use super::session_state::*;
 
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::net::TcpStream;
@@ -43,7 +46,7 @@ pub struct Peer {
 
 impl Peer {
     #[inline]
-    pub fn new(socket: TcpStream, addr: &SocketAddr) -> Self {
+    pub fn new(socket: TcpStream, addr: &SocketAddr, state: StateRef) -> Self {
         Peer {
             bootstraped: false,
             ip_addr: addr.clone(),
@@ -53,13 +56,13 @@ impl Peer {
             token: None,
             ttl: INIT_TTL,
 
-            session: Session::new(socket, addr).add_handler(),
+            session: Session::new(socket, addr, state).add_handler(),
         }
     }
 
     #[inline]
-    pub fn connect(addr: &SocketAddr) -> Result<Self> {
-        Session::connect(addr).and_then(|session| {
+    pub fn connect(addr: &SocketAddr, state: StateRef) -> Result<Self> {
+        Session::connect(addr, state).and_then(|session| {
             Ok(Peer {
                 bootstraped: false,
                 ip_addr: addr.clone(),

@@ -77,7 +77,6 @@ fn inject_mem_stat(instructions: &mut elements::Instructions, mem_stat_func: u32
     } else {
         Err(())
     }
-
 }
 
 fn add_mem_stat(module: elements::Module, ext_mem_stat_func: u32) -> elements::Module {
@@ -130,7 +129,7 @@ pub fn inject_cpu_stat(
             End => {
                 // Just finalize current block.
                 meter.finalize()?;
-            },
+            }
             Else => {
                 // `Else` opcode is being encountered. So the case we are looking at:
                 //
@@ -170,7 +169,7 @@ pub fn inject_cpu_stat(
 
 
 pub fn inject_resource_stat(module: elements::Module)
-                          -> Result<elements::Module, elements::Module>
+                            -> Result<elements::Module, elements::Module>
 {
     // Injecting resource statistic external
     let mut mbuilder = builder::from_module(module);
@@ -222,28 +221,28 @@ pub fn inject_resource_stat(module: elements::Module)
                         break;
                     }
                     if let Ok(_) = inject_mem_stat(func_body.code_mut(), total_func) {
-                        need_grow_counter  = true;
+                        need_grow_counter = true;
                     } else {
-                        need_grow_counter  = false;
+                        need_grow_counter = false;
                     }
                 }
-            },
+            }
             &mut elements::Section::Export(ref mut export_section) => {
                 for ref mut export in export_section.entries_mut() {
                     if let &mut elements::Internal::Function(ref mut func_index) = export.internal_mut() {
-                        if *func_index >= mem_stat_func { *func_index += 2}
+                        if *func_index >= mem_stat_func { *func_index += 2 }
                     }
                 }
-            },
+            }
             &mut elements::Section::Element(ref mut elements_section) => {
                 for ref mut segment in elements_section.entries_mut() {
                     // update all indirect call addresses initial values
                     for func_index in segment.members_mut() {
-                        if *func_index >= mem_stat_func { *func_index += 2}
+                        if *func_index >= mem_stat_func { *func_index += 2 }
                     }
                 }
-            },
-            _ => { }
+            }
+            _ => {}
         }
     }
 

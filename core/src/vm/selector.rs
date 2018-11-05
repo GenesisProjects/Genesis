@@ -54,7 +54,7 @@ impl Selector {
     }
 
     pub fn encode<'a>(&self) -> Result<EncodedRLP, &'static str> {
-       unimplemented!()
+        unimplemented!()
     }
 }
 
@@ -87,31 +87,31 @@ impl RLPSerialize for Selector {
                     args_rlp = args_rlp << type_item;
                     let arg_item: RLP = (value as u32).into();
                     args_rlp = args_rlp << arg_item;
-                },
+                }
                 Argument::Int64(value) => {
                     let type_item: RLP = "i64".to_owned().into();
                     args_rlp = args_rlp << type_item;
                     let arg_item: RLP = (value as u64).into();
                     args_rlp = args_rlp << arg_item;
-                },
+                }
                 Argument::Uint32(value) => {
                     let type_item: RLP = "u32".to_owned().into();
                     args_rlp = args_rlp << type_item;
                     let arg_item: RLP = (value as u32).into();
                     args_rlp = args_rlp << arg_item;
-                },
+                }
                 Argument::Uint64(value) => {
                     let type_item: RLP = "f32".to_owned().into();
                     args_rlp = args_rlp << type_item;
                     let arg_item: RLP = (value as u64).into();
                     args_rlp = args_rlp << arg_item;
-                },
+                }
                 Argument::Float32(value) => {
                     let type_item: RLP = "f64".to_owned().into();
                     args_rlp = args_rlp << type_item;
                     let arg_item: RLP = (value as u32).into();
                     args_rlp = args_rlp << arg_item;
-                },
+                }
                 Argument::Float64(value) => {
                     let type_item: RLP = "u64".to_owned().into();
                     args_rlp = args_rlp << type_item;
@@ -129,31 +129,31 @@ impl RLPSerialize for Selector {
                     returns_rlp = returns_rlp << type_item;
                     let ret_item: RLP = (value as u32).into();
                     returns_rlp = returns_rlp << ret_item;
-                },
+                }
                 Argument::Int64(value) => {
                     let type_item: RLP = "i64".to_owned().into();
                     returns_rlp = returns_rlp << type_item;
                     let ret_item: RLP = (value as u64).into();
                     returns_rlp = returns_rlp << ret_item;
-                },
+                }
                 Argument::Uint32(value) => {
                     let type_item: RLP = "u32".to_owned().into();
                     returns_rlp = returns_rlp << type_item;
                     let ret_item: RLP = (value as u32).into();
                     returns_rlp = returns_rlp << ret_item;
-                },
+                }
                 Argument::Uint64(value) => {
                     let type_item: RLP = "u64".to_owned().into();
                     returns_rlp = returns_rlp << type_item;
                     let ret_item: RLP = (value as u64).into();
                     returns_rlp = returns_rlp << ret_item;
-                },
+                }
                 Argument::Float32(value) => {
                     let type_item: RLP = "f64".to_owned().into();
                     returns_rlp = returns_rlp << type_item;
                     let ret_item: RLP = (value as u32).into();
                     returns_rlp = returns_rlp << ret_item;
-                },
+                }
                 Argument::Float64(value) => {
                     let type_item: RLP = "u64".to_owned().into();
                     returns_rlp = returns_rlp << type_item;

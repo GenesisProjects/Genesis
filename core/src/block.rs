@@ -1,36 +1,39 @@
-use common::hash::*;
+use chrono::{Utc, DateTime};
 use common::address::*;
-use num::bigint::BigInt;
+use common::hash::*;
+use common::key::Signature;
 use rlp::RLPSerialize;
 use rlp::types::*;
+use mpt::node::TrieKey;
 
-pub mod nounce {
-    /// A BlockNonce is a 64-bit hash which proves (combined with the
-    /// mix-hash) that a sufficient amount of computation has been carried
-    /// out on a block.
-    pub type BlockNounce = [u8; 8];
 
+///
+///
+///
+#[derive(Clone)]
+pub struct Block {
+    num: u64,
+    hash: Option<Hash>,
+    parent: Hash,
+    account_root: TrieKey,
+    txs_root: TrieKey,
+    signer_addr: Address,
+    signature: Option<Signature>,
+    date: DateTime<Utc>,
 }
 
-///
-///
-///
-#[derive(Clone, Debug)]
-pub struct Block {
-    pub parent: Hash,
-    pub uncle: Hash,
-    pub coinbase: Address,
-    pub root: Hash,
-    pub tx_root: Hash,
-    pub receipt_root: Hash,
-    //pub logs_bloom: Bloom<Log>,
-    pub difficulty: BigInt,
-    pub number: BigInt,
-    pub gas_used: u64,
-    pub time: BigInt,
-    pub extra: Vec<u8>,
-    pub digest: Hash,
-    pub nounce: nounce::BlockNounce
+impl Block {
+    pub fn num(&self) -> u64 {
+        self.num
+    }
+
+    pub fn account_root(&self) -> TrieKey {
+        self.account_root.clone()
+    }
+
+    pub fn txs_root(&self) -> TrieKey {
+        self.txs_root.clone()
+    }
 }
 
 impl RLPSerialize for Block {

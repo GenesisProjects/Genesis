@@ -1,95 +1,82 @@
-extern crate common;
-extern crate rlp;
+use ::rocksdb::{DB, Options};
+use common::hash::*;
+use config::*;
+use gen_db::*;
+use rlp::{decoder::Decoder, RLPSerialize};
 
-use self::common::hash::Hash;
-use self::rlp::RLPSerialize;
-use gen_rocksdb::*;
-
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 use std::sync::Mutex;
 
-pub enum DBResult {
-    DBConnectSuccess,
-    DBDisconnectSuccess,
-    DBUpdateSuccess,
-    DBFetchSuccess,
-    DBStatusSuccess,
-}
-
-pub enum DBError {
-    DBConnectError{ msg: &'static str },
-    DBDisconnectError { msg: &'static str },
-    DBUpdateError { msg: &'static str },
-    DBFetchError { msg: &'static str },
-    DBStatusError { msg: &'static str },
-}
-
-pub struct DBContext {
-
-}
-
-pub struct DBStatus {
-
-}
-
-pub struct DBConfig {
-    pub create_if_missing: bool,
-    pub max_open_files: i32
-}
-
-pub struct DBManager {
-    config: &'static mut DBConfig
-}
-
-impl DBManager {
-    pub fn connect(&self, config: & DBConfig) -> Result<(&'static DBContext, DBResult), DBError> {
-        let db = RocksDB::open(config);
-        Ok(( &DBContext{}, DBResult::DBConnectSuccess ))
-    }
-
-    pub fn disconnect(&self) -> Result<DBResult, DBError> {
-        unimplemented!()
-    }
-
-    pub fn show_status(&self) -> Result<DBStatus, DBError> {
-        unimplemented!()
-    }
-}
-
 lazy_static! {
-    //TODO:
-    pub static ref SHARED_MANAGER: Mutex<DBManager> = {
-        static mut conf: DBConfig = DBConfig {
-            create_if_missing: false,
-            max_open_files: 32
-        };
-        unsafe { Mutex::new(DBManager{ config: &mut conf }) }
+    static ref DB_MAP: Mutex<HashMap<String, RocksDB>> = {
+        Mutex::new(HashMap::new())
     };
 }
 
-///
-///
-///
-pub trait DBManagerOP {
-    fn put<T: RLPSerialize>(&self, value: &T) -> Hash;
-    fn delete(&self, key: &Vec<u8>);
-    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T>;
-    fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T>;
+pub struct DBManager {
+    config: HashMap<String, Value>
 }
 
-impl DBManagerOP for DBManager {
-    fn put<T: RLPSerialize>(&self, value: &T) -> Hash {
-        unimplemented!()
+static DB_NAME: &'static str = "db/_trie_db";
+
+impl DBManager {
+    pub fn default() -> Self {
+        let mut settings = Config::default();
+        let path = Path::new("../config/application.json");
+        settings.merge(File::from(path)).unwrap();
+        let config = settings.get_table("db").unwrap();
+        DBManager {
+            config
+        }
     }
 
-    fn delete(&self, key: &Vec<u8>) {
-        unimplemented!()
+    pub fn get_db(&mut self, key: &str) -> RocksDB {
+        let conf = self.config.get(key).unwrap().clone().into_table().unwrap();
+        let path = conf.get("path").unwrap().clone().into_str().unwrap();
+        let create_if_missing = conf.get("create_if_missing").unwrap().clone().into_bool().unwrap();
+        let max_open_files = conf.get("max_open_files").unwrap().clone().into_int().unwrap() as i32;
+        let mut map = DB_MAP.lock().unwrap();
+        map.entry(key.to_string()).or_insert_with(|| {
+            let db_config = DBConfig {
+                create_if_missing,
+                max_open_files,
+            };
+            RocksDB::open(&db_config, &path[..])
+        }).clone()
     }
 
-    fn get<T: RLPSerialize>(&self, key: &Vec<u8>) -> Option<T> {
-        unimplemented!()
+    pub fn destroy_db(&mut self, key: &str) {
+        let conf = self.config.get(key).unwrap().clone().into_table().unwrap();
+        let path = conf.get("path").unwrap().clone().into_str().unwrap();
+        let opts = Options::default();
+        let mut map = DB_MAP.lock().unwrap();
+        DB::destroy(&opts, path).and_then(|r| {
+            map.remove(key);
+            Ok(r)
+        });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_test_db() {
+        let mut c = DBManager::default();
+        let d = c.get_db("test");
+        println!("{:?}", d);
     }
 
-    fn get_node<T: RLPSerialize>(&self, value: &T) -> Option<T> {
-        unimplemented!()
+    #[test]
+    fn test_db_insert() {
+        let mut c = DBManager::default();
+        let db = c.get_db("test");
+
+        let test_str = String::from("test");
+        let r = db.put(&test_str);
+        println!("{:?}", r);
     }
 }

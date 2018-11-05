@@ -9,6 +9,7 @@ use std::io::{Error, ErrorKind};
 #[inline]
 fn malformed_err() -> (Result<RLP>, usize) { (Err(Error::new(ErrorKind::Other, "Malformed input")), 0) }
 
+/// RLP Decoder
 pub struct Decoder;
 
 impl Decoder {
@@ -164,7 +165,11 @@ impl Decoder {
         }
     }
 
+    /// Decode bytes array to RLP, return `None` if failed
     pub fn decode(input: &EncodedRLP) -> Option<RLP> {
+        if input.len() == 0 {
+            return None
+        }
         let (r, _) = Decoder::decode_helper(input, 0usize, input.len() - 1usize);
         match r {
             Ok(r) => Some(r),

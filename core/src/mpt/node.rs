@@ -2,10 +2,16 @@ use common::hash::*;
 use rlp::RLPSerialize;
 use rlp::types::*;
 
+/// Trie node index in DB
 pub type TrieKey = Hash;
+
+/// Trie node encoded path
 pub type EncodedPath = Vec<u8>;
 
+/// The branch num of a branch node
 pub const MAX_BRANCHE_NUM: usize = 16usize;
+
+/// The total num of kind of nibbles
 pub const MAX_NIBBLE_VALUE: u8 = 16u8;
 
 const BRANCH_NODE_RLP_SIZE: usize = 16usize;
@@ -105,6 +111,23 @@ pub fn decode_path(encoded_path: &Vec<u8>) -> (Vec<u8>, bool) {
     }
 }
 
+/// Enum of TrieNode.
+///
+/// ## EMPTY
+/// Unreachable Trie Node.
+/// ## BranchNode
+/// Branch Trie Node, contains 16 branches
+/// * Branches store 16 `TrieKey`, which are the indexes of child nodes in db.
+/// * May contain a value if it is at the end of an encoded path.
+/// * |0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|value|
+/// ## ExtensionNode
+/// Extension Trie Node
+/// * `encoded_path` is the remain encoded path.
+/// * `key` is the the pointed node index in db.
+/// ## LeafNode
+/// Leaf Trie Node
+/// * `encoded_path` is the remain encoded path.
+/// * `value` is the object of uniform type T which can be serialized to RLP
 #[derive(Debug, Clone, PartialEq)]
 pub enum TrieNode<T: RLPSerialize + Clone> {
     EMPTY,
@@ -115,6 +138,7 @@ pub enum TrieNode<T: RLPSerialize + Clone> {
 
 impl<T: RLPSerialize + Clone> TrieNode<T> {
     #[inline]
+    /// Construct a new `BranchNode`
     pub fn new_branch_node(branches: &[TrieKey; MAX_BRANCHE_NUM], value: Option<&T>) -> Self {
         let mut new_branches: [TrieKey; MAX_BRANCHE_NUM] = [zero_hash!(); MAX_BRANCHE_NUM];
         new_branches.copy_from_slice(&branches[0..MAX_BRANCHE_NUM]);
@@ -125,6 +149,7 @@ impl<T: RLPSerialize + Clone> TrieNode<T> {
         }
     }
 
+    /// Construct a new `LeafNode`
     #[inline]
     pub fn new_leaf_node(encoded_path: &EncodedPath, value: &T) -> Self {
         let nibbles = vec2nibble(encoded_path);
@@ -132,6 +157,7 @@ impl<T: RLPSerialize + Clone> TrieNode<T> {
         TrieNode::LeafNode { encoded_path: encoded_path.clone(), value: value.clone() }
     }
 
+    /// Construct a new `ExtensionNode`
     #[inline]
     pub fn new_extension_node(encoded_path: &EncodedPath, key: &TrieKey) -> Self {
         let nibbles = vec2nibble(encoded_path);
@@ -269,7 +295,6 @@ impl<T: RLPSerialize + Clone> RLPSerialize for TrieNode<T> {
 #[cfg(test)]
 mod node {
     use super::*;
-
     #[test]
     fn test_nibble2vec() {
         let result = nibble2vec(&vec![

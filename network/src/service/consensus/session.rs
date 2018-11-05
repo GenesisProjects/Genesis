@@ -10,10 +10,13 @@ use std::net::SocketAddr;
 use std::rc::Rc;
 
 use gen_message::{MESSAGE_CENTER, Message};
-use message::defines::*;
-use message::protocol::*;
-use message::message_handler::SocketMessageHandler;
+
+use socket::message::defines::*;
+use socket::message::message_handler::SocketMessageHandler;
 use socket::*;
+
+use super::protocol::*;
+use super::node_state::*;
 
 pub const CMD_ERR_PENALTY: u32 = 100u32;
 pub const DATA_TRANS_ERR_PENALTY: u32 = 200u32;
@@ -155,12 +158,12 @@ pub struct Session {
     context: TaskContext,
     connected: bool,
     mode: SessionMode,
-    protocol: P2PProtocol,
+    protocol: ConsensusProtocol,
 
     table: PeerTable,
-    block_info: Option<BlockInfo>,
 
-    pub handler: Rc<RefCell<SocketMessageHandler>>
+    state: StateRef,
+    pub handler: Rc<RefCell<SocketMessageHandler<Session>>>
 }
 
 impl Session {
@@ -178,7 +181,7 @@ impl Session {
     /// ## Examples
     /// ```
     /// ```
-    pub fn new(socket: TcpStream, addr: &SocketAddr) -> Self {
+    pub fn new(socket: TcpStream, addr: &SocketAddr, state: StateRef) -> Self {
         Session {
             token: None,
             socket: PeerSocket::new(socket),
@@ -189,11 +192,10 @@ impl Session {
             context: TaskContext::new(0usize, TaskType::None),
             connected: false,
             mode: SessionMode::Command,
-            protocol: P2PProtocol::new(),
+            protocol: ConsensusProtocol::new(),
 
             table: PeerTable::new(),
-            block_info: None,
-
+            state,
             handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
         }
     }
@@ -212,7 +214,7 @@ impl Session {
     /// ## Examples
     /// ```
     /// ```
-    pub fn connect(addr: &SocketAddr) -> Result<Self> {
+    pub fn connect(addr: &SocketAddr, state: StateRef) -> Result<Self> {
         match PeerSocket::connect(addr) {
             Ok(r) => {
                 Ok(Session {
@@ -225,11 +227,10 @@ impl Session {
                     context: TaskContext::new(0usize, TaskType::None),
                     connected: false,
                     mode: SessionMode::Command,
-                    protocol: P2PProtocol::new(),
+                    protocol: ConsensusProtocol::new(),
 
                     table: PeerTable::new(),
-                    block_info: None,
-
+                    state,
                     handler: Rc::new(RefCell::new(SocketMessageHandler::new()))
                 })
             },
@@ -255,18 +256,18 @@ impl Session {
     }
 
     #[inline]
+    pub fn state(&self) -> StateRef {
+        self.state.clone()
+    }
+
+    #[inline]
     pub fn set_status(&mut self, status: SessionStatus)  {
         self.status = status;
     }
 
     #[inline]
-    pub fn protocol(&self) -> P2PProtocol {
+    pub fn protocol(&self) -> ConsensusProtocol {
         self.protocol.clone()
-    }
-
-    #[inline]
-    pub fn block_info(&self) -> Option<BlockInfo> {
-        self.block_info.clone()
     }
 
     #[inline]
@@ -345,6 +346,11 @@ impl Session {
     #[inline]
     pub fn send_event(&mut self, msg: SocketMessage) -> Result<()> {
         self.socket.send_msg(msg)
+    }
+
+    #[inline]
+    pub fn send_request(&mut self, msg: RequestData) -> Result<()> {
+        self.socket.send_msg(self.protocol.request(msg))
     }
 
     #[inline]

@@ -1,3 +1,55 @@
 {
-  "event_queue_size" : 1024
+  "version": "0.0.0",
+  "event_queue_size" : 1024,
+  "db": {
+    "test": {
+      "path": "~/.genesis/data/test",
+      "create_if_missing": true,
+      "max_open_files": 32
+    },
+    "storage": {
+      "path": "~/.genesis/data/storage",
+      "create_if_missing": true,
+      "max_open_files": 32
+    },
+    "state": {
+      "path": "~/.genesis/data/state",
+      "create_if_missing": true,
+      "max_open_files": 32
+    },
+    "transaction": {
+      "path": "~/.genesis/data/transaction",
+      "create_if_missing": true,
+      "max_open_files": 32
+    },
+    "block": {
+      "path": "~/.genesis/data/block",
+      "create_if_missing": true,
+      "max_open_files": 32
+    },
+    "code": {
+      "path": "~/.genesis/data/code",
+      "create_if_missing": true,
+      "max_open_files": 32
+    }
+  },
+
+  "network": {
+    "p2p": {
+      "port": 39999,
+      "peer_map_limit": 1024,
+      "ban_list_limit": 100,
+      "waiting_list_limit": 1024,
+      "min_peers": 5,
+      "bootstrap_peers": [
+        "127.0.0.1:40001",
+        "127.0.0.1:40002",
+        "127.0.0.1:40003",
+        "127.0.0.1:40004"
+      ]
+    },
+    "bft": {
+
+    }
+  }
 }

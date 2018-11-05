@@ -1,20 +1,13 @@
-extern crate common;
-extern crate gen_core;
-use common::address::Address;
-use gen_core::vm::gen_vm::GenVM;
-use gen_core::action::Action;
+extern crate gen_network;
+extern crate gen_processor;
+use gen_network::service::download::SyncController;
+use gen_processor::ThreadService;
 
 fn main() {
-    let mut test_action = Action {
-        balance: 100,
-        addr: Address::load().unwrap()
-    };
-    let test_addr = Address::load().unwrap();
-    let mut vm = GenVM::new(&test_action, test_addr).unwrap();
+    let mut controller = SyncController::new().unwrap();
+    let ten_millis = std::time::Duration::from_millis(10);
+    std::thread::sleep(ten_millis);
+    controller.start();
 
-    vm.launch(&mut test_action).unwrap();
-    println!("test started");
-    loop {
-
-    }
+    loop {}
 }

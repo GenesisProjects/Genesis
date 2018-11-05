@@ -1,0 +1,10 @@
+[package]
+name = "gen_processor"
+version = "0.1.0"
+authors = ["edwardtanshuo <tanshuo198956@gmail.com>"]
+
+[dependencies]
+lazy_static = "1.0.0"
+num_cpus = "1.6"
+
+gen_message = { version = "0.1.0", path = "../message" }
