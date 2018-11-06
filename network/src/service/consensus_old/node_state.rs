@@ -3,8 +3,14 @@ use nat::*;
 use eventloop::*;
 use bit_vec::BitVec;
 
+use super::peer::*;
+use super::protocol::*;
+use super::consensus_config::*;
+
 use common::address::Address as Account;
 use common::gen_message::*;
+use common::thread::{Thread, ThreadStatus};
+use common::observe::Observe;
 use common::hash::*;
 
 use gen_core::validator::*;

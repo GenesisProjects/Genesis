@@ -1,9 +1,5 @@
 mod protocol;
-mod node_state;
-mod consensus_config;
-
-use self::node_state::*;
-use self::consensus_config::*;
+use self::protocol::*;
 
 use super::super::peer_manager::*;
 use super::super::socket::message::message_handler::*;
@@ -84,26 +80,20 @@ fn peer_info() -> Option<PeerInfo> {
 
 /// Consensus controller
 pub struct ConsensusController {
-    p2p_manager_ref: ContextRef<P2PManager>,
-    consensus_ref: ContextRef<NodeState>
+    p2p_manager_ref: ContextRef<P2PManager>
 }
 
 impl ConsensusController {
     pub fn new() -> Result<Self> {
         let hook = SyncMessageHook::new();
         hook.into_p2p_manager_ref().and_then(|context_ref| {
-            Ok(ConsensusController {
-                p2p_manager_ref: context_ref,
-                consensus_ref: consensus_ref
-            })
+            Ok(ConsensusController { p2p_manager_ref: context_ref })
         })
     }
 
     pub fn p2p_manager_ref(&self) -> ContextRef<P2PManager> {
         self.p2p_manager_ref.clone()
     }
-
-    pub fn node_state_ref(&self) -> ContextRef<NodeState> { self.consensus_ref.clone() }
 
     pub fn start(&mut self) {
         self.p2p_manager_ref.lock().start();
@@ -145,19 +135,6 @@ impl SyncMessageHook {
 
     pub fn into_p2p_manager_ref(self) -> Result<ContextRef<P2PManager>> {
         let config = P2PConfig::load("network.p2p");
-        let p2p_manager_ref_result = P2PManager::create(
-            P2P_MANAGER_CH_NAME.to_string(),
-            config,
-            P2P_MANAGER_EVENT_SIZE
-        );
-        p2p_manager_ref_result.and_then(|p2p_manager_ref| {
-            p2p_manager_ref.lock().set_msg_hook(self);
-            Ok(p2p_manager_ref)
-        })
-    }
-
-    pub fn into_consensus_ref(self) -> Result<ContextRef<NodeState>> {
-        let config = ConsensusConfig::load();
         let p2p_manager_ref_result = P2PManager::create(
             P2P_MANAGER_CH_NAME.to_string(),
             config,
